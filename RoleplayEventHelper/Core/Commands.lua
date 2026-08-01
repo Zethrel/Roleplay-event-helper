@@ -201,6 +201,58 @@ end)
 
 Group("Announcing")
 
+Register("include", "[section] [on|off]", "choose which sections are announced",
+	function(argument)
+		local preset, presetName = REH.Database:GetActivePreset()
+		local word, state = argument:match("^(%S*)%s*(.-)$")
+		word = word:lower()
+
+		if word == "" then
+			REH:Print(L["'%s' announces:"]:format(presetName))
+			for _, key in ipairs(REH.MODULE_KEYS) do
+				local tab = REH.Fields:FindTab(key)
+				local label = tab and tab.title or key
+				if preset.moduleEnabled[key] then
+					REH:Print("  |cff40ff40on |r %s", label)
+				else
+					REH:Print("  |cff808080off|r %s", label)
+				end
+			end
+			REH:Print(L["Change with /reh include <section> on|off."])
+			return
+		end
+
+		-- Match on the tab title as shown in the window, since that is the name
+		-- the host has actually seen.
+		local matched
+		for _, key in ipairs(REH.MODULE_KEYS) do
+			local tab = REH.Fields:FindTab(key)
+			if key == word or (tab and tab.title:lower() == word) then
+				matched = key
+			end
+		end
+
+		if not matched then
+			REH:PrintError(L["No section called '%s'. Try /reh include with no arguments to see them."]
+				:format(word))
+			return
+		end
+
+		if state == "" then
+			preset.moduleEnabled[matched] = not preset.moduleEnabled[matched]
+		else
+			preset.moduleEnabled[matched] = (state:lower() == "on")
+		end
+
+		local tab = REH.Fields:FindTab(matched)
+		REH:Print(L["%s is now %s."]:format(tab and tab.title or matched,
+			preset.moduleEnabled[matched] and "announced" or "left out"))
+
+		if REH.UI.MainFrame:IsBuilt() then
+			REH.UI.MainFrame:RefreshAll()
+		end
+	end)
+
 Register("preview", "[name]", "show exactly what would be sent to chat", function(argument)
 	local preset, name
 	if argument ~= "" then
@@ -326,6 +378,22 @@ Register("watch", "[on|off|announce]", "arm or disarm the roll watcher", functio
 			REH:PrintWarning(L["This preset announces to preview only, so verdicts will show here rather than in chat."])
 		end
 	end
+end)
+
+Register("round", "[new]", "start a new round, or show the current one", function(argument)
+	local watcher = REH.RollWatcher
+
+	if argument:lower() == "new" then
+		local number, created = watcher:NewRound()
+		if created then
+			REH:Print(L["Round %d."]:format(number))
+		else
+			REH:Print(L["Still on round %d; nothing has been rolled in it yet."]:format(number))
+		end
+		return
+	end
+
+	REH:Print(L["Round %d of %d."]:format(watcher:GetCurrentRound(), watcher:GetRoundCount()))
 end)
 
 Register("log", "[clear]", "show the roll log for this session", function(argument)

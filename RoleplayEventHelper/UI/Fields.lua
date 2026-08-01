@@ -395,6 +395,28 @@ Fields.TABS[#Fields.TABS + 1] = {
 	},
 }
 
+-- Every section that can be announced gets an include toggle as the first
+-- thing on its tab. Plenty of events run without rolls or combat at all, and
+-- the rules for those sections should be switched off rather than deleted, so
+-- the same preset can be turned back on for the next duelling night.
+--
+-- Added in a loop rather than written into each tab so a new module cannot be
+-- given an editor and quietly miss its toggle.
+for _, tab in ipairs(Fields.TABS) do
+	if REH.IsValidEnum(REH.MODULE_KEYS, tab.module) then
+		local moduleKey = tab.module
+
+		table.insert(tab.fields, 1, {
+			key = "include",
+			label = "Announce this section",
+			type = "toggle",
+			tooltip = "Off keeps the rules here but leaves them out of the announcement. Useful for events with no rolls or combat.",
+			get = function(p) return p.moduleEnabled[moduleKey] end,
+			set = function(p, v) p.moduleEnabled[moduleKey] = v end,
+		})
+	end
+end
+
 --- Suggested etiquette lines offered as one-click inserts.
 Fields.ETIQUETTE_SUGGESTIONS = {
 	"Keep emotes to two sentences so the round moves.",

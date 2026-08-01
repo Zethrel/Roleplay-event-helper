@@ -60,6 +60,7 @@ then restart the client or `/reload`.
 | `/reh preview [name]` | Show exactly what would be sent to chat, sending nothing |
 | `/reh announce [name]` | Send the rules to the chosen channel |
 | `/reh channel [type] [name]` | Choose where announcements go |
+| `/reh include [section] [on\|off]` | Choose which sections are announced |
 | `/reh cancel` | Stop an announcement in progress |
 | `/reh use <name>` | Switch the active preset |
 | `/reh new <name>` | Create a preset from the defaults |
@@ -70,6 +71,7 @@ then restart the client or `/reload`.
 | `/reh confirm` | Confirm the pending action |
 | `/reh watch [on\|off\|announce]` | Arm or disarm the roll watcher |
 | `/reh log [clear]` | Show this session's rolls and per-name totals |
+| `/reh round [new]` | Start a new round, or show the current one |
 | `/reh filter [mode]` | Whose rolls are tracked |
 | `/reh subgroups <numbers>` | Raid subgroups counted as combatants |
 | `/reh roster [import\|add\|remove\|clear]` | Edit the saved roster |
@@ -145,6 +147,13 @@ The Announce button disables itself when the target is unavailable and the
 status line says which condition failed, so a greyed-out button never leaves you
 guessing.
 
+## Events without combat
+
+Not every event needs rolls. Each tab has an **Announce this section** toggle,
+so the roll, health, damage and turn rules can be left out of a tavern night
+without deleting them — turn them back on for the next duel. `/reh include`
+does the same from chat.
+
 ## The roll watcher
 
 `/reh watch on` starts adjudicating `/roll` results against the active preset —
@@ -166,6 +175,12 @@ Whose rolls count is set per preset:
 `subgroup` is the one for large events: put combatants in raid subgroups 1–2 and
 the audience in 3–8, and spectators rolling for fun are ignored. An empty
 selection means the whole raid, never nobody.
+
+The log groups rolls into **rounds**. **New round** starts a fresh one; the
+arrows read back through earlier rounds, and stepping back past round one shows
+the whole event together with per-name totals. The log follows live rolls while
+you are on the current round and holds still while you are reading an earlier
+one.
 
 A raid caps at 40. If your event outgrows that, `/reh roster import` snapshots
 the current group into a list that survives group changes. And when rolls are

@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.1.0 - 2026-08-01
+
+**Rounds in the roll log.** A **New round** button starts a fresh round, and
+the arrows either side of the round label read back through earlier ones.
+Stepping back before round one shows every round together, with each roll
+marked by the round it belongs to and per-name totals for the whole event.
+
+A log left on the current round keeps up with live rolls on its own. One
+pinned to an earlier round stays there, so reading back through round two is
+not interrupted every time somebody rolls. Pressing New round twice without a
+roll in between does nothing, rather than stacking up empty rounds.
+
+`/reh round` and `/reh round new` do the same from chat.
+
+**Choosing which sections are announced.** Every section now has an
+**Announce this section** toggle at the top of its tab, so an event with no
+rolls or combat can leave those out without deleting the rules — the same
+preset can be switched back for the next duelling night. `/reh include` lists
+what is on and off, and `/reh include <section> on|off` changes it.
+
+`moduleEnabled` was in the data model from the start but had no way to reach
+it short of editing saved variables.
+
 ## 1.0.5 - 2026-08-01
 
 Fixes the roll log not updating while it is open.

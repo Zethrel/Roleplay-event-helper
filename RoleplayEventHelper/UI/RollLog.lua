@@ -4,24 +4,78 @@ local UI = REH.UI
 local RollLog = {}
 UI.RollLog = RollLog
 
-local WIDTH, HEIGHT = 420, 380
+local WIDTH, HEIGHT = 420, 400
 
 local frame
 
+-- Which round is on screen. nil means "follow the current round", so a log
+-- left open during an event keeps up on its own; a number pins it to one round
+-- so a host reading back through round two is not yanked forward every time
+-- somebody rolls. Round 0 is every round together.
+RollLog.viewing = nil
+
+function RollLog:GetViewedRound()
+	if self.viewing == nil then
+		return REH.RollWatcher:GetCurrentRound()
+	end
+	return self.viewing
+end
+
+function RollLog:SetViewedRound(index)
+	local count = REH.RollWatcher:GetRoundCount()
+
+	if index < 0 then
+		index = 0
+	elseif index > count then
+		index = count
+	end
+
+	-- Landing back on the current round resumes following it.
+	self.viewing = (index == REH.RollWatcher:GetCurrentRound()) and nil or index
+	self:Refresh()
+
+	return index
+end
+
+--- Called when the watcher starts a round, so the window follows it.
+function RollLog:OnRoundChanged()
+	self.viewing = nil
+	self:Refresh()
+end
+
+function RollLog:DescribeRound(index)
+	if index == 0 then
+		return ("All rounds (%d)"):format(REH.RollWatcher:GetRoundCount())
+	end
+	return ("Round %d of %d"):format(index, REH.RollWatcher:GetRoundCount())
+end
+
 --- Build the log text. Pure, so it can be tested without a frame.
-function RollLog:BuildText()
+function RollLog:BuildText(roundIndex)
 	local watcher = REH.RollWatcher
-	local entries, tallies = watcher:GetLog()
+	roundIndex = roundIndex or self:GetViewedRound()
+
+	local entries, tallies = watcher:GetRound(roundIndex)
 	local preset = REH.Database:GetActivePreset()
 
 	if #entries == 0 then
+		if roundIndex > 0 and watcher:GetRoundCount() > 1 then
+			return "|cff808080Nothing rolled in this round yet.|r"
+		end
 		return "|cff808080No rolls recorded yet.|r"
 	end
 
 	local lines = {}
 
 	for _, entry in ipairs(entries) do
-		lines[#lines + 1] = ("|cff808080%s|r %s"):format(entry.time,
+		-- Which round a roll belongs to only needs saying when several are on
+		-- screen at once.
+		local prefix = ""
+		if roundIndex == 0 and entry.round then
+			prefix = ("|cff606060R%d|r "):format(entry.round)
+		end
+
+		lines[#lines + 1] = ("|cff808080%s|r %s%s"):format(entry.time, prefix,
 			watcher:FormatVerdict(preset, entry.name, entry.roll, entry.verdict, true))
 	end
 
@@ -69,8 +123,33 @@ local function Build()
 		RollLog:Hide()
 	end)
 
-	local scroll, content = UI.CreateScrollArea(frame, WIDTH - 34, HEIGHT - 72)
-	scroll:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -30)
+	----------------------------------------------------------------------------
+	-- Round navigation
+	----------------------------------------------------------------------------
+
+	local previousButton = UI.CreateButton(frame, "<", 24, 20, function()
+		RollLog:SetViewedRound(RollLog:GetViewedRound() - 1)
+	end)
+	previousButton:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -28)
+	UI.SetTooltip(previousButton, "Earlier round",
+		"Step back through the rounds. Before round one is every round together.")
+
+	local roundLabel = UI.CreateLabel(frame, "", "GameFontNormalSmall")
+	roundLabel:SetPoint("LEFT", previousButton, "RIGHT", 6, 0)
+	roundLabel:SetWidth(150)
+	frame.roundLabel = roundLabel
+
+	local nextButton = UI.CreateButton(frame, ">", 24, 20, function()
+		RollLog:SetViewedRound(RollLog:GetViewedRound() + 1)
+	end)
+	nextButton:SetPoint("LEFT", roundLabel, "RIGHT", 6, 0)
+	UI.SetTooltip(nextButton, "Later round", "Step forward through the rounds.")
+
+	frame.previousButton = previousButton
+	frame.nextButton = nextButton
+
+	local scroll, content = UI.CreateScrollArea(frame, WIDTH - 34, HEIGHT - 96)
+	scroll:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -54)
 	frame.scrollFrame = scroll
 	frame.content = content
 
@@ -80,6 +159,18 @@ local function Build()
 	body:SetJustifyH("LEFT")
 	body:SetJustifyV("TOP")
 	frame.bodyText = body
+
+	local newRoundButton = UI.CreateButton(frame, "New round", 100, 22, function()
+		local number, created = REH.RollWatcher:NewRound()
+		if created then
+			REH:Print(("Round %d."):format(number))
+		end
+		RollLog:OnRoundChanged()
+	end)
+	newRoundButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 10)
+	frame.newRoundButton = newRoundButton
+	UI.SetTooltip(newRoundButton, "New round",
+		"Starts a fresh round. Earlier rounds stay in the log and can be read back with the arrows.")
 
 	local clearButton = UI.CreateButton(frame, "Clear", 90, 22, function()
 		REH.RollWatcher:ClearLog()
@@ -101,7 +192,8 @@ local function Build()
 			return
 		end
 
-		local plain = RollLog:BuildText():gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+		local plain = RollLog:BuildText(RollLog:GetViewedRound())
+			:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
 		copyBox.editBox:SetText(plain)
 		copyBox:Show()
 		copyBox.editBox:HighlightText()
@@ -130,7 +222,18 @@ function RollLog:Refresh()
 		return
 	end
 
-	frame.bodyText:SetText(self:BuildText())
+	local viewed = self:GetViewedRound()
+
+	frame.bodyText:SetText(self:BuildText(viewed))
+	frame.roundLabel:SetText(self:DescribeRound(viewed))
+
+	-- Nothing before "all rounds", nothing after the newest.
+	if frame.previousButton.SetEnabled then
+		frame.previousButton:SetEnabled(viewed > 0)
+	end
+	if frame.nextButton.SetEnabled then
+		frame.nextButton:SetEnabled(viewed < REH.RollWatcher:GetRoundCount())
+	end
 
 	-- The scroll child has to grow with the text or the scrollbar never has
 	-- anything to scroll, and the log looks like it stopped recording once the

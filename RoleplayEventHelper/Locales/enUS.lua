@@ -100,6 +100,17 @@ L["Roll log cleared."] = "Roll log cleared."
 L["No rolls recorded yet."] = "No rolls recorded yet."
 L["Totals:"] = "Totals:"
 
+-- Sections
+L["'%s' announces:"] = "'%s' announces:"
+L["Change with /reh include <section> on|off."] = "Change with /reh include <section> on|off."
+L["No section called '%s'. Try /reh include with no arguments to see them."] = "No section called '%s'. Try /reh include with no arguments to see them."
+L["%s is now %s."] = "%s is now %s."
+
+-- Rounds
+L["Round %d."] = "Round %d."
+L["Round %d of %d."] = "Round %d of %d."
+L["Still on round %d; nothing has been rolled in it yet."] = "Still on round %d; nothing has been rolled in it yet."
+
 -- Diagnostics
 L["The client blocked '%s'.%s"] = "The client blocked '%s'.%s"
 L["This happened while %s."] = "This happened while %s."

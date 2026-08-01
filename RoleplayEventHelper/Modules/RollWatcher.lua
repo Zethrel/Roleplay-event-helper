@@ -33,7 +33,12 @@ RollWatcher.mode = "off"
 local roster = {}
 local rosterCount = 0
 local muted = {}
-local log = { entries = {}, tallies = {} }
+-- Rolls are grouped into rounds. A duel or a brawl runs in rounds, and a host
+-- reviewing "who hit what in round three" should not have to read one long
+-- undivided list. Rounds are session state, like the log itself: they are not
+-- saved, because a new evening is a new event.
+local rounds = { { entries = {}, tallies = {} } }
+local currentRound = 1
 local ignoredOutsideGroup = 0
 local hintShown = false
 local verdictTimes = {}
@@ -405,11 +410,78 @@ end
 -- The log
 --------------------------------------------------------------------------------
 
+local function CurrentRound()
+	return rounds[currentRound]
+end
+
+--- Start a new round. Returns the round number, and whether a new one was
+--- actually created -- pressing it twice on an empty round is a no-op rather
+--- than a way to accumulate empty rounds.
+function RollWatcher:NewRound()
+	if #CurrentRound().entries == 0 then
+		return currentRound, false
+	end
+
+	rounds[#rounds + 1] = { entries = {}, tallies = {} }
+	currentRound = #rounds
+
+	if REH.UI and REH.UI.RollLog then
+		REH.UI.RollLog:OnRoundChanged(currentRound)
+	end
+
+	return currentRound, true
+end
+
+function RollWatcher:GetRoundCount()
+	return #rounds
+end
+
+function RollWatcher:GetCurrentRound()
+	return currentRound
+end
+
+--- Entries and tallies for one round. Round 0 is every round together, so a
+--- host can see the event's totals as well as the current exchange.
+function RollWatcher:GetRound(index)
+	if index and index > 0 then
+		local round = rounds[index]
+		if not round then
+			return {}, {}
+		end
+		return round.entries, round.tallies
+	end
+
+	local entries, tallies = {}, {}
+
+	for _, round in ipairs(rounds) do
+		for _, entry in ipairs(round.entries) do
+			entries[#entries + 1] = entry
+		end
+
+		for name, tally in pairs(round.tallies) do
+			local combined = tallies[name]
+			if not combined then
+				combined = { total = 0, successes = 0, failures = 0, criticals = 0 }
+				tallies[name] = combined
+			end
+			combined.total = combined.total + tally.total
+			combined.successes = combined.successes + tally.successes
+			combined.failures = combined.failures + tally.failures
+			combined.criticals = combined.criticals + tally.criticals
+		end
+	end
+
+	return entries, tallies
+end
+
 function RollWatcher:Record(name, roll, verdict)
+	local log = CurrentRound()
+
 	local entry = {
 		name = name,
 		roll = roll,
 		verdict = verdict,
+		round = currentRound,
 		time = (date and date("%H:%M:%S")) or "",
 	}
 
@@ -440,19 +512,20 @@ function RollWatcher:Record(name, roll, verdict)
 	return entry
 end
 
+--- The current round, which is what most callers mean by "the log".
 function RollWatcher:GetLog()
-	return log.entries, log.tallies
+	return CurrentRound().entries, CurrentRound().tallies
 end
 
 function RollWatcher:ClearLog()
-	log.entries = {}
-	log.tallies = {}
+	rounds = { { entries = {}, tallies = {} } }
+	currentRound = 1
 	ignoredOutsideGroup = 0
 	hintShown = false
 	capWarned = false
 
 	if REH.UI and REH.UI.RollLog then
-		REH.UI.RollLog:Refresh()
+		REH.UI.RollLog:OnRoundChanged()
 	end
 end
 
