@@ -13,8 +13,10 @@ REH.Diagnostics = Diagnostics
 -- the announcement it happened at.
 
 local MAX_ENTRIES = 20
+local REPEAT_SILENCE = 5
 
 local blocked = {}
+local lastReport = { func = nil, at = 0 }
 local eventFrame
 
 --- Set by the announcer before each send, so a block can be attributed to a
@@ -35,6 +37,7 @@ end
 
 function Diagnostics:Clear()
 	blocked = {}
+	lastReport = { func = nil, at = 0 }
 end
 
 local function Record(event, addon, func)
@@ -62,6 +65,27 @@ function Diagnostics:Handle(event, addon, func)
 	if entry.addon ~= ADDON_NAME then
 		return entry
 	end
+
+	-- A block that lands mid-announcement is the announcer's to explain: it
+	-- knows which message and which channel, and it can stop the queue rather
+	-- than let every remaining message produce its own error line.
+	if REH.Announcer:IsSending() and REH.Announcer:AbortBlocked(entry.func) then
+		lastReport.func = entry.func
+		lastReport.at = (GetTime and GetTime()) or 0
+		return entry
+	end
+
+	-- A blocked action rarely arrives alone: one refusal usually brings several
+	-- more for the same function within a moment. The host needs to be told
+	-- once, not once per repetition, so the same function stays quiet for a few
+	-- seconds after it has been reported. Every occurrence is still recorded
+	-- and visible in /reh blocked.
+	local now = (GetTime and GetTime()) or 0
+	if lastReport.func == entry.func and (now - lastReport.at) < REPEAT_SILENCE then
+		return entry
+	end
+
+	lastReport.func, lastReport.at = entry.func, now
 
 	REH:PrintError(L["The client blocked '%s'.%s"]:format(
 		entry.func,

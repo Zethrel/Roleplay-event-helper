@@ -16,6 +16,24 @@ REH.Announcer = Announcer
 local MIN_SEND_DELAY = 0.3
 local MAX_SEND_DELAY = 5.0
 
+-- The client refuses an addon send to these chat types unless a hardware event
+-- is behind it. A timer callback has none, so the first message of a paced
+-- announcement arrives and every one after it is blocked. Sending them all in
+-- the call stack of the click keeps the event behind every send.
+local NEEDS_HARDWARE_EVENT = {
+	SAY = true, YELL = true, EMOTE = true, CHANNEL = true, WHISPER = true,
+}
+
+Announcer.NEEDS_HARDWARE_EVENT = NEEDS_HARDWARE_EVENT
+
+--- Which send mode to use for a channel, honouring an explicit override.
+function Announcer:ResolveSendMode(chatType, setting)
+	if setting == "paced" or setting == "burst" then
+		return setting
+	end
+	return NEEDS_HARDWARE_EVENT[chatType] and "burst" or "paced"
+end
+
 local queue = {
 	active = false,
 	messages = nil,
@@ -142,6 +160,31 @@ function Announcer:Cancel()
 	return true
 end
 
+--- Stop because the client blocked a send.
+---
+--- Reported once and only once: without this the host gets one error line per
+--- remaining message, which buries the one piece of advice that would help.
+function Announcer:AbortBlocked(functionName)
+	if not queue.active or queue.blockReported then
+		return false
+	end
+
+	queue.blockReported = true
+
+	local index, total, chatType = queue.index, #queue.messages, queue.chatType
+	ResetQueue()
+
+	REH:PrintError(L["The client blocked message %d of %d on the way to %s, so the announcement stopped."]
+		:format(index, total, REH.DISPLAY.channel[chatType] or tostring(chatType)))
+
+	if NEEDS_HARDWARE_EVENT[chatType] then
+		REH:PrintWarning(L["Your client restricts addons sending to /say, /yell, /emote, whispers and custom channels. Party, raid, guild and officer chat are not restricted."])
+		REH:Print(L["Try /reh channel party, or press Announce again -- the first message always goes through because your click is behind it."])
+	end
+
+	return true
+end
+
 --- Stop because the client refused a send. The host is told which message
 --- failed, because a half-announced rule set is worse than an obvious error.
 local function Abort(failureIndex, total, err)
@@ -258,7 +301,8 @@ function Announcer:Announce(preset, presetName, overrides)
 	queue.target = target
 	queue.presetName = presetName
 	queue.delay = settings.sendDelay
-	queue.mode = settings.sendMode
+	queue.mode = self:ResolveSendMode(channel.type, settings.sendMode)
+	queue.blockReported = false
 
 	if queue.mode == "burst" then
 		REH:Print(L["Announcing '%s' to %s: %d messages, all at once."]
@@ -329,5 +373,15 @@ function Announcer:SetChannel(preset, word, target)
 	preset.channel.target = target
 
 	local available, reason = self:CheckAvailability(preset.channel)
-	return true, nil, (not available) and reason or nil
+	if not available then
+		return true, nil, reason
+	end
+
+	-- Not a failure, but worth saying before the host finds out mid-event.
+	if NEEDS_HARDWARE_EVENT[kind] and kind ~= "PREVIEW" then
+		return true, nil, nil,
+			L["Your client restricts addons sending here, so the rules are sent all at once rather than spaced out."]
+	end
+
+	return true
 end

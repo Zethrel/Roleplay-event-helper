@@ -107,7 +107,12 @@ L["That is the 'Interface action failed because of an AddOn' message. Run /reh b
 L["No blocked actions recorded this session."] = "No blocked actions recorded this session."
 L["Blocked actions (%d):"] = "Blocked actions (%d):"
 L["Send mode is %s."] = "Send mode is %s."
-L["Send mode must be paced or burst."] = "Send mode must be paced or burst."
+L["Send mode must be auto, paced or burst."] = "Send mode must be auto, paced or burst."
+L["Send mode is %s (%s for this preset's channel)."] = "Send mode is %s (%s for this preset's channel)."
+L["The client blocked message %d of %d on the way to %s, so the announcement stopped."] = "The client blocked message %d of %d on the way to %s, so the announcement stopped."
+L["Your client restricts addons sending to /say, /yell, /emote, whispers and custom channels. Party, raid, guild and officer chat are not restricted."] = "Your client restricts addons sending to /say, /yell, /emote, whispers and custom channels. Party, raid, guild and officer chat are not restricted."
+L["Try /reh channel party, or press Announce again -- the first message always goes through because your click is behind it."] = "Try /reh channel party, or press Announce again -- the first message always goes through because your click is behind it."
+L["Your client restricts addons sending here, so the rules are sent all at once rather than spaced out."] = "Your client restricts addons sending here, so the rules are sent all at once rather than spaced out."
 L["Announcing '%s' to %s: %d messages, all at once."] = "Announcing '%s' to %s: %d messages, all at once."
 L["Announcement cancelled by you after %d of %d messages."] = "Announcement cancelled by you after %d of %d messages."
 

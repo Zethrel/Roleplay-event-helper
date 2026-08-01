@@ -143,17 +143,20 @@ Register("blocked", nil, "show actions the client blocked, and why", function()
 	REH.Diagnostics:Report()
 end)
 
-Register("sendmode", "[paced|burst]", "how announcements are sent", function(argument)
+Register("sendmode", "[auto|paced|burst]", "how announcements are sent", function(argument)
 	local settings = REH.Database:GetSettings()
 	local word = argument:lower()
 
 	if word == "" then
-		REH:Print(L["Send mode is %s."]:format(settings.sendMode))
+		local preset = REH.Database:GetActivePreset()
+		REH:Print(L["Send mode is %s (%s for this preset's channel)."]:format(
+			settings.sendMode,
+			REH.Announcer:ResolveSendMode(preset.channel.type, settings.sendMode)))
 		return
 	end
 
-	if word ~= "paced" and word ~= "burst" then
-		REH:PrintError(L["Send mode must be paced or burst."])
+	if word ~= "paced" and word ~= "burst" and word ~= "auto" then
+		REH:PrintError(L["Send mode must be auto, paced or burst."])
 		return
 	end
 
@@ -251,7 +254,7 @@ Register("channel", "[type] [name]", "choose where announcements are sent", func
 	end
 
 	local word, target = argument:match("^(%S+)%s*(.-)$")
-	local ok, reason, warning = REH.Announcer:SetChannel(preset, word, target)
+	local ok, reason, warning, note = REH.Announcer:SetChannel(preset, word, target)
 
 	if not ok then
 		REH:PrintError(reason)
@@ -266,6 +269,10 @@ Register("channel", "[type] [name]", "choose where announcements are sent", func
 	-- surprise at the moment they press announce.
 	if warning then
 		REH:PrintWarning(L["Not available right now: %s"]:format(warning))
+	end
+
+	if note then
+		REH:Print(note)
 	end
 end)
 

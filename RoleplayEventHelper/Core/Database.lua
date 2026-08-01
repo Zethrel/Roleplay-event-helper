@@ -96,8 +96,9 @@ function Database:ValidateSettings(settings)
 	-- drops messages; too high and the host holds the channel for a minute.
 	settings.sendDelay = REH.ClampNumber(settings.sendDelay, 0.3, 5.0, 0.7)
 
-	if settings.sendMode ~= "paced" and settings.sendMode ~= "burst" then
-		settings.sendMode = "paced"
+	if settings.sendMode ~= "paced" and settings.sendMode ~= "burst"
+		and settings.sendMode ~= "auto" then
+		settings.sendMode = "auto"
 	end
 	settings.useSeparators = REH.ToBoolean(settings.useSeparators, false)
 	settings.mergeLines = REH.ToBoolean(settings.mergeLines, true)

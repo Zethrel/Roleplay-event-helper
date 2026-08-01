@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.0.3 - 2026-08-01
+
+Fixes announcements to `/say` stopping after the first message.
+
+- The client refuses an addon send to `/say`, `/yell`, `/emote`, whispers and
+  custom channels unless a hardware event is behind it. A timer callback has
+  none, so the first message of an announcement arrived and every one after it
+  was blocked. Those channels now send every message in the call stack of the
+  click that started the announcement, which keeps the event behind all of
+  them. Party, raid, guild and officer chat are unaffected and stay paced.
+- The send mode is chosen per channel by default (`/reh sendmode auto`), so
+  this needs no setting up. `paced` and `burst` still force one.
+- A blocked send now stops the announcement and explains it **once**, naming
+  the message and offering a channel that works, instead of producing one
+  error line per remaining message.
+- Choosing a restricted channel says so at the time rather than letting the
+  host discover it mid-event.
+
 ## 1.0.2 - 2026-08-01
 
 Diagnostics for the "Interface action failed because of an AddOn" message.

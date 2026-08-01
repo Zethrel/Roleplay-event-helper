@@ -109,11 +109,9 @@ REH.DEFAULT_SETTINGS = {
 	framePoint = { point = "CENTER", relativePoint = "CENTER", x = 0, y = 0 },
 	sendDelay = 0.7,
 
-	-- "paced" spaces messages out with a timer. "burst" sends them all in the
-	-- call stack of the click that started them, which matters if the client
-	-- requires a hardware event to send to a given chat type -- a timer
-	-- callback has no such event behind it.
-	sendMode = "paced",
+	-- "auto" picks per channel: burst where the client needs a hardware event
+	-- behind each send, paced everywhere else. "paced" and "burst" force one.
+	sendMode = "auto",
 
 	-- Off by default. Each separator costs a whole chat message and a send
 	-- delay, and the module labels ("Rolls:", "Health:") already give the
