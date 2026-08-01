@@ -7,6 +7,10 @@
 ## X-Category: Roleplay
 ## X-Website: https://github.com/Zethrel/Roleplay-event-helper
 
+Libs\LibStub\LibStub.lua
+Libs\LibDeflate\LibDeflate.lua
+Libs\LibSerialize\LibSerialize.lua
+
 Locales\enUS.lua
 
 Core\Util.lua
@@ -16,6 +20,7 @@ Core\Database.lua
 Modules\Formatter.lua
 Modules\Announcer.lua
 Modules\RollWatcher.lua
+Modules\Transfer.lua
 
 UI\Widgets.lua
 UI\Fields.lua
@@ -23,6 +28,7 @@ UI\Editors.lua
 UI\Preview.lua
 UI\PresetList.lua
 UI\RollLog.lua
+UI\TransferFrame.lua
 UI\MainFrame.lua
 
 Core\Commands.lua

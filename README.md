@@ -26,8 +26,8 @@ watcher adjudicates the plain `/roll` everyone already uses.
 | M3 — Announcer (first milestone where it talks) | ✅ done |
 | M4 — Main UI | ✅ done |
 | M5 — Roll watcher | ✅ done |
-| M6 — Export / import strings | next |
-| M7 — Polish and first release | |
+| M6 — Export / import strings | ✅ done |
+| M7 — Polish and first release | next |
 
 The full feature design lives in [`docs/PHASE1-PLAN.md`](docs/PHASE1-PLAN.md).
 
@@ -71,6 +71,8 @@ then restart the client or `/reload`.
 | `/reh subgroups <numbers>` | Raid subgroups counted as combatants |
 | `/reh roster [import\|add\|remove\|clear]` | Edit the saved roster |
 | `/reh mute <name>` / `/reh unmute <name>` | Ignore one name this session |
+| `/reh export [name]` | Get a shareable string for a preset |
+| `/reh import [string]` | Import a preset from a string |
 | `/reh version` | Addon version, client build, and interface numbers |
 
 `/rpevent` works as an alias for `/reh`. Preset names may contain spaces.
@@ -157,6 +159,32 @@ participant's roll is worse than adjudicating a stranger's.
 
 Cross-realm names are normalized on both sides, so `Faraway-Moon Guard` matches
 whether the roster or the system message spells it with a space.
+
+## Sharing presets
+
+**Export** turns a preset into a string starting `REH1:` — short enough to paste
+into Discord. **Import** takes it back. Strings survive being wrapped across
+lines by a chat client, and an import shows you what you are about to get before
+anything is saved. If the name collides with one you already have, you choose
+between overwriting and keeping both; nothing is replaced silently.
+
+Attendees do not need to import anything — the rules reach them as ordinary chat
+text. This is for handing a rule set to another host.
+
+An imported preset is treated as untrusted input: size-capped before
+decompression, then coerced through the same validation as a hand-edited saved
+file, so a malformed or hostile string cannot produce a preset that misbehaves
+later.
+
+## Bundled libraries
+
+`Libs/` contains three vendored libraries, unmodified:
+
+| Library | Licence | Used for |
+|---------|---------|----------|
+| [LibStub](https://www.wowace.com/projects/libstub) | Public domain | Library registry |
+| [LibDeflate](https://github.com/SafeteeWoW/LibDeflate) | zlib | Compressing export strings |
+| [LibSerialize](https://github.com/rossnichols/LibSerialize) | MIT | Serializing presets |
 
 ## Design principles
 

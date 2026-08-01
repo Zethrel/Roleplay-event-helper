@@ -428,6 +428,46 @@ Register("roster", "[import|add <name>|remove <name>|clear]", "edit the saved ro
 		REH:PrintError(L["Usage: %s"]:format("/reh roster [import|add <name>|remove <name>|clear]"))
 	end)
 
+Register("export", "[name]", "get a shareable string for a preset", function(argument)
+	local preset, name
+	if argument ~= "" then
+		preset, name = REH.Database:GetPreset(argument)
+		if not preset then
+			REH:PrintError(L["No preset named '%s'."]:format(argument))
+			return
+		end
+	else
+		preset, name = REH.Database:GetActivePreset()
+	end
+
+	-- The string is far longer than a chat line, so it goes to a window with a
+	-- selectable box rather than being printed where it cannot be copied.
+	REH.UI.TransferFrame:ShowExport(preset, name)
+end)
+
+Register("import", "[string]", "import a preset from a string", function(argument)
+	if argument == "" then
+		REH.UI.TransferFrame:ShowImport()
+		return
+	end
+
+	-- The chat box caps what can be typed, so a pasted string usually has to go
+	-- through the window. This path is here for short ones.
+	local preset, name = REH.Transfer:Import(argument)
+	if not preset then
+		REH:PrintError(tostring(name))
+		return
+	end
+
+	local stored, reason = REH.Transfer:Commit(preset, name, "new")
+	if not stored then
+		REH:PrintError(tostring(reason))
+		return
+	end
+
+	REH:Print(L["Imported preset '%s'."]:format(stored))
+end)
+
 Register("use", "<name>", "switch the active preset", function(argument)
 	if argument == "" then
 		REH:PrintError(L["Usage: %s"]:format("/reh use <name>"))

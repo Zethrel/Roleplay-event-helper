@@ -551,6 +551,12 @@ function Harness.fire(event, ...)
 end
 
 --- Full startup: load the files, then fire the events the client fires.
+---
+--- Returns a NEW namespace. Anything a test is holding from a previous load --
+--- REH, Database, Announcer, RollWatcher, a UI frame -- belongs to the old
+--- module and is no longer what the slash commands route to, so rebind after
+--- calling this. Forgetting is the single easiest way to write a test that
+--- fails for a reason that has nothing to do with the addon.
 function Harness.login()
 	local namespace = Harness.loadAddon()
 	Harness.fire("ADDON_LOADED", addonName)
@@ -603,8 +609,15 @@ function Harness.checkNoLeakedGlobals(allowed)
 end
 
 Harness.ALLOWED_GLOBALS = {
+	-- LibStub is deliberately global: it is the shared registry every addon
+	-- uses to find embedded libraries, and creating it is the documented
+	-- behaviour rather than a leak. The libraries themselves register inside
+	-- it rather than creating globals of their own.
+	LibStub = true,
+
 	RoleplayEventHelper = true,
 	RoleplayEventHelperLogFrame = true,
+	RoleplayEventHelperTransferFrame = true,
 	RoleplayEventHelperDB = true,
 	RoleplayEventHelperFrame = true,
 	SLASH_ROLEPLAYEVENTHELPER1 = true,

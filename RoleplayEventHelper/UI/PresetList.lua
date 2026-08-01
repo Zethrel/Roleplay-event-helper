@@ -235,6 +235,19 @@ function PresetList:Create(parent, width, height, onChanged)
 	end)
 	deleteButton:SetPoint("LEFT", renameButton, "RIGHT", 6, 0)
 
+	local exportButton = UI.CreateButton(frame, "Export", buttonWidth, UI.ROW_HEIGHT, function()
+		local preset, activeName = REH.Database:GetActivePreset()
+		UI.TransferFrame:ShowExport(preset, activeName)
+	end)
+	exportButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 8, 8)
+
+	local importButton = UI.CreateButton(frame, "Import", buttonWidth, UI.ROW_HEIGHT, function()
+		UI.TransferFrame:ShowImport()
+	end)
+	importButton:SetPoint("LEFT", exportButton, "RIGHT", 6, 0)
+
+	frame.exportButton = exportButton
+	frame.importButton = importButton
 	frame.newButton = newButton
 	frame.copyButton = copyButton
 	frame.renameButton = renameButton
