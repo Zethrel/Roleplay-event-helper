@@ -1,0 +1,12 @@
+## Interface: 120007
+## Title: Roleplay Event Helper
+## Notes: Build your event's house rules, announce them to chat, and adjudicate /roll results.
+## Author: Zethrel
+## Version: 0.1.0-alpha
+## SavedVariables: RoleplayEventHelperDB
+## X-Category: Roleplay
+## X-Website: https://github.com/Zethrel/Roleplay-event-helper
+
+Locales\enUS.lua
+
+Core\Init.lua

@@ -429,7 +429,7 @@ That is the whole positioning, and it should stay that way. Growing this into a 
 
 ## 11. Open items to confirm during Phase 2
 
-1. **Interface version.** Must be read from the live client; a wrong `## Interface:` number makes the addon show as out-of-date. First task of M0.
+1. ~~**Interface version.**~~ **Resolved at M0:** the live client is patch **12.0.7**, so the TOC declares `## Interface: 120007`. The addon also self-checks at login and names the correct number if a future patch moves ahead of the TOC, so this should not need chasing again.
 2. **`SendChatMessage` restrictions.** Blizzard periodically tightens what addons may send and when (hardware-event requirements, throttles, restricted channels). Verify current behaviour on the live client at M3 and adapt the queue — including a graceful "your client blocked this send" path rather than a silent failure.
 3. **Which rolls actually reach the host's client.** `/roll` results are delivered to your group, and to nearby players within local chat range — but the precise scope, and whether a non-grouped bystander's roll is visible to you at all, needs confirming in-game at M5. It decides how much work the participant filter is really doing: if out-of-group rolls never arrive, `Group` mode is belt-and-braces; if they do, it is essential. Test with a helper outside the group at melee range and again at distance.
 
