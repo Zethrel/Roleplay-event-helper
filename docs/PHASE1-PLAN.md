@@ -123,7 +123,9 @@ A dropdown on the main frame:
 - Guild, Officer
 - **Custom channel** — pick from the player's joined channels by name (e.g. "MoonGuardRP")
 - **Whisper** — to current target or a typed name
-- **Preview only** — prints to the host's own chat frame, sends nothing. Default selection on a fresh install, so a mis-click never spams a channel.
+- **Preview only** — prints to the host's own chat frame, sends nothing.
+
+**Decided:** *Preview only* is the fresh-install default, so a mis-click can never spam a channel. The host picks a real channel deliberately, once, and it is then remembered per preset.
 
 Availability is validated before sending: Raid Warning requires lead or assist, Guild requires guild membership, Party/Raid require a group, custom channel requires being joined. If the target is unavailable, the send button is disabled with a tooltip explaining why.
 
@@ -202,7 +204,7 @@ The roster is built passively from names seen rolling — the addon does not sca
 
 - **Export:** serialize the preset table → compress → Base64-ish encode → prefix with a version tag, producing `REH1:…`. Shown in a selectable edit box with a "select all" helper so the host can Ctrl+C it into Discord.
 - **Import:** paste the string, the addon validates the version tag and checksum, shows a **preview of what will be imported** (event name, module count), and requires a confirm click. Imports never silently overwrite — a name collision prompts for rename / overwrite / cancel.
-- **Libraries:** embed `LibSerialize` + `LibDeflate` under `Libs/`. Both are permissively licensed, widely used, and remove the need to hand-roll a serializer.
+- **Libraries — decided:** embed `LibSerialize` + `LibDeflate` under `Libs/`. Both are permissively licensed, battle-tested (WeakAuras uses this exact pair for its import strings), and remove the need to hand-roll a serializer and its edge cases. Vendored into the addon folder, so the addon has no external dependencies and users install one thing.
 - Corrupt or wrong-version strings fail with a clear message, never an error spew.
 
 Out of scope for now (deliberately): addon-to-addon channel sync. Attendees receive the rules through the chat announcement, which works whether or not they have the addon installed.
@@ -363,16 +365,49 @@ Minimap button, tooltips on every control, `/reh help`, README with screenshots,
 
 ---
 
-## 10. Open items to confirm before or during M0
+## 10. Name check and prior art
 
-1. **Interface version.** Must be read from the live client; a wrong `## Interface:` number makes the addon show as out-of-date. First task of M0.
-2. **`SendChatMessage` restrictions.** Blizzard periodically tightens what addons may send and when (hardware-event requirements, throttles, restricted channels). Verify current behaviour on the live client at M3 and adapt the queue — including a graceful "your client blocked this send" path rather than a silent failure.
-3. **Preferred default channel.** Currently "Preview only". Confirm that is the behaviour you want on a fresh install.
-4. **Addon name collision.** Worth a quick check on CurseForge/Wago before the first release so the published name is unique.
+### 10.1 Name availability — clear
+
+Searched CurseForge, Wago Addons, WoWInterface and GitHub in August 2026. **No addon is published under the name "Roleplay Event Helper."** The nearest names are:
+
+| Existing addon | Why it is not a conflict |
+|----------------|--------------------------|
+| Roleplaying Helper / Roleplaying Helper 2 | Old, listed under discontinued mods. Different function entirely: auto-emotes and phrases fired by game events. |
+| Roleplay Log | A synced text box the party leader edits so latecomers can catch up. |
+
+"Roleplaying Helper" is close enough to be worth noting — a searcher could confuse the two — but it is a long-dead addon with an unrelated purpose, so the name is safe to take. Registering the CurseForge/Wago project slug early is still worth doing.
+
+### 10.2 Prior art — where this addon fits
+
+Several established addons run RP combat, and it is worth being clear that this one is not competing with them:
+
+| Addon | What it does |
+|-------|--------------|
+| **DiceMaster** | Full D20 tabletop layer: dice notation, health bars, custom traits and abilities. |
+| **RPToolkit** | An event system built on D&D 5e mechanics — turn order, player actions, defence prompts. |
+| **RP Combat Dice**, **Game Master Dice** | Dice rollers with combat-oriented helpers. |
+
+Those are **systems** — everyone at the event must install them for the mechanics to work. This addon solves a different, smaller, more common problem: **the host has house rules and needs everyone in the room to know them, right now, in chat.** The rules land as plain chat text, so attendees need nothing installed at all. The roll watcher then adjudicates the ordinary `/roll` everyone already uses, rather than replacing it with a custom dice system.
+
+That is the whole positioning, and it should stay that way. Growing this into a full combat system would put it in a crowded field against mature addons; staying the thing that *explains the rules and calls the rolls* keeps it uniquely useful.
 
 ---
 
-## 11. Explicit non-goals
+## 11. Open items to confirm during Phase 2
+
+1. **Interface version.** Must be read from the live client; a wrong `## Interface:` number makes the addon show as out-of-date. First task of M0.
+2. **`SendChatMessage` restrictions.** Blizzard periodically tightens what addons may send and when (hardware-event requirements, throttles, restricted channels). Verify current behaviour on the live client at M3 and adapt the queue — including a graceful "your client blocked this send" path rather than a silent failure.
+
+### Resolved in Phase 1
+
+- **Default channel:** Preview only. *(§3.1)*
+- **Export/import:** embed LibSerialize + LibDeflate. *(§5)*
+- **Name:** "Roleplay Event Helper" is unclaimed and safe to use. *(§10.1)*
+
+---
+
+## 12. Explicit non-goals
 
 - No combat log parsing, no automation of actual game combat.
 - No inspection or announcement of other players' gear, class, or spec.
