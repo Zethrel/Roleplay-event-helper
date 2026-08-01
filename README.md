@@ -16,7 +16,9 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**Early development — not yet usable at an event.**
+**Feature complete, not yet tested in the game.** Everything is implemented and
+covered by tests that run outside the client; the next step is loading it in
+WoW and fixing whatever the game says.
 
 | Milestone | State |
 |-----------|-------|
@@ -27,7 +29,7 @@ watcher adjudicates the plain `/roll` everyone already uses.
 | M4 — Main UI | ✅ done |
 | M5 — Roll watcher | ✅ done |
 | M6 — Export / import strings | ✅ done |
-| M7 — Polish and first release | next |
+| M7 — Polish and first release | ✅ done |
 
 The full feature design lives in [`docs/PHASE1-PLAN.md`](docs/PHASE1-PLAN.md).
 
@@ -73,6 +75,7 @@ then restart the client or `/reload`.
 | `/reh mute <name>` / `/reh unmute <name>` | Ignore one name this session |
 | `/reh export [name]` | Get a shareable string for a preset |
 | `/reh import [string]` | Import a preset from a string |
+| `/reh minimap` | Show or hide the minimap button |
 | `/reh version` | Addon version, client build, and interface numbers |
 
 `/rpevent` works as an alias for `/reh`. Preset names may contain spaces.
@@ -114,6 +117,17 @@ The suites cover the TOC staying consistent with the code, a clean load and
 event bootstrap, saved variables persisting across a reload, no stray globals,
 preset create/copy/rename/delete/reset, and the validation layer's handling of
 corrupt or hand-edited saved data.
+
+## Your first event in four steps
+
+1. `/reh` opens the window. On the **Rolls** and **Health** tabs, set the numbers
+   your event runs on — the defaults are `/roll 100`, 10 or higher succeeds, and
+   Cloth 10 / Leather 11 / Mail 12 / Plate 13 with `+1` for a shield.
+2. Add anything else on the **Rules** tab, one rule per line.
+3. Pick where it goes with the channel button at the bottom left, then press
+   **Announce Rules**. The preview pane above shows exactly what will be sent.
+4. Set the watcher to **verdicts to me** and it will call each `/roll` a success
+   or failure as your event runs.
 
 ## The window
 

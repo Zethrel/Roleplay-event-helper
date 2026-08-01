@@ -64,6 +64,12 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
 	elseif event == "PLAYER_LOGIN" then
 		CheckInterfaceVersion()
 
+		-- Built at login rather than at ADDON_LOADED: the minimap exists by
+		-- now, and a failure here must not take the rest of the addon with it.
+		pcall(function()
+			REH.UI.MinimapButton:Initialize()
+		end)
+
 		-- A downgrade leaves saved data this build does not understand. Say so
 		-- once, because the alternative is the host quietly finding their
 		-- presets behaving oddly mid-event.
@@ -81,3 +87,12 @@ REH.eventFrame = eventFrame
 
 -- Expose the namespace for debugging and for the UI milestones.
 _G.RoleplayEventHelper = REH
+
+-- The TOC points the addon compartment at this global.
+function _G.RoleplayEventHelper_OnCompartmentClick(_, mouseButton)
+	if mouseButton == "RightButton" then
+		REH.UI.RollLog:Toggle()
+	else
+		REH.UI.MainFrame:Toggle()
+	end
+end

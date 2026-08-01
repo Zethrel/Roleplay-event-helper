@@ -27,11 +27,15 @@ local fieldCount = 0
 local allReadable, allWritable = true, true
 local unreadable, unwritable = nil, nil
 
+-- Tabs may edit the active preset or the account settings, so each one is
+-- checked against whatever it actually writes to.
 for _, tab in ipairs(Fields:GetTabs()) do
+	local target = Fields:GetTarget(tab)
+
 	for _, field in ipairs(tab.fields) do
 		fieldCount = fieldCount + 1
 
-		if type(field.get) ~= "function" or field.get(preset) == nil then
+		if type(field.get) ~= "function" or field.get(target) == nil then
 			allReadable = false
 			unreadable = tab.module .. "." .. field.key
 		end
@@ -57,9 +61,10 @@ H.check("every announceable module has an editor tab", everyModuleHasATab)
 
 local selectsAreValid = true
 for _, tab in ipairs(Fields:GetTabs()) do
+	local target = Fields:GetTarget(tab)
 	for _, field in ipairs(tab.fields) do
 		if field.type == "select" then
-			local current = field.get(preset)
+			local current = field.get(target)
 			local found = false
 			for _, option in ipairs(field.options()) do
 				if option.value == current then

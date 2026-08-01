@@ -119,6 +119,8 @@ local function Build()
 
 	local editors = UI.Editors:Create(content, editorWidth - 40, function()
 		MainFrame:RefreshPreview()
+		-- The Options tab can hide or show the minimap button.
+		UI.MinimapButton:ApplySettings()
 	end)
 	frame.editors = editors
 

@@ -90,6 +90,7 @@ Harness.clientInterface = nil  -- defaults to the TOC value
 Harness.playerName = "Testchar"
 Harness.realm = "Argent Dawn"
 Harness.rollResultFormat = "%s rolls %d (%d-%d)"
+Harness.cursor = { x = 1080, y = 500 }
 Harness.now = 1000
 
 local frames = {}
@@ -342,6 +343,11 @@ function Harness.installStubs()
 	----------------------------------------------------------------------------
 
 	UIParent = Harness.newWidget("Frame")
+	Minimap = Harness.newWidget("Frame")
+
+	function GetCursorPosition()
+		return Harness.cursor.x, Harness.cursor.y
+	end
 	UISpecialFrames = {}
 	StaticPopupDialogs = {}
 	ACCEPT, CANCEL, YES, NO = "Accept", "Cancel", "Yes", "No"
@@ -407,6 +413,8 @@ local WIDGET_METHODS = {
 	-- scrolling
 	SetScrollChild = true, GetScrollChild = true, SetVerticalScroll = true,
 	GetVerticalScrollRange = true, UpdateScrollChildRect = true,
+	-- minimap placement
+	GetCenter = true, GetEffectiveScale = true,
 	-- tooltip
 	SetOwner = true, AddLine = true, AddDoubleLine = true, ClearLines = true,
 }
@@ -482,6 +490,10 @@ function Harness.widgetCall(widget, method, a, b, c, d, e)
 		widget._scrollChild = a
 	elseif method == "GetScrollChild" then
 		return widget._scrollChild
+	elseif method == "GetCenter" then
+		return 1000, 500
+	elseif method == "GetEffectiveScale" then
+		return 1
 	elseif method == "Click" then
 		local handler = widget._scripts["OnClick"]
 		if handler then
@@ -616,7 +628,9 @@ Harness.ALLOWED_GLOBALS = {
 	LibStub = true,
 
 	RoleplayEventHelper = true,
+	RoleplayEventHelper_OnCompartmentClick = true,
 	RoleplayEventHelperLogFrame = true,
+	RoleplayEventHelperMinimapButton = true,
 	RoleplayEventHelperTransferFrame = true,
 	RoleplayEventHelperDB = true,
 	RoleplayEventHelperFrame = true,

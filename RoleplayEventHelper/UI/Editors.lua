@@ -115,6 +115,7 @@ end
 local BUILDERS = {
 	text = BuildTextRow,
 	number = BuildNumberRow,
+	decimal = BuildNumberRow,
 	toggle = BuildToggleRow,
 	select = BuildSelectRow,
 	lines = BuildLinesRow,
@@ -128,24 +129,28 @@ local BUILDERS = {
 function Editors:Create(parent, width, onChanged)
 	local controller = { pages = {}, activeIndex = 1 }
 
-	local function onEdited(field, rawValue)
-		local preset = REH.Database:GetActivePreset()
-		local ok, reason = REH.Fields:Set(preset, field, rawValue)
+	local function editorFor(tab)
+		return function(field, rawValue)
+			local target = REH.Fields:GetTarget(tab)
+			local ok, reason = REH.Fields:Set(target, field, rawValue, tab.scope)
 
-		if not ok then
-			REH:PrintError(reason)
-		end
+			if not ok then
+				REH:PrintError(reason)
+			end
 
-		-- Refresh regardless: a rejected edit must put the old value back on
-		-- screen, and an accepted one may have been adjusted by validation.
-		controller:Refresh()
+			-- Refresh regardless: a rejected edit must put the old value back
+			-- on screen, and an accepted one may have been adjusted by
+			-- validation.
+			controller:Refresh()
 
-		if onChanged then
-			onChanged()
+			if onChanged then
+				onChanged()
+			end
 		end
 	end
 
 	for index, tab in ipairs(REH.Fields:GetTabs()) do
+		local onEdited = editorFor(tab)
 		local page = CreateFrame("Frame", nil, parent)
 		page:SetSize(width, 400)
 		page:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, 0)
@@ -185,14 +190,18 @@ function Editors:Create(parent, width, onChanged)
 
 	--- Push the active preset's values into every widget on the visible page.
 	function controller:Refresh()
-		local preset = REH.Database:GetActivePreset()
 		local page = self.pages[self.activeIndex]
-		if not page or not preset then
+		if not page then
+			return
+		end
+
+		local target = REH.Fields:GetTarget(page.tab)
+		if not target then
 			return
 		end
 
 		for _, row in ipairs(page.rows) do
-			row.apply(preset)
+			row.apply(target)
 		end
 	end
 

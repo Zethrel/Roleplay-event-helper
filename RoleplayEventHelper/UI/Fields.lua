@@ -358,6 +358,49 @@ Fields.TABS[#Fields.TABS + 1] = {
 	},
 }
 
+-- Account-wide settings rather than per-preset rules. Marked with a scope so
+-- the editor writes them to the settings table instead of the active preset.
+Fields.TABS[#Fields.TABS + 1] = {
+	module = "settings",
+	title = "Options",
+	scope = "settings",
+	fields = {
+		{
+			key = "useColors", label = "Colour the announcement", type = "toggle",
+			tooltip = "Colour codes count toward the 255-byte chat limit, so turning this off fits slightly more text per message.",
+			get = function(s) return s.useColors end,
+			set = function(s, v) s.useColors = v end,
+		},
+		{
+			key = "mergeLines", label = "Pack rules into fewer messages", type = "toggle",
+			tooltip = "Combines adjacent rules from the same section into one message. Off sends one message per rule, which takes longer.",
+			get = function(s) return s.mergeLines end,
+			set = function(s, v) s.mergeLines = v end,
+		},
+		{
+			key = "useSeparators", label = "Separator line between sections", type = "toggle",
+			tooltip = "Each separator costs a whole chat message and a send delay.",
+			get = function(s) return s.useSeparators end,
+			set = function(s, v) s.useSeparators = v end,
+		},
+		{
+			key = "sendDelay", label = "Seconds between messages", type = "decimal",
+			min = 0.3, max = 5.0,
+			tooltip = "Too low and the client drops messages; too high and you hold the channel for a long time. 0.7 is a good default.",
+			get = function(s) return s.sendDelay end,
+			set = function(s, v) s.sendDelay = v end,
+		},
+		{
+			key = "minimapHide", label = "Hide the minimap button", type = "toggle",
+			get = function(s) return s.minimapButton and s.minimapButton.hide end,
+			set = function(s, v)
+				s.minimapButton = s.minimapButton or {}
+				s.minimapButton.hide = v
+			end,
+		},
+	},
+}
+
 --- Suggested etiquette lines offered as one-click inserts.
 Fields.ETIQUETTE_SUGGESTIONS = {
 	"Keep emotes to two sentences so the round moves.",
@@ -380,8 +423,27 @@ end
 --- after every write so cross-field rules hold immediately -- lowering the die
 --- max below the success threshold pulls the threshold down with it rather than
 --- leaving an impossible rule on screen.
-function Fields:Set(preset, field, rawValue)
-	if field.type == "number" then
+--- What a tab edits: the account settings, or the active preset.
+function Fields:GetTarget(tab)
+	if tab and tab.scope == "settings" then
+		return REH.Database:GetSettings()
+	end
+	return REH.Database:GetActivePreset()
+end
+
+function Fields:Set(target, field, rawValue, scope)
+	local preset = target
+
+	if field.type == "decimal" then
+		local number = tonumber(rawValue)
+		if not number then
+			return false, ("'%s' needs a number."):format(field.label)
+		end
+
+		number = REH.ClampNumber(number, field.min, field.max, number)
+		field.set(preset, number)
+
+	elseif field.type == "number" then
 		local number = tonumber(rawValue)
 		if not number then
 			return false, ("'%s' needs a number."):format(field.label)
@@ -423,7 +485,13 @@ function Fields:Set(preset, field, rawValue)
 		field.set(preset, REH.CleanString(rawValue, field.maxLength))
 	end
 
-	REH.Database:ValidatePreset(preset)
+	-- Revalidate whatever was written, so cross-field rules hold immediately.
+	if scope == "settings" then
+		REH.Database:ValidateSettings(preset)
+	else
+		REH.Database:ValidatePreset(preset)
+	end
+
 	return true
 end
 

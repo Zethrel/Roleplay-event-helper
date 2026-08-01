@@ -79,28 +79,67 @@ end
 local handlers = {}
 local order = {}
 
-local function Register(name, argHint, description, handler)
-	handlers[name] = handler
-	order[#order + 1] = { name = name, argHint = argHint, description = description }
+-- The list has grown past the point where an undifferentiated dump is useful,
+-- so each command declares which group it belongs to and /reh help prints them
+-- under headings.
+local GROUP_ORDER = { "Window", "Presets", "Announcing", "Roll watcher", "Sharing", "Other" }
+local currentGroup = "Other"
+
+local function Group(name)
+	currentGroup = name
 end
 
-Register("help", nil, "show this command list", function()
+local function Register(name, argHint, description, handler)
+	handlers[name] = handler
+	order[#order + 1] = {
+		name = name, argHint = argHint, description = description, group = currentGroup,
+	}
+end
+
+Group("Other")
+
+Register("help", "[group]", "show this command list", function(argument)
+	local wanted = argument ~= "" and argument:lower() or nil
+
 	REH:Print("%s v%s", L["Roleplay Event Helper"], REH.version)
-	REH:Print(L["Commands:"])
-	for _, entry in ipairs(order) do
-		local usage = "/reh " .. entry.name
-		if entry.argHint then
-			usage = usage .. " " .. entry.argHint
+
+	for _, groupName in ipairs(GROUP_ORDER) do
+		if not wanted or groupName:lower():find(wanted, 1, true) then
+			local printedHeading = false
+
+			for _, entry in ipairs(order) do
+				if entry.group == groupName then
+					if not printedHeading then
+						REH:Print("|cffffd100%s|r", groupName)
+						printedHeading = true
+					end
+
+					local usage = "/reh " .. entry.name
+					if entry.argHint then
+						usage = usage .. " " .. entry.argHint
+					end
+					REH:Print("  |cff8fd3ff%s|r - %s", usage, entry.description)
+				end
+			end
 		end
-		REH:Print("  |cffffd100%s|r - %s", usage, entry.description)
 	end
 end)
+
+Group("Window")
 
 Register("window", nil, "open or close the main window", function()
 	if REH.UI and REH.UI.MainFrame then
 		REH.UI.MainFrame:Toggle()
 	end
 end)
+
+Register("minimap", nil, "show or hide the minimap button", function()
+	local hidden = REH.UI.MinimapButton:SetHidden(not REH.UI.MinimapButton:IsHidden())
+	REH:Print(hidden and L["Minimap button hidden. Use /reh minimap to bring it back."]
+		or L["Minimap button shown."])
+end)
+
+Group("Presets")
 
 Register("list", nil, "list your presets", function()
 	local names = REH.Database:GetPresetNames()
@@ -130,6 +169,8 @@ Register("show", "[name]", "show a preset's rules in detail", function(argument)
 
 	DescribePreset(preset, name)
 end)
+
+Group("Announcing")
 
 Register("preview", "[name]", "show exactly what would be sent to chat", function(argument)
 	local preset, name
@@ -205,6 +246,8 @@ end)
 --------------------------------------------------------------------------------
 -- Roll watcher
 --------------------------------------------------------------------------------
+
+Group("Roll watcher")
 
 local WATCH_MODE_TEXT = {
 	off = "off",
@@ -428,6 +471,8 @@ Register("roster", "[import|add <name>|remove <name>|clear]", "edit the saved ro
 		REH:PrintError(L["Usage: %s"]:format("/reh roster [import|add <name>|remove <name>|clear]"))
 	end)
 
+Group("Sharing")
+
 Register("export", "[name]", "get a shareable string for a preset", function(argument)
 	local preset, name
 	if argument ~= "" then
@@ -467,6 +512,8 @@ Register("import", "[string]", "import a preset from a string", function(argumen
 
 	REH:Print(L["Imported preset '%s'."]:format(stored))
 end)
+
+Group("Presets")
 
 Register("use", "<name>", "switch the active preset", function(argument)
 	if argument == "" then
@@ -581,6 +628,8 @@ Register("confirm", nil, "confirm the pending action", function()
 	ClearPending()
 	action()
 end)
+
+Group("Other")
 
 Register("version", nil, "show addon and client version details", function()
 	local clientVersion, build = GetBuildInfo()
