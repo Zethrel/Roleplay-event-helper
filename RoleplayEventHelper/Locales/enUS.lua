@@ -100,5 +100,16 @@ L["Roll log cleared."] = "Roll log cleared."
 L["No rolls recorded yet."] = "No rolls recorded yet."
 L["Totals:"] = "Totals:"
 
+-- Diagnostics
+L["The client blocked '%s'.%s"] = "The client blocked '%s'.%s"
+L["This happened while %s."] = "This happened while %s."
+L["That is the 'Interface action failed because of an AddOn' message. Run /reh blocked for the details."] = "That is the 'Interface action failed because of an AddOn' message. Run /reh blocked for the details."
+L["No blocked actions recorded this session."] = "No blocked actions recorded this session."
+L["Blocked actions (%d):"] = "Blocked actions (%d):"
+L["Send mode is %s."] = "Send mode is %s."
+L["Send mode must be paced or burst."] = "Send mode must be paced or burst."
+L["Announcing '%s' to %s: %d messages, all at once."] = "Announcing '%s' to %s: %d messages, all at once."
+L["Announcement cancelled by you after %d of %d messages."] = "Announcement cancelled by you after %d of %d messages."
+
 -- Saved data
 L["Your saved data is from a newer version (format %d, this build reads %d). It has been left untouched. Update the addon to use it."] = "Your saved data is from a newer version (format %d, this build reads %d). It has been left untouched. Update the addon to use it."

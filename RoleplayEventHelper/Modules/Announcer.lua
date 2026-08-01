@@ -137,7 +137,8 @@ function Announcer:Cancel()
 
 	local sent, total = queue.index, #queue.messages
 	ResetQueue()
-	REH:PrintWarning(L["Announcement cancelled after %d of %d messages."]:format(sent, total))
+	REH:PrintWarning(L["Announcement cancelled by you after %d of %d messages."]
+		:format(sent, total))
 	return true
 end
 
@@ -174,7 +175,15 @@ function Announcer:SendNext()
 	-- is the hardest kind of failure for a host to diagnose mid-event.
 	message = REH.StripChatEscapes(message)
 
+	-- So that a blocked action can be attributed to a specific message rather
+	-- than to "something, at some point during the evening".
+	REH.Diagnostics:SetContext(("sending message %d of %d to %s")
+		:format(queue.index, #queue.messages, tostring(queue.chatType)))
+
 	local ok, err = pcall(SendChatMessage, message, queue.chatType, nil, queue.target)
+
+	REH.Diagnostics:ClearContext()
+
 	if not ok then
 		Abort(queue.index, #queue.messages, err)
 		return
@@ -188,9 +197,17 @@ function Announcer:SendNext()
 		return
 	end
 
-	C_Timer.After(queue.delay, function()
+	-- In burst mode the next message goes out in this same call stack, keeping
+	-- whatever hardware event started the announcement behind every send. In
+	-- paced mode a timer carries it, which is gentler on the client but has no
+	-- hardware event behind it.
+	if queue.mode == "burst" then
 		Announcer:SendNext()
-	end)
+	else
+		C_Timer.After(queue.delay, function()
+			Announcer:SendNext()
+		end)
+	end
 end
 
 --------------------------------------------------------------------------------
@@ -241,10 +258,16 @@ function Announcer:Announce(preset, presetName, overrides)
 	queue.target = target
 	queue.presetName = presetName
 	queue.delay = settings.sendDelay
+	queue.mode = settings.sendMode
 
-	REH:Print(L["Announcing '%s' to %s: %d messages, about %d seconds. /reh cancel to stop."]
-		:format(presetName, DescribeChannel(channel), #messages,
-			math.ceil(#messages * queue.delay)))
+	if queue.mode == "burst" then
+		REH:Print(L["Announcing '%s' to %s: %d messages, all at once."]
+			:format(presetName, DescribeChannel(channel), #messages))
+	else
+		REH:Print(L["Announcing '%s' to %s: %d messages, about %d seconds. /reh cancel to stop."]
+			:format(presetName, DescribeChannel(channel), #messages,
+				math.ceil(#messages * queue.delay)))
+	end
 
 	self:SendNext()
 	return true

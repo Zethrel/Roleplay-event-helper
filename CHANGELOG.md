@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.0.2 - 2026-08-01
+
+Diagnostics for the "Interface action failed because of an AddOn" message.
+
+- That message is not a Lua error, so `/console scriptErrors 1` never shows
+  it. The addon now listens for `ADDON_ACTION_BLOCKED` and
+  `ADDON_ACTION_FORBIDDEN` and reports which function the client blocked,
+  and which message of the announcement it happened on. `/reh blocked`
+  lists them along with the client build and locale.
+- Adds `/reh sendmode burst`, which sends every message in the call stack of
+  the click that started the announcement instead of spacing them out with a
+  timer. If the client requires a hardware event behind a send, a timer
+  callback has none, and burst mode restores it.
+- A cancelled announcement now says it was cancelled by you, so it cannot be
+  mistaken for the addon giving up on its own.
+
 ## 1.0.1 - 2026-08-01
 
 Fixes announcements arriving as a single message.

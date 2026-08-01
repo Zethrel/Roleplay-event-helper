@@ -139,6 +139,32 @@ Register("minimap", nil, "show or hide the minimap button", function()
 		or L["Minimap button shown."])
 end)
 
+Register("blocked", nil, "show actions the client blocked, and why", function()
+	REH.Diagnostics:Report()
+end)
+
+Register("sendmode", "[paced|burst]", "how announcements are sent", function(argument)
+	local settings = REH.Database:GetSettings()
+	local word = argument:lower()
+
+	if word == "" then
+		REH:Print(L["Send mode is %s."]:format(settings.sendMode))
+		return
+	end
+
+	if word ~= "paced" and word ~= "burst" then
+		REH:PrintError(L["Send mode must be paced or burst."])
+		return
+	end
+
+	settings.sendMode = word
+	REH:Print(L["Send mode is %s."]:format(settings.sendMode))
+
+	if word == "burst" then
+		REH:Print(L["Messages will go out together, in the call stack of the button you press. Slower on the client, but every send keeps the click behind it."])
+	end
+end)
+
 Group("Presets")
 
 Register("list", nil, "list your presets", function()

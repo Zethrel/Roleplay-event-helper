@@ -300,6 +300,10 @@ function Harness.installStubs()
 	-- from this rather than from English text.
 	RANDOM_ROLL_RESULT = Harness.rollResultFormat
 
+	function GetLocale()
+		return "enUS"
+	end
+
 	function GetNormalizedRealmName()
 		return Harness.realm
 	end

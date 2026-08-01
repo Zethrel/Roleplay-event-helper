@@ -55,6 +55,7 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
 		-- Saved variables are only guaranteed to exist once our own
 		-- ADDON_LOADED has fired, so the database is built here rather than at
 		-- file scope.
+		REH.Diagnostics:Initialize()
 		REH.Database:Initialize()
 		REH.Commands:Register()
 		REH.RollWatcher:Initialize()
