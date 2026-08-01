@@ -16,10 +16,10 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**v1.0.0.** Every planned feature is implemented and covered by 702 checks
-across eight test suites. Those suites run against a stub of the WoW API rather
-than the client, so anything purely visual is still unverified -- see the known
-gaps in the [changelog](CHANGELOG.md).
+**v1.1.0**, in use and being fixed as the game finds things. Covered by 901
+checks across ten suites, which run against a stub of the WoW API rather than
+the client -- see the [changelog](CHANGELOG.md) for what that does and does not
+catch.
 
 | Milestone | State |
 |-----------|-------|
