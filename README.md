@@ -16,7 +16,7 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**v1.2.0**, in use and being fixed as the game finds things. Covered by 923
+**v1.3.0**, in use and being fixed as the game finds things. Covered by 982
 checks across ten suites, which run against a stub of the WoW API rather than
 the client -- see the [changelog](CHANGELOG.md) for what that does and does not
 catch.
@@ -74,6 +74,7 @@ then restart the client or `/reload`.
 | `/reh round [new]` | Start a new round, or show the current one |
 | `/reh filter [mode]` | Whose rolls are tracked |
 | `/reh subgroups <numbers>` | Raid subgroups counted as combatants |
+| `/reh range [atmost\|exact\|any]` | Which dice sizes count |
 | `/reh roster [import\|add\|remove\|clear]` | Edit the saved roster |
 | `/reh mute <name>` / `/reh unmute <name>` | Ignore one name this session |
 | `/reh export [name]` | Get a shareable string for a preset |
@@ -191,6 +192,12 @@ A raid caps at 40. If your event outgrows that, `/reh roster import` snapshots
 the current group into a list that survives group changes. And when rolls are
 being ignored by your filter, the addon says so once — silently dropping a
 participant's roll is worse than adjudicating a stranger's.
+
+**Wounded characters rolling smaller dice are counted.** An event on `/roll 100`
+also tracks `/roll 20` and `/roll 15` by default, and the verdict names the die
+when it differs — `Bob rolled 12 (1-15) -> SUCCESS`. The threshold is not scaled
+down, since the smaller die is itself the penalty. `/reh range exact` restores
+strict matching.
 
 Cross-realm names are normalized on both sides, so `Faraway-Moon Guard` matches
 whether the roster or the system message spells it with a space.

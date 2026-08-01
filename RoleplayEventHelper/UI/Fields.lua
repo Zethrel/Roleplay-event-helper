@@ -343,11 +343,11 @@ Fields.TABS[#Fields.TABS + 1] = {
 			end,
 		},
 		{
-			key = "matchRangeOnly", label = "Only count rolls matching the die size",
-			type = "toggle",
-			tooltip = "Ignores a /roll 20 for loot while your event runs on /roll 100.",
-			get = function(p) return p.rollFilter.matchRangeOnly end,
-			set = function(p, v) p.rollFilter.matchRangeOnly = v end,
+			key = "rangeMode", label = "Count rolls on", type = "select",
+			options = function() return OptionsFrom(REH.RANGE_MODES, REH.DISPLAY.rangeMode) end,
+			tooltip = "A wounded character often rolls a smaller die, so 'that die or a smaller one' counts /roll 15 at an event running on /roll 100. A roll on a bigger die is still ignored.",
+			get = function(p) return p.rollFilter.rangeMode end,
+			set = function(p, v) p.rollFilter.rangeMode = v end,
 		},
 		{
 			key = "announceRounds", label = "Announce each new round", type = "toggle",

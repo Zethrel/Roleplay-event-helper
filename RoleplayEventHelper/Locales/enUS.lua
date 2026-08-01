@@ -87,6 +87,11 @@ L["No valid subgroups in that. Subgroups are 1 to 8."] = "No valid subgroups in 
 L["Muted %s for this session."] = "Muted %s for this session."
 L["Unmuted %s."] = "Unmuted %s."
 
+-- Dice sizes
+L["Counting rolls on %s (these rules use /roll %d)."] = "Counting rolls on %s (these rules use /roll %d)."
+L["Range must be atmost, exact or any."] = "Range must be atmost, exact or any."
+L["Ignored a /roll %d: these rules use /roll %d. Change what counts on the Watcher tab, or with /reh range any."] = "Ignored a /roll %d: these rules use /roll %d. Change what counts on the Watcher tab, or with /reh range any."
+
 -- Roster and log
 L["The saved roster is empty."] = "The saved roster is empty."
 L["Saved roster (%d):"] = "Saved roster (%d):"

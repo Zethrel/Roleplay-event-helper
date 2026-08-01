@@ -22,6 +22,7 @@ REH.TIE_BREAKS = { "reroll", "armor", "attacker", "defender", "host" }
 REH.DEATH_RULES = { "out", "downed", "host" }
 REH.INITIATIVE_MODES = { "initiative", "host", "roundrobin", "freeform" }
 REH.ROLL_FILTER_MODES = { "group", "subgroup", "roster", "everyone" }
+REH.RANGE_MODES = { "atMost", "exact", "any" }
 REH.ANNOUNCE_STYLES = { "full", "summary" }
 REH.CHANNEL_TYPES = {
 	"PREVIEW", "SAY", "YELL", "EMOTE", "PARTY", "RAID", "RAID_WARNING",
@@ -78,6 +79,11 @@ REH.DISPLAY = {
 		OFFICER = "officer chat",
 		CHANNEL = "a custom channel",
 		WHISPER = "a whisper",
+	},
+	rangeMode = {
+		atMost = "that die or a smaller one",
+		exact = "only that exact die",
+		any = "any die at all",
 	},
 	rollFilter = {
 		group = "party/raid members",
@@ -199,7 +205,11 @@ local PRESET_TEMPLATE = {
 		mode = "group",
 		subgroups = {},          -- raid subgroup numbers when mode == "subgroup"
 		roster = {},             -- explicit names when mode == "roster"
-		matchRangeOnly = true,   -- ignore rolls whose range is not 1..dieMax
+		-- "atMost" counts /roll 100 and anything smaller, because a wounded
+		-- character rolling a reduced die is the usual reason to roll low.
+		-- "exact" wants the die in the rules and nothing else; "any" takes
+		-- everything.
+		rangeMode = "atMost",
 	},
 
 	moduleOrder = { "header", "rolls", "health", "damage", "turns", "custom", "etiquette" },

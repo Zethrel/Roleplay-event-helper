@@ -109,7 +109,23 @@ end
 
 --- Coerce a preset into a valid shape in place. Returns the preset.
 function Database:ValidatePreset(preset)
+	-- Presets saved before the range rule became a choice stored a boolean:
+	-- true meant "only the exact die". That is read here, before the defaults
+	-- are merged in and hide the fact that it was ever missing, so an existing
+	-- preset keeps behaving the way its host set it up.
+	local legacyRange
+	if type(preset) == "table" and type(preset.rollFilter) == "table"
+		and preset.rollFilter.rangeMode == nil
+		and preset.rollFilter.matchRangeOnly ~= nil then
+		legacyRange = preset.rollFilter.matchRangeOnly and "atMost" or "any"
+	end
+
 	preset = REH.ApplyDefaults(preset, REH.PRESET_TEMPLATE)
+
+	if legacyRange then
+		preset.rollFilter.rangeMode = legacyRange
+		preset.rollFilter.matchRangeOnly = nil
+	end
 
 	-- Header
 	local header = preset.header
@@ -182,7 +198,10 @@ function Database:ValidatePreset(preset)
 	if not REH.IsValidEnum(REH.ROLL_FILTER_MODES, filter.mode) then
 		filter.mode = "group"
 	end
-	filter.matchRangeOnly = REH.ToBoolean(filter.matchRangeOnly, true)
+	if not REH.IsValidEnum(REH.RANGE_MODES, filter.rangeMode) then
+		filter.rangeMode = "atMost"
+	end
+	filter.matchRangeOnly = nil
 
 	-- Subgroup numbers are dropped when out of range rather than clamped.
 	-- Clamping 99 to 8 would silently add a subgroup the host never selected,

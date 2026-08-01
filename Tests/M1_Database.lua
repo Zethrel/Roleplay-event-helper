@@ -329,6 +329,36 @@ H.runSlash("use Expiring")
 H.runSlash("reset")
 H.check("/reh reset asks first too", DB:GetPreset("Expiring") ~= nil)
 
+--------------------------------------------------------------------------------
+H.section("Presets from before the range rule was a choice")
+--------------------------------------------------------------------------------
+
+-- The range rule used to be a boolean. An existing preset must keep behaving
+-- the way its host set it up rather than silently taking the new default.
+freshLogin()
+RoleplayEventHelperDB.presets["Old Strict"] = {
+	rollFilter = { matchRangeOnly = true },
+}
+RoleplayEventHelperDB.presets["Old Loose"] = {
+	rollFilter = { matchRangeOnly = false },
+}
+H.reload()
+
+H.checkEqual("a preset that only wanted its own die now counts smaller ones too",
+	DB:GetPreset("Old Strict").rollFilter.rangeMode, "atMost")
+H.checkEqual("one that took any roll still does",
+	DB:GetPreset("Old Loose").rollFilter.rangeMode, "any")
+H.check("and the old field is gone",
+	DB:GetPreset("Old Strict").rollFilter.matchRangeOnly == nil)
+
+local brandNew = REH.CreateDefaultPreset("Brand New")
+DB:ValidatePreset(brandNew)
+H.checkEqual("a new preset gets the default", brandNew.rollFilter.rangeMode, "atMost")
+
+brandNew.rollFilter.rangeMode = "nonsense"
+DB:ValidatePreset(brandNew)
+H.checkEqual("an invalid range rule is repaired", brandNew.rollFilter.rangeMode, "atMost")
+
 H.checkNoLeakedGlobals(H.ALLOWED_GLOBALS)
 
 H.finish()

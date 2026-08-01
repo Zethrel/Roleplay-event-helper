@@ -40,7 +40,9 @@ local muted = {}
 local rounds = { { entries = {}, tallies = {} } }
 local currentRound = 1
 local ignoredOutsideGroup = 0
+local ignoredForRange = 0
 local hintShown = false
+local rangeHintShown = false
 local verdictTimes = {}
 local verdictQueue = {}
 local verdictSending = false
@@ -233,9 +235,17 @@ function RollWatcher:ShouldAdjudicate(preset, fullName, minRoll, maxRoll)
 		return false, "muted"
 	end
 
-	-- Someone rolling /roll 20 for loot is not part of your duel.
-	if filter.matchRangeOnly then
+	-- A wounded character rolling a reduced die is the usual reason to roll on
+	-- something smaller than the event's, so "atMost" accepts those while still
+	-- ignoring a roll on a bigger die than the rules use.
+	local rangeMode = filter.rangeMode
+
+	if rangeMode == "exact" then
 		if minRoll ~= 1 or maxRoll ~= preset.rolls.dieMax then
+			return false, "range"
+		end
+	elseif rangeMode ~= "any" then
+		if minRoll ~= 1 or maxRoll > preset.rolls.dieMax then
 			return false, "range"
 		end
 	end
@@ -324,9 +334,16 @@ local VERDICT_COLORS = {
 	critfail = "|cffff4040",
 }
 
-function RollWatcher:FormatVerdict(preset, name, roll, verdict, colored)
-	local text = ("%s rolled %d -> %s"):format(
-		self:DisplayName(name), roll, self:VerdictText(preset, verdict))
+function RollWatcher:FormatVerdict(preset, name, roll, verdict, colored, maxRoll)
+	-- When somebody rolls on a smaller die than the event's, the die matters:
+	-- "rolled 12" reads as a near miss until you know it was out of 15.
+	local die = ""
+	if maxRoll and maxRoll ~= preset.rolls.dieMax then
+		die = (" (1-%d)"):format(maxRoll)
+	end
+
+	local text = ("%s rolled %d%s -> %s"):format(
+		self:DisplayName(name), roll, die, self:VerdictText(preset, verdict))
 
 	if colored then
 		return (VERDICT_COLORS[verdict] or "|cffffffff") .. text .. "|r"
@@ -494,13 +511,14 @@ function RollWatcher:GetRound(index)
 	return entries, tallies
 end
 
-function RollWatcher:Record(name, roll, verdict)
+function RollWatcher:Record(name, roll, verdict, maxRoll)
 	local log = CurrentRound()
 
 	local entry = {
 		name = name,
 		roll = roll,
 		verdict = verdict,
+		maxRoll = maxRoll,
 		round = currentRound,
 		time = (date and date("%H:%M:%S")) or "",
 	}
@@ -541,7 +559,9 @@ function RollWatcher:ClearLog()
 	rounds = { { entries = {}, tallies = {} } }
 	currentRound = 1
 	ignoredOutsideGroup = 0
+	ignoredForRange = 0
 	hintShown = false
+	rangeHintShown = false
 	capWarned = false
 
 	if REH.UI and REH.UI.RollLog then
@@ -591,6 +611,18 @@ function RollWatcher:HandleSystemMessage(message)
 
 	local allowed, reason = self:ShouldAdjudicate(preset, fullName, minRoll, maxRoll)
 	if not allowed then
+		-- Being told which die was ignored, and how to accept it, beats
+		-- wondering why a roll vanished.
+		if reason == "range" then
+			ignoredForRange = ignoredForRange + 1
+
+			if not rangeHintShown then
+				rangeHintShown = true
+				REH:PrintWarning(L["Ignored a /roll %d: these rules use /roll %d. Change what counts on the Watcher tab, or with /reh range any."]
+					:format(maxRoll, preset.rolls.dieMax))
+			end
+		end
+
 		if reason == "group" or reason == "roster" or reason == "subgroup" then
 			ignoredOutsideGroup = ignoredOutsideGroup + 1
 
@@ -606,12 +638,13 @@ function RollWatcher:HandleSystemMessage(message)
 	end
 
 	local verdict = self:Judge(preset, roll)
-	local entry = self:Record(fullName, roll, verdict)
+	local entry = self:Record(fullName, roll, verdict, maxRoll)
 
-	REH:Print(self:FormatVerdict(preset, fullName, roll, verdict, true))
+	REH:Print(self:FormatVerdict(preset, fullName, roll, verdict, true, maxRoll))
 
 	if self.mode == "announce" then
-		self:QueueVerdict(preset, self:FormatVerdict(preset, fullName, roll, verdict, false))
+		self:QueueVerdict(preset,
+			self:FormatVerdict(preset, fullName, roll, verdict, false, maxRoll))
 	end
 
 	return entry

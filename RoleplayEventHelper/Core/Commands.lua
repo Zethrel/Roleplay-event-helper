@@ -418,7 +418,8 @@ Register("log", "[clear]", "show the roll log for this session", function(argume
 		local entry = entries[index]
 		local preset = REH.Database:GetActivePreset()
 		REH:Print("  %s %s", entry.time,
-			watcher:FormatVerdict(preset, entry.name, entry.roll, entry.verdict, true))
+			watcher:FormatVerdict(preset, entry.name, entry.roll, entry.verdict, true,
+				entry.maxRoll))
 	end
 
 	REH:Print(L["Totals:"])
@@ -477,6 +478,38 @@ Register("filter", "[group|subgroup|roster|everyone]", "choose whose rolls are t
 			REH:PrintWarning(L["No subgroups chosen yet, so the whole raid counts. Set them with /reh subgroups 1 2."])
 		end
 	end)
+
+Register("range", "[atmost|exact|any]", "which dice sizes count", function(argument)
+	local preset = REH.Database:GetActivePreset()
+	local word = argument:lower():gsub("%s", "")
+
+	local aliases = {
+		atmost = "atMost", ["or"] = "atMost", smaller = "atMost", lower = "atMost",
+		exact = "exact", same = "exact",
+		any = "any", all = "any",
+	}
+
+	if word == "" then
+		REH:Print(L["Counting rolls on %s (these rules use /roll %d)."]:format(
+			REH.DISPLAY.rangeMode[preset.rollFilter.rangeMode] or preset.rollFilter.rangeMode,
+			preset.rolls.dieMax))
+		return
+	end
+
+	local mode = aliases[word]
+	if not mode then
+		REH:PrintError(L["Range must be atmost, exact or any."])
+		return
+	end
+
+	preset.rollFilter.rangeMode = mode
+	REH:Print(L["Counting rolls on %s (these rules use /roll %d)."]:format(
+		REH.DISPLAY.rangeMode[mode], preset.rolls.dieMax))
+
+	if REH.UI.MainFrame:IsBuilt() then
+		REH.UI.MainFrame:RefreshAll()
+	end
+end)
 
 Register("subgroups", "<numbers>", "raid subgroups counted as combatants", function(argument)
 	local preset = REH.Database:GetActivePreset()

@@ -234,7 +234,7 @@ H.check("no subgroups chosen means everyone in the raid counts",
 preset.rollFilter.subgroups = { 1, 2 }
 
 --------------------------------------------------------------------------------
-H.section("Range filtering")
+H.section("Which dice sizes count")
 --------------------------------------------------------------------------------
 
 reset()
@@ -242,14 +242,57 @@ H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Bob", subgroup = 1 }
 Watcher:SetMode("local")
 preset = DB:GetActivePreset()
 preset.rollFilter.mode = "group"
-preset.rollFilter.matchRangeOnly = true
 
-H.check("a matching roll counts", roll("Bob", 50, 1, 100) ~= nil)
-H.check("a /roll 20 for loot is ignored", roll("Bob", 15, 1, 20) == nil)
+-- A wounded character rolling a reduced die is the usual reason to roll on
+-- something smaller than the event's, so those must count.
+preset.rollFilter.rangeMode = "atMost"
+H.check("a roll on the event's die counts", roll("Bob", 50, 1, 100) ~= nil)
+H.check("a roll on a smaller die counts too", roll("Bob", 12, 1, 15) ~= nil)
+H.check("and one right at the edge", roll("Bob", 2, 1, 2) ~= nil)
+H.check("but a roll on a bigger die does not", roll("Bob", 500, 1, 1000) == nil)
+H.check("nor one that does not start at 1", roll("Bob", 12, 5, 15) == nil)
 
-preset.rollFilter.matchRangeOnly = false
-H.check("with range matching off, any range counts", roll("Bob", 15, 1, 20) ~= nil)
-preset.rollFilter.matchRangeOnly = true
+H.checkEqual("counting rolls on smaller dice is the default",
+	REH.PRESET_TEMPLATE.rollFilter.rangeMode, "atMost")
+
+-- The die matters when reading the verdict back: "rolled 12" looks like a near
+-- miss until you know it was out of 15.
+local entry = roll("Bob", 12, 1, 15)
+H.checkEqual("the entry remembers the die used", entry.maxRoll, 15)
+H.check("and the verdict shows it",
+	Watcher:FormatVerdict(preset, "Bob-ArgentDawn", 12, "success", false, 15)
+		:find("(1-15)", 1, true) ~= nil)
+H.check("while the event's own die is not worth repeating",
+	Watcher:FormatVerdict(preset, "Bob-ArgentDawn", 12, "success", false, 100)
+		:find("(1-100)", 1, true) == nil)
+
+preset.rollFilter.rangeMode = "exact"
+H.check("exact still takes the event's die", roll("Bob", 50, 1, 100) ~= nil)
+H.check("but refuses a smaller one", roll("Bob", 12, 1, 15) == nil)
+
+preset.rollFilter.rangeMode = "any"
+H.check("any takes a smaller die", roll("Bob", 12, 1, 15) ~= nil)
+H.check("and a bigger one", roll("Bob", 500, 1, 1000) ~= nil)
+H.check("and an odd range", roll("Bob", 12, 5, 15) ~= nil)
+
+-- A roll dropped for its die should say so, since that is exactly the case
+-- that looks like the watcher has stopped working.
+reset()
+H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Bob", subgroup = 1 } }, true)
+Watcher:SetMode("local")
+preset = DB:GetActivePreset()
+preset.rollFilter.mode = "group"
+preset.rollFilter.rangeMode = "atMost"
+H.clearOutput()
+roll("Bob", 500, 1, 1000)
+H.check("an ignored die is explained",
+	H.outputText():find("Ignored a /roll 1000", 1, true) ~= nil, H.outputText())
+H.check("naming the die the rules use",
+	H.outputText():find("/roll 100", 1, true) ~= nil, H.outputText())
+
+H.clearOutput()
+roll("Bob", 400, 1, 1000)
+H.checkEqual("and it is not repeated for every roll", H.outputText(), "")
 
 --------------------------------------------------------------------------------
 H.section("Saved roster and muting")

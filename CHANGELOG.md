@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.3.0 - 2026-08-01
+
+**Smaller dice are now counted.** The roll watcher used to want the exact die
+from your rules and ignored everything else, so a wounded character rolling
+`/roll 15` at an event running on `/roll 100` simply vanished from the log.
+
+**Count rolls on** on the Watcher tab now offers:
+
+- **that die or a smaller one** (new default) -- `/roll 100`, `/roll 20` and
+  `/roll 15` all count; a roll on a *bigger* die still does not
+- **only that exact die** -- the old behaviour
+- **any die at all**
+
+`/reh range atmost|exact|any` does the same from chat. Presets saved before
+this keep the behaviour their host set up.
+
+When a roll is counted on a different die, the verdict says which:
+`Bob rolled 12 (1-15) -> SUCCESS`. Without it, a 12 reads as a near miss until
+you know it was out of fifteen. The threshold is not scaled to the smaller die,
+because rolling a smaller die is itself the penalty.
+
+A roll ignored for its die now says so once, naming the die and how to accept
+it, rather than disappearing silently.
+
 ## 1.2.0 - 2026-08-01
 
 **Starting a round tells the room.** The main window's log button is now

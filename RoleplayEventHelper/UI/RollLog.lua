@@ -76,7 +76,8 @@ function RollLog:BuildText(roundIndex)
 		end
 
 		lines[#lines + 1] = ("|cff808080%s|r %s%s"):format(entry.time, prefix,
-			watcher:FormatVerdict(preset, entry.name, entry.roll, entry.verdict, true))
+			watcher:FormatVerdict(preset, entry.name, entry.roll, entry.verdict, true,
+				entry.maxRoll))
 	end
 
 	lines[#lines + 1] = ""
