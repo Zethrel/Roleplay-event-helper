@@ -320,6 +320,7 @@ RoleplayEventHelperDB = {
       turns   = { mode = "initiative", turnTimeSeconds = 60, note = "" },
       custom  = { "No mounts inside the ring.", "No consumables between rounds." },
       etiquette = { "OOC in double parentheses." },
+      rollFilter = { mode = "group", subgroups = {}, roster = {}, matchRangeOnly = true },
       moduleOrder   = { "header", "rolls", "health", "damage", "turns", "custom", "etiquette" },
       moduleEnabled = { header = true, rolls = true, health = true, ... },
       channel = { type = "CHANNEL", target = "MoonGuardRP" },
@@ -346,8 +347,9 @@ RoleplayEventHelper/
 ├── Core/
 │   ├── Init.lua          -- namespace, event frame, ADDON_LOADED, DB bootstrap
 │   ├── Defaults.lua      -- default preset, default settings
-│   ├── Database.lua      -- get/set, migrations, preset CRUD
-│   └── Util.lua          -- byte-safe string splitting, colour helpers, validation
+│   ├── Database.lua      -- get/set, migrations, preset CRUD, validation
+│   ├── Commands.lua      -- slash command table and dispatch
+│   └── Util.lua          -- byte-safe string splitting, colour helpers, coercion
 ├── Modules/
 │   ├── Formatter.lua     -- preset table  → ordered list of chat lines
 │   ├── Announcer.lua     -- paced send queue, channel validation, cancel

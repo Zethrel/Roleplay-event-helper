@@ -21,8 +21,8 @@ watcher adjudicates the plain `/roll` everyone already uses.
 | Milestone | State |
 |-----------|-------|
 | M0 — Skeleton: loads clean, `/reh`, saved variables | ✅ done |
-| M1 — Data layer: presets, defaults, migrations | next |
-| M2 — Formatter and preview | |
+| M1 — Data layer: presets, defaults, migrations | ✅ done |
+| M2 — Formatter and preview | next |
 | M3 — Announcer (first milestone where it talks) | |
 | M4 — Main UI | |
 | M5 — Roll watcher | |
@@ -51,9 +51,23 @@ then restart the client or `/reload`.
 | Command | Effect |
 |---------|--------|
 | `/reh` | Command list |
+| `/reh list` | List your presets, marking the active one |
+| `/reh show [name]` | Show a preset's rules in detail |
+| `/reh use <name>` | Switch the active preset |
+| `/reh new <name>` | Create a preset from the defaults |
+| `/reh copy <new name>` | Copy the active preset |
+| `/reh rename <new name>` | Rename the active preset |
+| `/reh delete <name>` | Delete a preset (asks to confirm) |
+| `/reh reset` | Reset the active preset to defaults (asks to confirm) |
+| `/reh confirm` | Confirm the pending action |
 | `/reh version` | Addon version, client build, and interface numbers |
 
-`/rpevent` works as an alias for `/reh`.
+`/rpevent` works as an alias for `/reh`. Preset names may contain spaces.
+
+Deleting and resetting ask for confirmation, because preset names get similar
+fast ("Duel Ring", "Duel Ring 2") and a mistyped delete otherwise costs you an
+evening's setup. The prompt expires after 30 seconds, and any other command
+cancels it, so a stale prompt can never be answered by a later `confirm`.
 
 If the client updates to a patch newer than the addon's TOC, the addon says so at
 login and tells you the exact `## Interface:` number to change it to.
@@ -64,12 +78,13 @@ The addon is tested outside the game against a stub of the WoW API, so bootstrap
 regressions get caught without a client. Requires Lua 5.1 (the version WoW uses):
 
 ```sh
-lua5.1 Tests/M0_Bootstrap.lua
+./Tests/run.sh          # VERBOSE=1 ./Tests/run.sh to see every check
 ```
 
-It checks that the TOC is consistent with the code, that the addon loads and
-registers cleanly, that saved variables persist across a reload, that no stray
-globals are created, and that the interface-version self-check fires correctly.
+The suites cover the TOC staying consistent with the code, a clean load and
+event bootstrap, saved variables persisting across a reload, no stray globals,
+preset create/copy/rename/delete/reset, and the validation layer's handling of
+corrupt or hand-edited saved data.
 
 ## Design principles
 
