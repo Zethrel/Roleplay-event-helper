@@ -514,8 +514,27 @@ H.check("the roll bands and criticals share a message",
 	mergedText:find("10%-100 = SUCCESS%. A natural 100") ~= nil, mergedText)
 H.check("the health table and its note share a message",
 	mergedText:find("Plate 13%. Shield equipped %+1%.") ~= nil, mergedText)
-H.check("both custom rules share a message",
-	mergedText:find("1%. No mounts inside the ring%. 2%. No consumables") ~= nil, mergedText)
+-- A rule list must not be packed: the host wrote them as separate rules, and
+-- running two into one message reads as a single run-on instruction.
+H.check("each custom rule gets its own message",
+	mergedText:find("1%. No mounts inside the ring%. 2%. No consumables") == nil, mergedText)
+
+local ruleMessages = 0
+for _, message in ipairs(merged) do
+	if message:find("^%d%. ") then
+		ruleMessages = ruleMessages + 1
+	end
+end
+H.checkEqual("one message per rule", ruleMessages, #packable.custom)
+
+local etiquetteTogether = false
+for _, message in ipairs(merged) do
+	if message:find("OOC in double parentheses.", 1, true)
+		and message:find("Disputes are settled", 1, true) then
+		etiquetteTogether = true
+	end
+end
+H.check("etiquette lines are not packed together either", etiquetteTogether == false)
 
 -- Merging across modules would run "Health: ..." into the end of the damage
 -- rules, and the announcement stops being scannable.

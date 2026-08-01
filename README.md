@@ -16,7 +16,7 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**v1.4.2**, in use and being fixed as the game finds things. Covered by 1018
+**v1.5.0**, in use and being fixed as the game finds things. Covered by 1022
 checks across ten suites, which run against a stub of the WoW API rather than
 the client -- see the [changelog](CHANGELOG.md) for what that does and does not
 catch.
@@ -143,6 +143,10 @@ the announcement takes. Editing any rule updates it immediately.
 
 Health rows and rule lists are edited as plain text, one entry per line
 (`Cloth 10`, `Shield equipped +1`), so a whole rule set can be pasted in or out.
+
+Each custom rule and etiquette line is announced as its own chat message, so
+what you typed on separate lines arrives on separate lines. Two thoughts that
+belong together can be typed on one line.
 
 The Announce button disables itself when the target is unavailable and the
 status line says which condition failed, so a greyed-out button never leaves you

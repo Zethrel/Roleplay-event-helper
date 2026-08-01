@@ -210,19 +210,25 @@ builders.turns = function(preset, emit, options)
 	end
 end
 
+-- Rules and etiquette lines are sent one per message rather than packed
+-- together. The host wrote them as separate rules, and two of them run into one
+-- message read as a single run-on instruction. It also means the host decides:
+-- rules on separate lines arrive separately, and two thoughts that belong
+-- together can be typed on one line.
+
 builders.custom = function(preset, emit, options)
 	for index, rule in ipairs(preset.custom) do
 		if options.numberCustomRules then
-			emit(("%d. %s"):format(index, rule))
+			emit(("%d. %s"):format(index, rule), true)
 		else
-			emit(rule)
+			emit(rule, true)
 		end
 	end
 end
 
 builders.etiquette = function(preset, emit, options)
 	for _, rule in ipairs(preset.etiquette) do
-		emit(rule)
+		emit(rule, true)
 	end
 end
 

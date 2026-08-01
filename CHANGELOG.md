@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.0 - 2026-08-01
+
+**Each custom rule and etiquette line is announced as its own message.**
+
+Message packing was running consecutive rules together whenever they fit inside
+one chat message, so two rules written on separate lines arrived as a single
+run-on instruction. Rules and etiquette lines are no longer packed; the
+descriptive sections still are, since "Rolls: ... One roll per turn." reads
+perfectly well as one message.
+
+This also puts the host in charge of it: rules on separate lines arrive
+separately, and two thoughts that belong together can be typed on one line.
+
 ## 1.4.2 - 2026-08-01
 
 Fixes the multi-line boxes still refusing clicks after 1.4.1.
