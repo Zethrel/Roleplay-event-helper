@@ -350,6 +350,13 @@ Fields.TABS[#Fields.TABS + 1] = {
 			set = function(p, v) p.rollFilter.rangeMode = v end,
 		},
 		{
+			key = "scaleToDie", label = "Scale the threshold to smaller dice",
+			type = "toggle",
+			tooltip = "Off: a wounded character on /roll 15 still needs the event's number, so the smaller die is the penalty. On: the threshold moves with the die, keeping their odds the same.",
+			get = function(p) return p.rolls.scaleToDie end,
+			set = function(p, v) p.rolls.scaleToDie = v end,
+		},
+		{
 			key = "announceRounds", label = "Announce each new round", type = "toggle",
 			tooltip = "Sends a short line to your channel when you start a round, so everyone knows the next exchange has begun.",
 			get = function(p) return p.rounds.announce end,

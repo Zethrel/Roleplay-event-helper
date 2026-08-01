@@ -293,20 +293,47 @@ end
 -- Adjudication
 --------------------------------------------------------------------------------
 
---- "critsuccess", "success", "fail" or "critfail".
-function RollWatcher:Judge(preset, roll)
+--- The numbers a roll is judged against, for the die it was actually rolled on.
+---
+--- With scaling off these are simply the preset's own numbers, so a wounded
+--- character on a smaller die still needs the event's threshold and their
+--- reduced die is the penalty. With it on the threshold moves in proportion,
+--- keeping their odds the same and making the smaller die a matter of flavour.
+--- Both are defensible ways to run an event, which is why it is a choice.
+function RollWatcher:ThresholdsFor(preset, maxRoll)
 	local rolls = preset.rolls
 
-	if rolls.useCritical then
-		if roll >= rolls.critSuccessAt then
+	if not rolls.scaleToDie or not maxRoll or maxRoll == rolls.dieMax then
+		return rolls.successThreshold, rolls.critSuccessAt, rolls.critFailAt
+	end
+
+	local scale = maxRoll / rolls.dieMax
+
+	local function up(value)
+		return math.min(maxRoll, math.max(1, math.ceil(value * scale)))
+	end
+
+	-- The critical-failure band rounds down and the success bands round up, so
+	-- scaling never widens what counts as a critical failure.
+	local critFail = math.min(maxRoll, math.max(1, math.floor(rolls.critFailAt * scale)))
+
+	return up(rolls.successThreshold), up(rolls.critSuccessAt), critFail
+end
+
+--- "critsuccess", "success", "fail" or "critfail".
+function RollWatcher:Judge(preset, roll, maxRoll)
+	local success, critSuccess, critFail = self:ThresholdsFor(preset, maxRoll)
+
+	if preset.rolls.useCritical then
+		if roll >= critSuccess then
 			return "critsuccess"
 		end
-		if roll <= rolls.critFailAt then
+		if roll <= critFail then
 			return "critfail"
 		end
 	end
 
-	if roll >= rolls.successThreshold then
+	if roll >= success then
 		return "success"
 	end
 
@@ -339,7 +366,13 @@ function RollWatcher:FormatVerdict(preset, name, roll, verdict, colored, maxRoll
 	-- "rolled 12" reads as a near miss until you know it was out of 15.
 	local die = ""
 	if maxRoll and maxRoll ~= preset.rolls.dieMax then
-		die = (" (1-%d)"):format(maxRoll)
+		if preset.rolls.scaleToDie then
+			-- With scaling on the number they needed is not the one in the
+			-- rules, so it is worth showing.
+			die = (" (1-%d, %d+)"):format(maxRoll, (self:ThresholdsFor(preset, maxRoll)))
+		else
+			die = (" (1-%d)"):format(maxRoll)
+		end
 	end
 
 	local text = ("%s rolled %d%s -> %s"):format(
@@ -637,7 +670,7 @@ function RollWatcher:HandleSystemMessage(message)
 		return nil
 	end
 
-	local verdict = self:Judge(preset, roll)
+	local verdict = self:Judge(preset, roll, maxRoll)
 	local entry = self:Record(fullName, roll, verdict, maxRoll)
 
 	REH:Print(self:FormatVerdict(preset, fullName, roll, verdict, true, maxRoll))

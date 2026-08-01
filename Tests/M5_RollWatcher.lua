@@ -153,6 +153,60 @@ preset.rolls.successText = "SUCCESS"
 preset.rolls.failText = "FAILURE"
 
 --------------------------------------------------------------------------------
+H.section("Scaling the threshold to a smaller die")
+--------------------------------------------------------------------------------
+
+-- Both readings are defensible, which is why it is a choice: unscaled makes
+-- the reduced die the wound penalty, scaled keeps the odds and makes it
+-- flavour.
+local scaling = REH.CreateDefaultPreset("Scaling")
+DB:ValidatePreset(scaling)
+H.checkEqual("scaling is off unless asked for", scaling.rolls.scaleToDie, false)
+
+H.checkEqual("unscaled, a d15 still needs the event's number",
+	Watcher:Judge(scaling, 9, 15), "fail")
+H.checkEqual("and clears it at the same number",
+	Watcher:Judge(scaling, 10, 15), "success")
+
+scaling.rolls.scaleToDie = true
+local success, critSuccess, critFail = Watcher:ThresholdsFor(scaling, 15)
+H.checkEqual("scaled, 10 of 100 becomes 2 of 15", success, 2)
+H.checkEqual("the critical success follows the top of the die", critSuccess, 15)
+H.checkEqual("and a natural 1 is still a critical failure", critFail, 1)
+
+H.checkEqual("so a 2 on a d15 succeeds", Watcher:Judge(scaling, 2, 15), "success")
+H.checkEqual("and a 1 is a critical failure", Watcher:Judge(scaling, 1, 15), "critfail")
+H.checkEqual("the top of the die is a critical success",
+	Watcher:Judge(scaling, 15, 15), "critsuccess")
+
+H.checkEqual("the event's own die is unaffected either way",
+	select(1, Watcher:ThresholdsFor(scaling, 100)), 10)
+
+-- Nothing may scale to zero, or to a number the die cannot roll.
+local harsh = REH.CreateDefaultPreset("Harsh")
+harsh.rolls.scaleToDie = true
+harsh.rolls.successThreshold = 1
+DB:ValidatePreset(harsh)
+H.check("a threshold can never scale below 1",
+	select(1, Watcher:ThresholdsFor(harsh, 3)) >= 1)
+
+local steep = REH.CreateDefaultPreset("Steep")
+steep.rolls.scaleToDie = true
+steep.rolls.successThreshold = 100
+DB:ValidatePreset(steep)
+H.check("nor above what the die can roll",
+	select(1, Watcher:ThresholdsFor(steep, 6)) <= 6)
+
+H.check("a scaled verdict shows the number they needed",
+	Watcher:FormatVerdict(scaling, "Bob-ArgentDawn", 2, "success", false, 15)
+		:find("(1-15, 2+)", 1, true) ~= nil,
+	Watcher:FormatVerdict(scaling, "Bob-ArgentDawn", 2, "success", false, 15))
+scaling.rolls.scaleToDie = false
+H.check("and an unscaled one just names the die",
+	Watcher:FormatVerdict(scaling, "Bob-ArgentDawn", 2, "fail", false, 15)
+		:find("(1-15)", 1, true) ~= nil)
+
+--------------------------------------------------------------------------------
 H.section("The watcher starts disarmed")
 --------------------------------------------------------------------------------
 

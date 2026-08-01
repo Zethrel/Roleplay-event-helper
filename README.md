@@ -16,7 +16,7 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**v1.3.0**, in use and being fixed as the game finds things. Covered by 982
+**v1.4.0**, in use and being fixed as the game finds things. Covered by 999
 checks across ten suites, which run against a stub of the WoW API rather than
 the client -- see the [changelog](CHANGELOG.md) for what that does and does not
 catch.
@@ -195,8 +195,9 @@ participant's roll is worse than adjudicating a stranger's.
 
 **Wounded characters rolling smaller dice are counted.** An event on `/roll 100`
 also tracks `/roll 20` and `/roll 15` by default, and the verdict names the die
-when it differs — `Bob rolled 12 (1-15) -> SUCCESS`. The threshold is not scaled
-down, since the smaller die is itself the penalty. `/reh range exact` restores
+when it differs — `Bob rolled 12 (1-15) -> SUCCESS`. By default the threshold is **not** scaled down, so the
+smaller die is itself the penalty; *Scale the threshold to smaller dice* on the
+Watcher tab keeps their odds the same instead. `/reh range exact` restores
 strict matching.
 
 Cross-realm names are normalized on both sides, so `Faraway-Moon Guard` matches

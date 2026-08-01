@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.4.0 - 2026-08-01
+
+**Scaling the threshold to smaller dice is now a choice.** *Scale the threshold
+to smaller dice* on the Watcher tab:
+
+- **off** (default, unchanged): a wounded character on `/roll 15` still needs
+  the event's number, so the reduced die is the penalty
+- **on**: the threshold moves with the die -- `10+` on `/roll 100` becomes `2+`
+  on `/roll 15` -- keeping their odds the same and making the smaller die
+  flavour rather than a handicap
+
+With scaling on, the verdict shows what they needed:
+`Bob rolled 2 (1-15, 2+) -> SUCCESS`. Nothing scales below 1 or above what the
+die can roll, and the critical-failure band rounds down while the success bands
+round up, so scaling never widens what counts as a critical failure.
+
+**New presets have no turn timer.** The default was 60 seconds; it is now 0,
+meaning no limit, and the timer line is left out of the announcement entirely.
+Not everyone types quickly, and a countdown on someone composing an emote is
+pressure the host did not ask for. Existing presets keep whatever they were
+set to -- change it on the Turns tab.
+
 ## 1.3.0 - 2026-08-01
 
 **Smaller dice are now counted.** The roll watcher used to want the exact die

@@ -37,6 +37,11 @@ H.checkEqual("shield bonus", preset.health.modifiers[1].bonus, 1)
 H.checkEqual("host name taken from the player", preset.header.hostName, H.playerName)
 H.checkEqual("announce target defaults to PREVIEW", preset.channel.type, "PREVIEW")
 H.checkEqual("roll filter defaults to group", preset.rollFilter.mode, "group")
+-- Not everyone types quickly; a countdown on someone composing an emote is
+-- pressure the host did not ask for.
+H.checkEqual("no turn timer by default", preset.turns.turnTimeSeconds, 0)
+H.checkEqual("and the threshold does not follow the die by default",
+	preset.rolls.scaleToDie, false)
 H.checkEqual("every module is listed in the order", #preset.moduleOrder, #REH.MODULE_KEYS)
 
 --------------------------------------------------------------------------------

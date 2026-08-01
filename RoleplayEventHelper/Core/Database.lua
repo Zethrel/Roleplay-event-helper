@@ -142,6 +142,7 @@ function Database:ValidatePreset(preset)
 	rolls.successText = REH.CleanString(rolls.successText, 24, "SUCCESS")
 	rolls.failText = REH.CleanString(rolls.failText, 24, "FAILURE")
 	rolls.useCritical = REH.ToBoolean(rolls.useCritical, true)
+	rolls.scaleToDie = REH.ToBoolean(rolls.scaleToDie, false)
 	rolls.critSuccessAt = REH.ClampInteger(rolls.critSuccessAt, 1, rolls.dieMax, rolls.dieMax)
 	rolls.critFailAt = REH.ClampInteger(rolls.critFailAt, 1, rolls.dieMax, 1)
 
@@ -177,7 +178,7 @@ function Database:ValidatePreset(preset)
 
 	-- Turns
 	local turns = preset.turns
-	turns.turnTimeSeconds = REH.ClampInteger(turns.turnTimeSeconds, 0, 3600, 60)
+	turns.turnTimeSeconds = REH.ClampInteger(turns.turnTimeSeconds, 0, 3600, 0)
 	turns.note = REH.CleanString(turns.note, REH.MAX_RULE_LINE_LENGTH)
 
 	if not REH.IsValidEnum(REH.INITIATIVE_MODES, turns.mode) then

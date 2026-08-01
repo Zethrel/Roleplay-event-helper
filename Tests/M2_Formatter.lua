@@ -269,6 +269,8 @@ H.check("states the shield bonus", text:find("Shield equipped +1", 1, true) ~= n
 H.check("states the damage rule", text:find("1 per successful hit", 1, true) ~= nil, text)
 H.check("states the death rule", text:find("out at 0 HP", 1, true) ~= nil, text)
 H.check("states the turn order", text:find("Roll for initiative", 1, true) ~= nil, text)
+H.check("and does not impose a turn timer nobody set",
+	text:find("seconds per turn", 1, true) == nil, text)
 H.check("names the event", text:find(preset.header.eventName, 1, true) ~= nil, text)
 H.check("names the host", text:find(H.playerName, 1, true) ~= nil, text)
 

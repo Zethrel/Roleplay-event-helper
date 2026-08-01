@@ -159,6 +159,12 @@ local PRESET_TEMPLATE = {
 		critFailAt = 1,
 		tieBreak = "reroll",
 		rollsPerTurn = 1,
+
+		-- Whether the success threshold moves with a smaller die. Off means a
+		-- wounded character rolling d15 still needs the event's number, so the
+		-- smaller die is the penalty. On keeps their odds the same and makes
+		-- the smaller die cosmetic.
+		scaleToDie = false,
 	},
 
 	health = {
@@ -186,7 +192,9 @@ local PRESET_TEMPLATE = {
 
 	turns = {
 		mode = "initiative",
-		turnTimeSeconds = 60,    -- 0 means no limit
+		-- No limit by default. Not everyone types quickly, and a countdown on
+		-- someone composing an emote is pressure the host did not ask for.
+		turnTimeSeconds = 0,
 		note = "",
 	},
 
