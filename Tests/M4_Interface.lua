@@ -307,6 +307,18 @@ for _, page in ipairs(frame.editors.pages) do
 end
 H.check("there are multi-line fields to check", multiLineRows >= 4, multiLineRows)
 
+-- Nesting a scroll frame inside the editor's own scroll frame is what stopped
+-- these boxes receiving clicks at all, so there must not be one.
+local nested = false
+for _, page in ipairs(frame.editors.pages) do
+	for _, row in ipairs(page.rows) do
+		if row.field.type == "lines" and row.control.scrollFrame then
+			nested = true
+		end
+	end
+end
+H.check("no multi-line box nests a scroll frame inside the page's own", nested == false)
+
 MainFrame:SelectTab(6)
 local rulesRow = findRow("custom", "custom")
 H.check("the custom rules row exists", rulesRow ~= nil)
@@ -331,8 +343,34 @@ H.check("the box grows with a long list",
 	rulesRow.control.editBox:GetHeight() > shortHeight,
 	("%s -> %s"):format(shortHeight, rulesRow.control.editBox:GetHeight()))
 
+-- Growing must push the rows below it down and make the page taller, or the
+-- extra lines would sit under the next field and be unreachable.
+local rulesPage
+for _, page in ipairs(frame.editors.pages) do
+	if page.tab.module == "custom" then
+		rulesPage = page
+	end
+end
+
+-- Back to a short list first: the height is measured before the growth, not
+-- after an earlier check already grew it.
+rulesRow.control.editBox:SetText("One rule.")
+local pageHeightBefore = rulesPage.height
+
+rulesRow.control.editBox:SetText(table.concat(manyLines, "\n"))
+H.check("a grown field makes its page taller",
+	rulesPage.height > pageHeightBefore,
+	("%s -> %s"):format(pageHeightBefore, rulesPage.height))
+
+local scrollChild = frame.editorScroll.content
+H.check("and the scroll child follows, so the bottom stays reachable",
+	scrollChild:GetHeight() >= rulesPage.height)
+
 rulesRow.control.editBox:SetText("")
 H.fireScript(rulesRow.control.editBox, "OnEditFocusLost")
+H.check("and shrinking puts the page back",
+	rulesPage.height <= pageHeightBefore + 1,
+	("%s vs %s"):format(rulesPage.height, pageHeightBefore))
 
 --------------------------------------------------------------------------------
 H.section("The preview pane")

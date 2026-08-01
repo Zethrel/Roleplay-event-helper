@@ -217,33 +217,38 @@ function UI.CreateEditBox(parent, width, maxLetters, onCommit)
 	return box
 end
 
---- A multi-line entry inside its own scroll frame, for list-shaped fields.
-function UI.CreateMultiLineBox(parent, width, height, onCommit)
+--- A multi-line entry for list-shaped fields.
+---
+--- Deliberately has no scroll frame of its own. The editor page it sits on is
+--- already inside one, and nesting a scroll frame inside a scroll frame is
+--- where mouse input goes to die: the inner frame competes for the click and
+--- the edit box beneath it never receives focus, so the field looks present and
+--- refuses to be typed in.
+---
+--- Instead the box grows with its text and `onResize` asks the page to lay
+--- itself out again, letting the page's own scrolling reach the whole thing.
+function UI.CreateMultiLineBox(parent, width, height, onCommit, onResize)
 	local LINE_HEIGHT = 14
+	local PADDING = 6
 
 	local container = UI.CreatePanel(parent, 0.6)
 	container:SetSize(width, height)
 	container:EnableMouse(true)
 
-	local scroll = UI.SafeCreateFrame("ScrollFrame", nil, container, "UIPanelScrollFrameTemplate")
-	scroll:SetPoint("TOPLEFT", container, "TOPLEFT", 4, -4)
-	scroll:SetPoint("BOTTOMRIGHT", container, "BOTTOMRIGHT", -26, 4)
-
-	local innerWidth = math.max(width - 34, 1)
-	local innerHeight = math.max(height - 8, 1)
-
-	local box = CreateFrame("EditBox", nil, scroll)
+	local box = CreateFrame("EditBox", nil, container)
+	box:SetPoint("TOPLEFT", container, "TOPLEFT", PADDING, -PADDING)
+	box:SetWidth(math.max(width - PADDING * 2, 1))
+	box:SetHeight(math.max(height - PADDING * 2, 1))
 	box:SetMultiLine(true)
 	box:SetAutoFocus(false)
-	box:SetFontObject("ChatFontNormal")
-	box:SetTextInsets(4, 4, 4, 4)
+	box:SetJustifyH("LEFT")
 	box:EnableMouse(true)
-	box:SetWidth(innerWidth)
+	box:SetTextInsets(2, 2, 2, 2)
 
-	-- An edit box with no height has no area to click, so it can never take
-	-- focus and nothing typed reaches it -- the box looks like it refuses
-	-- input. It needs a real height even before it has any text in it.
-	box:SetHeight(innerHeight)
+	-- The font object itself rather than its name: an edit box with no font
+	-- resolved does not render or accept input, and passing a string relies on
+	-- the client looking it up.
+	box:SetFontObject(_G.ChatFontNormal or "ChatFontNormal")
 
 	box:SetScript("OnEscapePressed", box.ClearFocus)
 
@@ -253,35 +258,34 @@ function UI.CreateMultiLineBox(parent, width, height, onCommit)
 		end
 	end)
 
-	-- Grow with the text so a long list scrolls rather than running off the
-	-- bottom of a fixed-height child.
-	box:SetScript("OnTextChanged", function(self)
+	local function fitToText(self)
 		local lines = 1
 		for _ in tostring(self:GetText() or ""):gmatch("\n") do
 			lines = lines + 1
 		end
 
-		self:SetHeight(math.max(innerHeight, lines * LINE_HEIGHT + 8))
+		local wanted = math.max(height, lines * LINE_HEIGHT + PADDING * 2)
 
-		if scroll.UpdateScrollChildRect then
-			scroll:UpdateScrollChildRect()
+		if math.abs(wanted - container:GetHeight()) >= 1 then
+			container:SetHeight(wanted)
+			self:SetHeight(math.max(wanted - PADDING * 2, 1))
+
+			if onResize then
+				onResize(wanted)
+			end
 		end
-	end)
+	end
+
+	box:SetScript("OnTextChanged", fitToText)
 
 	-- Clicking the panel around the text puts the cursor in it, rather than
 	-- requiring a hit on the text itself.
-	local function focusBox()
+	container:SetScript("OnMouseDown", function()
 		box:SetFocus()
-	end
-
-	container:SetScript("OnMouseDown", focusBox)
-	scroll:EnableMouse(true)
-	scroll:SetScript("OnMouseDown", focusBox)
-
-	scroll:SetScrollChild(box)
+	end)
 
 	container.editBox = box
-	container.scrollFrame = scroll
+	container.minHeight = height
 	return container
 end
 

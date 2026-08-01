@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.4.2 - 2026-08-01
+
+Fixes the multi-line boxes still refusing clicks after 1.4.1.
+
+- Each one had a scroll frame of its own, sitting inside the editor page's
+  scroll frame. Nested scroll frames compete for the click, and the edit box
+  underneath never received focus -- so Health by armor, Modifiers, Custom
+  rules, Etiquette and the saved roster all looked present and ignored typing.
+  The inner scroll frame is gone; the page already scrolls.
+- The font is now set from the font object rather than its name, since an edit
+  box with no font resolved neither renders nor accepts input.
+- A box grows with its text and the rows below it move down, so a long rule
+  list stays reachable through the page's own scrolling instead of running
+  under the next field.
+
 ## 1.4.1 - 2026-08-01
 
 Fixes the multi-line boxes refusing to accept typing.

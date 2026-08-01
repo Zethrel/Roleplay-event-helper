@@ -87,13 +87,13 @@ local function BuildSelectRow(page, field, width, onEdited)
 	}
 end
 
-local function BuildLinesRow(page, field, width, onEdited)
+local function BuildLinesRow(page, field, width, onEdited, onResize)
 	local label = UI.CreateLabel(page, field.label)
 
 	local height = field.height or 120
 	local box = UI.CreateMultiLineBox(page, width - 16, height, function(text)
 		onEdited(field, text)
-	end)
+	end, onResize)
 
 	if field.tooltip then
 		UI.SetTooltip(box, field.label, field.tooltip)
@@ -105,6 +105,7 @@ local function BuildLinesRow(page, field, width, onEdited)
 		control = box,
 		height = height,
 		labelAbove = true,
+		growable = true,
 		apply = function(preset)
 			box.editBox:SetText(tostring(field.get(preset) or ""))
 			box.editBox:SetCursorPosition(0)
@@ -157,17 +158,24 @@ function Editors:Create(parent, width, onChanged)
 		page:Hide()
 
 		local rows = {}
-		local top = 0
+		local pageInfo = { tab = tab, frame = page, rows = rows, height = 1 }
 
-		for _, field in ipairs(tab.fields) do
-			local builder = BUILDERS[field.type]
-			if builder then
-				local row = builder(page, field, width, onEdited)
+		-- Positioning is a separate pass from building, so a field that grows
+		-- with its contents can push the rows below it down rather than
+		-- overlapping them.
+		local function layout()
+			local top = 0
+
+			for _, row in ipairs(rows) do
+				if row.label then
+					row.label:ClearAllPoints()
+				end
+				row.control:ClearAllPoints()
 
 				if row.labelAbove then
 					row.label:SetPoint("TOPLEFT", page, "TOPLEFT", 4, -top)
 					row.control:SetPoint("TOPLEFT", page, "TOPLEFT", 4, -(top + 18))
-					top = top + row.height + 18 + ROW_SPACING
+					top = top + row.control:GetHeight() + 18 + ROW_SPACING
 				else
 					if row.label then
 						row.label:SetPoint("TOPLEFT", page, "TOPLEFT", 4, -(top + 4))
@@ -177,15 +185,28 @@ function Editors:Create(parent, width, onChanged)
 					end
 					top = top + row.height + ROW_SPACING
 				end
+			end
 
-				rows[#rows + 1] = row
+			page:SetHeight(math.max(top, 1))
+			pageInfo.height = top
+
+			if controller.onLayoutChanged then
+				controller.onLayoutChanged()
 			end
 		end
 
-		page.rows = rows
-		page:SetHeight(math.max(top, 1))
+		pageInfo.layout = layout
 
-		controller.pages[index] = { tab = tab, frame = page, rows = rows, height = top }
+		for _, field in ipairs(tab.fields) do
+			local builder = BUILDERS[field.type]
+			if builder then
+				rows[#rows + 1] = builder(page, field, width, onEdited, layout)
+			end
+		end
+
+		layout()
+
+		controller.pages[index] = pageInfo
 	end
 
 	--- Push the active preset's values into every widget on the visible page.
@@ -202,6 +223,12 @@ function Editors:Create(parent, width, onChanged)
 
 		for _, row in ipairs(page.rows) do
 			row.apply(target)
+		end
+
+		-- Filling a growable box changes its height, so the rows below it need
+		-- placing again.
+		if page.layout then
+			page.layout()
 		end
 	end
 

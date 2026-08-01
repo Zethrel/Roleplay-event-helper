@@ -124,6 +124,15 @@ local function Build()
 	end)
 	frame.editors = editors
 
+	-- A field that grew changes the page height, so the scroll child has to
+	-- follow or the bottom of the page becomes unreachable.
+	editors.onLayoutChanged = function()
+		local scrollContent = frame.editorScroll and frame.editorScroll.content
+		if scrollContent then
+			scrollContent:SetHeight(math.max(editors:GetActiveHeight(), 1))
+		end
+	end
+
 	-- Tab strip. Plain buttons rather than Blizzard's tab templates, which have
 	-- changed shape more than once.
 	frame.tabButtons = {}
