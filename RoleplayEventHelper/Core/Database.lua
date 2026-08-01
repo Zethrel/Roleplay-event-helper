@@ -90,6 +90,19 @@ local function ValidateStringList(list, maxEntries)
 	return cleaned
 end
 
+--- Coerce account settings into a valid shape in place.
+function Database:ValidateSettings(settings)
+	-- The send delay paces the announcement queue. Too low and the client
+	-- drops messages; too high and the host holds the channel for a minute.
+	settings.sendDelay = REH.ClampNumber(settings.sendDelay, 0.3, 5.0, 0.7)
+	settings.useColors = REH.ToBoolean(settings.useColors, true)
+	settings.useSeparators = REH.ToBoolean(settings.useSeparators, false)
+	settings.mergeLines = REH.ToBoolean(settings.mergeLines, true)
+	settings.debug = REH.ToBoolean(settings.debug, false)
+
+	return settings
+end
+
 --- Coerce a preset into a valid shape in place. Returns the preset.
 function Database:ValidatePreset(preset)
 	preset = REH.ApplyDefaults(preset, REH.PRESET_TEMPLATE)
@@ -462,6 +475,7 @@ function Database:Initialize()
 	local migrated, fromVersion = RunMigrations(db)
 
 	db.settings = REH.ApplyDefaults(db.settings, REH.DEFAULT_SETTINGS)
+	self:ValidateSettings(db.settings)
 	db.presets = type(db.presets) == "table" and db.presets or {}
 
 	-- Repair every preset on load. Cheap at this scale, and it means nothing

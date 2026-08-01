@@ -91,9 +91,76 @@ Harness.playerName = "Testchar"
 Harness.now = 1000
 
 local frames = {}
+local timers = {}
+
+Harness.sent = {}
+Harness.sendError = nil
+Harness.group = {
+	inGroup = false,
+	inRaid = false,
+	inGuild = false,
+	inInstance = false,
+	isLeader = false,
+	isAssistant = false,
+	channels = {},
+}
 
 function Harness.clearOutput()
 	Harness.output = {}
+end
+
+function Harness.clearSent()
+	Harness.sent = {}
+end
+
+function Harness.resetGroup()
+	Harness.group = {
+		inGroup = false, inRaid = false, inGuild = false, inInstance = false,
+		isLeader = false, isAssistant = false, channels = {},
+	}
+end
+
+--- Move the clock forward, firing any timers that come due -- including timers
+--- scheduled by the callbacks themselves, which is how the send queue paces
+--- itself one message at a time.
+function Harness.advance(seconds)
+	local target = Harness.now + seconds
+
+	while true do
+		local nextTimer, nextIndex
+		for index, timer in ipairs(timers) do
+			if timer.at <= target and (not nextTimer or timer.at < nextTimer.at) then
+				nextTimer, nextIndex = timer, index
+			end
+		end
+
+		if not nextTimer then
+			break
+		end
+
+		table.remove(timers, nextIndex)
+		Harness.now = math.max(Harness.now, nextTimer.at)
+		nextTimer.callback()
+	end
+
+	Harness.now = target
+end
+
+function Harness.pendingTimers()
+	return #timers
+end
+
+function Harness.clearTimers()
+	timers = {}
+end
+
+--- The chat messages the addon would have broadcast, as plain strings.
+function Harness.sentMessages()
+	local list = {}
+	for index, entry in ipairs(Harness.sent) do
+		list[index] = entry.message
+	end
+	return list
 end
 
 --- Every line printed since the last clearOutput, stripped of colour escapes.
@@ -149,6 +216,60 @@ function Harness.installStubs()
 	}
 
 	SlashCmdList = {}
+
+	----------------------------------------------------------------------------
+	-- Chat, group state and timers
+	----------------------------------------------------------------------------
+
+	-- Everything the addon would say to other players lands in Harness.sent
+	-- instead, so a test can assert on exactly what would have been broadcast.
+	function SendChatMessage(message, chatType, languageID, target)
+		if Harness.sendError then
+			error(Harness.sendError, 0)
+		end
+		Harness.sent[#Harness.sent + 1] = {
+			message = message, chatType = chatType, target = target,
+		}
+	end
+
+	function IsInGroup()
+		return Harness.group.inGroup or Harness.group.inRaid
+	end
+
+	function IsInRaid()
+		return Harness.group.inRaid
+	end
+
+	function IsInGuild()
+		return Harness.group.inGuild
+	end
+
+	function IsInInstance()
+		return Harness.group.inInstance, "none"
+	end
+
+	function UnitIsGroupLeader(unit)
+		return unit == "player" and Harness.group.isLeader or false
+	end
+
+	function UnitIsGroupAssistant(unit)
+		return unit == "player" and Harness.group.isAssistant or false
+	end
+
+	--- Returns 0 when not joined, matching the live API.
+	function GetChannelName(name)
+		local id = Harness.group.channels[name]
+		if not id then
+			return 0
+		end
+		return id, name
+	end
+
+	C_Timer = {
+		After = function(delay, callback)
+			timers[#timers + 1] = { at = Harness.now + delay, callback = callback }
+		end,
+	}
 
 	function CreateFrame()
 		local frame = {

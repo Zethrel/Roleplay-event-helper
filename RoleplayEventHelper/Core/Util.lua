@@ -149,6 +149,23 @@ function REH.ClampInteger(value, minimum, maximum, fallback)
 	return number
 end
 
+--- As ClampInteger, but keeps fractional values (send delays, positions).
+function REH.ClampNumber(value, minimum, maximum, fallback)
+	local number = tonumber(value)
+	if not number then
+		return fallback
+	end
+
+	if minimum and number < minimum then
+		number = minimum
+	end
+	if maximum and number > maximum then
+		number = maximum
+	end
+
+	return number
+end
+
 function REH.ToBoolean(value, fallback)
 	if value == nil then
 		return fallback

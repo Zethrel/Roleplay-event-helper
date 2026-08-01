@@ -140,6 +140,62 @@ Register("preview", "[name]", "show exactly what would be sent to chat", functio
 	REH.Formatter:Preview(preset, name)
 end)
 
+Register("announce", "[name]", "send a preset's rules to the chosen channel", function(argument)
+	local preset, name
+	if argument ~= "" then
+		preset, name = REH.Database:GetPreset(argument)
+		if not preset then
+			REH:PrintError(L["No preset named '%s'."]:format(argument))
+			return
+		end
+	else
+		preset, name = REH.Database:GetActivePreset()
+	end
+
+	REH.Announcer:Announce(preset, name)
+end)
+
+Register("cancel", nil, "stop an announcement in progress", function()
+	if not REH.Announcer:Cancel() then
+		REH:Print(L["Nothing is being announced."])
+	end
+end)
+
+Register("channel", "[type] [name]", "choose where announcements are sent", function(argument)
+	local preset, presetName = REH.Database:GetActivePreset()
+
+	if argument == "" then
+		REH:Print(L["'%s' announces to: %s"]:format(presetName,
+			REH.Announcer:DescribeChannel(preset.channel)))
+
+		local available, reason = REH.Announcer:CheckAvailability(preset.channel)
+		if not available then
+			REH:PrintWarning(L["Not available right now: %s"]:format(reason))
+		end
+
+		REH:Print(L["Set with: /reh channel <preview|say|yell|emote|party|raid|warning|instance|guild|officer|channel <name>|whisper <name>>"])
+		return
+	end
+
+	local word, target = argument:match("^(%S+)%s*(.-)$")
+	local ok, reason, warning = REH.Announcer:SetChannel(preset, word, target)
+
+	if not ok then
+		REH:PrintError(reason)
+		return
+	end
+
+	REH:Print(L["'%s' will announce to: %s"]:format(presetName,
+		REH.Announcer:DescribeChannel(preset.channel)))
+
+	-- Setting a target you cannot use yet is allowed on purpose: hosts set up
+	-- "raid warning" before the raid exists. The warning is so it is not a
+	-- surprise at the moment they press announce.
+	if warning then
+		REH:PrintWarning(L["Not available right now: %s"]:format(warning))
+	end
+end)
+
 Register("use", "<name>", "switch the active preset", function(argument)
 	if argument == "" then
 		REH:PrintError(L["Usage: %s"]:format("/reh use <name>"))

@@ -568,7 +568,7 @@ H.check("preview says nothing was sent", out:find("nothing sent", 1, true) ~= ni
 out = H.runSlash("preview Nonexistent")
 H.check("preview reports an unknown preset", out:find("No preset named", 1, true) ~= nil, out)
 
-H.check("no chat-sending API was called", _G.SendChatMessage == nil)
+H.check("preview broadcast nothing to other players", #H.sent == 0)
 H.checkNoLeakedGlobals(H.ALLOWED_GLOBALS)
 
 H.finish()

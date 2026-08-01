@@ -23,8 +23,8 @@ watcher adjudicates the plain `/roll` everyone already uses.
 | M0 — Skeleton: loads clean, `/reh`, saved variables | ✅ done |
 | M1 — Data layer: presets, defaults, migrations | ✅ done |
 | M2 — Formatter and preview | ✅ done |
-| M3 — Announcer (first milestone where it talks) | next |
-| M4 — Main UI | |
+| M3 — Announcer (first milestone where it talks) | ✅ done |
+| M4 — Main UI | next |
 | M5 — Roll watcher | |
 | M6 — Export / import strings | |
 | M7 — Polish and first release | |
@@ -54,6 +54,9 @@ then restart the client or `/reload`.
 | `/reh list` | List your presets, marking the active one |
 | `/reh show [name]` | Show a preset's rules in detail |
 | `/reh preview [name]` | Show exactly what would be sent to chat, sending nothing |
+| `/reh announce [name]` | Send the rules to the chosen channel |
+| `/reh channel [type] [name]` | Choose where announcements go |
+| `/reh cancel` | Stop an announcement in progress |
 | `/reh use <name>` | Switch the active preset |
 | `/reh new <name>` | Create a preset from the defaults |
 | `/reh copy <new name>` | Copy the active preset |
@@ -64,6 +67,22 @@ then restart the client or `/reload`.
 | `/reh version` | Addon version, client build, and interface numbers |
 
 `/rpevent` works as an alias for `/reh`. Preset names may contain spaces.
+
+### Announcing
+
+`/reh channel` picks the target: `preview` (default), `say`, `yell`, `emote`,
+`party`, `raid`, `warning`, `instance`, `guild`, `officer`,
+`channel <name>`, or `whisper <name>`. Short aliases work — `/reh channel rw`.
+
+A new preset announces to **preview only**, so the first press can never
+surprise a channel. The addon refuses to send when the target is not available
+— not in the raid, not in that channel, no assist for a raid warning — and says
+which it is rather than failing silently.
+
+Messages are paced (0.7s apart by default) so the client does not drop them.
+`/reh cancel` stops mid-announcement. If the client refuses a message, the queue
+stops and reports which message failed, rather than leaving half a rule set in
+the channel.
 
 Deleting and resetting ask for confirmation, because preset names get similar
 fast ("Duel Ring", "Duel Ring 2") and a mistyped delete otherwise costs you an

@@ -45,5 +45,31 @@ L["This will reset '%s' to the default rules."] = "This will reset '%s' to the d
 L["Nothing is waiting for confirmation."] = "Nothing is waiting for confirmation."
 L["That confirmation expired. Run the command again."] = "That confirmation expired. Run the command again."
 
+-- Announcing
+L["Announcing '%s' to %s: %d messages, about %d seconds. /reh cancel to stop."] = "Announcing '%s' to %s: %d messages, about %d seconds. /reh cancel to stop."
+L["Announced '%s': %d messages sent."] = "Announced '%s': %d messages sent."
+L["Announcement cancelled after %d of %d messages."] = "Announcement cancelled after %d of %d messages."
+L["Nothing is being announced."] = "Nothing is being announced."
+L["Already announcing. Use /reh cancel first."] = "Already announcing. Use /reh cancel first."
+L["This preset is set to preview only. Use /reh channel <type> to choose where to announce."] = "This preset is set to preview only. Use /reh channel <type> to choose where to announce."
+L["'%s' has no enabled rules to announce."] = "'%s' has no enabled rules to announce."
+L["The client blocked message %d of %d, so the announcement stopped."] = "The client blocked message %d of %d, so the announcement stopped."
+L["Reason: %s"] = "Reason: %s"
+
+-- Channel selection and availability
+L["'%s' announces to: %s"] = "'%s' announces to: %s"
+L["'%s' will announce to: %s"] = "'%s' will announce to: %s"
+L["Not available right now: %s"] = "Not available right now: %s"
+L["You are not in a party."] = "You are not in a party."
+L["You are not in a raid."] = "You are not in a raid."
+L["You are not in a guild."] = "You are not in a guild."
+L["You are not in an instance group."] = "You are not in an instance group."
+L["Raid warnings need raid lead or assist."] = "Raid warnings need raid lead or assist."
+L["You have not joined the channel '%s'."] = "You have not joined the channel '%s'."
+L["No channel name set. Use /reh channel channel <name>."] = "No channel name set. Use /reh channel channel <name>."
+L["No whisper target set. Use /reh channel whisper <name>."] = "No whisper target set. Use /reh channel whisper <name>."
+L["Which channel? Use /reh channel channel <name>."] = "Which channel? Use /reh channel channel <name>."
+L["Whisper whom? Use /reh channel whisper <name>."] = "Whisper whom? Use /reh channel whisper <name>."
+
 -- Saved data
 L["Your saved data is from a newer version (format %d, this build reads %d). It has been left untouched. Update the addon to use it."] = "Your saved data is from a newer version (format %d, this build reads %d). It has been left untouched. Update the addon to use it."
