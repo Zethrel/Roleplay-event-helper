@@ -219,18 +219,32 @@ end
 
 --- A multi-line entry inside its own scroll frame, for list-shaped fields.
 function UI.CreateMultiLineBox(parent, width, height, onCommit)
+	local LINE_HEIGHT = 14
+
 	local container = UI.CreatePanel(parent, 0.6)
 	container:SetSize(width, height)
+	container:EnableMouse(true)
 
 	local scroll = UI.SafeCreateFrame("ScrollFrame", nil, container, "UIPanelScrollFrameTemplate")
 	scroll:SetPoint("TOPLEFT", container, "TOPLEFT", 4, -4)
 	scroll:SetPoint("BOTTOMRIGHT", container, "BOTTOMRIGHT", -26, 4)
 
+	local innerWidth = math.max(width - 34, 1)
+	local innerHeight = math.max(height - 8, 1)
+
 	local box = CreateFrame("EditBox", nil, scroll)
 	box:SetMultiLine(true)
 	box:SetAutoFocus(false)
 	box:SetFontObject("ChatFontNormal")
-	box:SetWidth(width - 34)
+	box:SetTextInsets(4, 4, 4, 4)
+	box:EnableMouse(true)
+	box:SetWidth(innerWidth)
+
+	-- An edit box with no height has no area to click, so it can never take
+	-- focus and nothing typed reaches it -- the box looks like it refuses
+	-- input. It needs a real height even before it has any text in it.
+	box:SetHeight(innerHeight)
+
 	box:SetScript("OnEscapePressed", box.ClearFocus)
 
 	box:SetScript("OnEditFocusLost", function(self)
@@ -238,6 +252,31 @@ function UI.CreateMultiLineBox(parent, width, height, onCommit)
 			onCommit(self:GetText())
 		end
 	end)
+
+	-- Grow with the text so a long list scrolls rather than running off the
+	-- bottom of a fixed-height child.
+	box:SetScript("OnTextChanged", function(self)
+		local lines = 1
+		for _ in tostring(self:GetText() or ""):gmatch("\n") do
+			lines = lines + 1
+		end
+
+		self:SetHeight(math.max(innerHeight, lines * LINE_HEIGHT + 8))
+
+		if scroll.UpdateScrollChildRect then
+			scroll:UpdateScrollChildRect()
+		end
+	end)
+
+	-- Clicking the panel around the text puts the cursor in it, rather than
+	-- requiring a hit on the text itself.
+	local function focusBox()
+		box:SetFocus()
+	end
+
+	container:SetScript("OnMouseDown", focusBox)
+	scroll:EnableMouse(true)
+	scroll:SetScript("OnMouseDown", focusBox)
 
 	scroll:SetScrollChild(box)
 

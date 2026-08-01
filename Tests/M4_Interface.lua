@@ -286,6 +286,55 @@ H.checkEqual("and the box is put back to the real value",
 	thresholdRow.control:GetText(), tostring(goodValue))
 
 --------------------------------------------------------------------------------
+H.section("Multi-line boxes can actually be typed into")
+--------------------------------------------------------------------------------
+
+-- A frame with no height has no area to click, so it never takes focus and
+-- nothing typed reaches it. The box looks present and refuses input, which is
+-- invisible to any test that only checks the text round-trips.
+local multiLineRows = 0
+for _, page in ipairs(frame.editors.pages) do
+	for _, row in ipairs(page.rows) do
+		if row.field.type == "lines" then
+			multiLineRows = multiLineRows + 1
+			local editBox = row.control.editBox
+
+			H.check(row.field.key .. " has a clickable height",
+				editBox:GetHeight() > 0, editBox:GetHeight())
+			H.check(row.field.key .. " has a width", editBox:GetWidth() > 0)
+		end
+	end
+end
+H.check("there are multi-line fields to check", multiLineRows >= 4, multiLineRows)
+
+MainFrame:SelectTab(6)
+local rulesRow = findRow("custom", "custom")
+H.check("the custom rules row exists", rulesRow ~= nil)
+
+-- Clicking the panel around the text should put the cursor in it, rather than
+-- requiring a hit on the text itself.
+H.fireScript(rulesRow.control, "OnMouseDown")
+H.check("clicking the box focuses it", rulesRow.control.editBox:HasFocus())
+
+rulesRow.control.editBox:SetText("No mounts inside the ring.\nNo consumables.")
+H.fireScript(rulesRow.control.editBox, "OnEditFocusLost")
+H.checkEqual("and what is typed is kept", #DB:GetActivePreset().custom, 2)
+
+-- The child has to grow with the text or a long list runs off the bottom.
+local shortHeight = rulesRow.control.editBox:GetHeight()
+local manyLines = {}
+for index = 1, 30 do
+	manyLines[index] = "Rule number " .. index .. "."
+end
+rulesRow.control.editBox:SetText(table.concat(manyLines, "\n"))
+H.check("the box grows with a long list",
+	rulesRow.control.editBox:GetHeight() > shortHeight,
+	("%s -> %s"):format(shortHeight, rulesRow.control.editBox:GetHeight()))
+
+rulesRow.control.editBox:SetText("")
+H.fireScript(rulesRow.control.editBox, "OnEditFocusLost")
+
+--------------------------------------------------------------------------------
 H.section("The preview pane")
 --------------------------------------------------------------------------------
 

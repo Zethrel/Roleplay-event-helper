@@ -420,6 +420,7 @@ local WIDGET_METHODS = {
 	GetStringHeight = true, GetStringWidth = true,
 	SetMaxLetters = true, SetMultiLine = true, SetAutoFocus = true, SetNumeric = true,
 	SetCursorPosition = true, HighlightText = true, SetFocus = true, ClearFocus = true,
+	SetTextInsets = true, HasFocus = true, GetNumLetters = true,
 	-- buttons
 	Click = true, SetEnabled = true, Enable = true, Disable = true, IsEnabled = true,
 	SetChecked = true, GetChecked = true,
@@ -459,6 +460,19 @@ function Harness.widgetCall(widget, method, a, b, c, d, e)
 		return widget._shown and true or false
 	elseif method == "SetText" then
 		widget._text = tostring(a or "")
+		-- The client fires OnTextChanged for programmatic changes too.
+		local handler = widget._scripts["OnTextChanged"]
+		if handler then
+			handler(widget, false)
+		end
+	elseif method == "SetFocus" then
+		widget._focused = true
+	elseif method == "ClearFocus" then
+		widget._focused = false
+	elseif method == "HasFocus" then
+		return widget._focused and true or false
+	elseif method == "GetNumLetters" then
+		return #(widget._text or "")
 	elseif method == "GetText" then
 		return widget._text or ""
 	elseif method == "GetStringHeight" then

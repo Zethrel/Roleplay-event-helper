@@ -2,7 +2,7 @@
 ## Title: Roleplay Event Helper
 ## Notes: Build your event's house rules, announce them to chat, and adjudicate /roll results.
 ## Author: Zethrel
-## Version: 1.4.0
+## Version: 1.4.1
 ## SavedVariables: RoleplayEventHelperDB
 ## X-Category: Roleplay
 ## IconTexture: Interface\Icons\INV_Misc_Dice_01

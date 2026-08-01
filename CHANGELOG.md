@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.4.1 - 2026-08-01
+
+Fixes the multi-line boxes refusing to accept typing.
+
+- The edit box inside each multi-line field had no height. A frame with no
+  height has no area to click, so it could never take focus and nothing typed
+  reached it -- the box looked present and ignored you. This affected Custom
+  rules, Etiquette, Health by armor, Modifiers and the saved roster.
+- Clicking anywhere in the panel now puts the cursor in the text, rather than
+  needing a hit on the text itself.
+- The box grows with its contents, so a long list scrolls instead of running
+  off the bottom.
+
 ## 1.4.0 - 2026-08-01
 
 **Scaling the threshold to smaller dice is now a choice.** *Scale the threshold
