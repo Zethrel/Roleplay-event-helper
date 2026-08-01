@@ -65,6 +65,7 @@ function Preview:Create(parent, width, height)
 	frame.summaryText = summary
 	frame.bodyText = body
 	frame.content = content
+	frame.scrollFrame = scroll
 
 	function frame:Refresh(preset)
 		if not preset then
@@ -74,6 +75,15 @@ function Preview:Create(parent, width, height)
 		local text, count, seconds = Preview:BuildText(preset)
 		self.bodyText:SetText(text)
 		self.summaryText:SetText(Preview:BuildSummary(count, seconds))
+
+		-- Same reason as the roll log: without this the scroll child stays at
+		-- its original height and a long preview cannot be scrolled.
+		if self.content and self.bodyText.GetStringHeight then
+			self.content:SetHeight(math.max(self.bodyText:GetStringHeight() or 0, 1))
+		end
+		if self.scrollFrame and self.scrollFrame.UpdateScrollChildRect then
+			self.scrollFrame:UpdateScrollChildRect()
+		end
 	end
 
 	return frame

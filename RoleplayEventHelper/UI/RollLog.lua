@@ -71,6 +71,8 @@ local function Build()
 
 	local scroll, content = UI.CreateScrollArea(frame, WIDTH - 34, HEIGHT - 72)
 	scroll:SetPoint("TOPLEFT", frame, "TOPLEFT", 10, -30)
+	frame.scrollFrame = scroll
+	frame.content = content
 
 	local body = UI.CreateLabel(content, "", "ChatFontNormal")
 	body:SetPoint("TOPLEFT", content, "TOPLEFT", 0, 0)
@@ -127,7 +129,27 @@ function RollLog:Refresh()
 	if not frame then
 		return
 	end
+
 	frame.bodyText:SetText(self:BuildText())
+
+	-- The scroll child has to grow with the text or the scrollbar never has
+	-- anything to scroll, and the log looks like it stopped recording once the
+	-- first screenful is full.
+	if frame.content and frame.bodyText.GetStringHeight then
+		frame.content:SetHeight(math.max(frame.bodyText:GetStringHeight() or 0, 1))
+	end
+
+	-- Newest rolls are at the bottom, which is where a host watching an event
+	-- wants to be looking.
+	local scroll = frame.scrollFrame
+	if scroll then
+		if scroll.UpdateScrollChildRect then
+			scroll:UpdateScrollChildRect()
+		end
+		if scroll.GetVerticalScrollRange then
+			scroll:SetVerticalScroll(math.max(scroll:GetVerticalScrollRange() or 0, 0))
+		end
+	end
 end
 
 function RollLog:Show()

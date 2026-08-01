@@ -421,6 +421,12 @@ function RollWatcher:Record(name, roll, verdict)
 		log.tallies[name] = tally
 	end
 
+	-- The log window is not polling, so it has to be told. Refresh is a no-op
+	-- until the window has been built, so this costs nothing when it is closed.
+	if REH.UI and REH.UI.RollLog then
+		REH.UI.RollLog:Refresh()
+	end
+
 	tally.total = tally.total + 1
 	if verdict == "success" or verdict == "critsuccess" then
 		tally.successes = tally.successes + 1
@@ -444,6 +450,10 @@ function RollWatcher:ClearLog()
 	ignoredOutsideGroup = 0
 	hintShown = false
 	capWarned = false
+
+	if REH.UI and REH.UI.RollLog then
+		REH.UI.RollLog:Refresh()
+	end
 end
 
 function RollWatcher:Mute(name)

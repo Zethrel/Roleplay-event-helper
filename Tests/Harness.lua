@@ -417,6 +417,7 @@ local WIDGET_METHODS = {
 	-- text
 	SetText = true, GetText = true, SetJustifyH = true, SetJustifyV = true,
 	SetTextColor = true, SetFontObject = true, SetNormalFontObject = true,
+	GetStringHeight = true, GetStringWidth = true,
 	SetMaxLetters = true, SetMultiLine = true, SetAutoFocus = true, SetNumeric = true,
 	SetCursorPosition = true, HighlightText = true, SetFocus = true, ClearFocus = true,
 	-- buttons
@@ -460,6 +461,11 @@ function Harness.widgetCall(widget, method, a, b, c, d, e)
 		widget._text = tostring(a or "")
 	elseif method == "GetText" then
 		return widget._text or ""
+	elseif method == "GetStringHeight" then
+		-- Enough to stand in for a real measurement: taller with more text.
+		return math.max(1, math.ceil(#(widget._text or "") / 40) * 14)
+	elseif method == "GetStringWidth" then
+		return #(widget._text or "") * 6
 	elseif method == "SetChecked" then
 		widget._checked = a and true or false
 	elseif method == "GetChecked" then
@@ -500,8 +506,27 @@ function Harness.widgetCall(widget, method, a, b, c, d, e)
 		return Harness.newWidget("FontString")
 	elseif method == "CreateTexture" then
 		return Harness.newWidget("Texture")
+	elseif method == "SetSize" then
+		widget._width, widget._height = a, b
+	elseif method == "SetWidth" then
+		widget._width = a
+	elseif method == "SetHeight" then
+		widget._height = a
+	elseif method == "GetWidth" then
+		return widget._width or 0
+	elseif method == "GetHeight" then
+		return widget._height or 0
 	elseif method == "SetScrollChild" then
 		widget._scrollChild = a
+	elseif method == "GetVerticalScrollRange" then
+		-- How far past the visible area the child extends, as in the client.
+		local child = widget._scrollChild
+		if not child then
+			return 0
+		end
+		return math.max(0, (child._height or 0) - (widget._height or 0))
+	elseif method == "SetVerticalScroll" then
+		widget._verticalScroll = a
 	elseif method == "GetScrollChild" then
 		return widget._scrollChild
 	elseif method == "GetCenter" then

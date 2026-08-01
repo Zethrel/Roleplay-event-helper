@@ -478,6 +478,63 @@ H.check("the log window opens", REH.UI.RollLog:IsShown())
 frame.logButton:Click()
 H.check("and closes", REH.UI.RollLog:IsShown() == false)
 
+--------------------------------------------------------------------------------
+H.section("The log window keeps up with the event")
+--------------------------------------------------------------------------------
+
+-- The window does not poll, so a roll arriving while it is open has to push an
+-- update. Without that the log looks like it stopped recording the moment you
+-- opened it -- which is exactly when a host is watching it.
+reset()
+H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Bob", subgroup = 1 } }, true)
+Watcher:SetMode("local")
+DB:GetActivePreset().rollFilter.mode = "group"
+
+REH.UI.RollLog:Show()
+local logFrame = REH.UI.RollLog:GetFrame()
+H.check("the log opens empty",
+	logFrame.bodyText:GetText():find("No rolls recorded", 1, true) ~= nil,
+	logFrame.bodyText:GetText())
+
+roll("Bob", 74)
+H.check("a roll made while the window is open appears in it",
+	logFrame.bodyText:GetText():find("74", 1, true) ~= nil,
+	logFrame.bodyText:GetText())
+H.check("with its verdict",
+	logFrame.bodyText:GetText():find("SUCCESS", 1, true) ~= nil,
+	logFrame.bodyText:GetText())
+
+roll("Bob", 3)
+H.check("and so does the next one",
+	logFrame.bodyText:GetText():find(" 3 ", 1, true) ~= nil
+		or logFrame.bodyText:GetText():find("rolled 3", 1, true) ~= nil,
+	logFrame.bodyText:GetText())
+
+-- The scroll child has to grow, or everything past the first screenful is
+-- unreachable and the log appears to stop.
+local heightBefore = logFrame.content:GetHeight()
+for index = 1, 40 do
+	roll("Bob", index)
+end
+H.check("the scroll area grows with the log",
+	logFrame.content:GetHeight() > heightBefore,
+	("%s -> %s"):format(tostring(heightBefore), tostring(logFrame.content:GetHeight())))
+
+Watcher:ClearLog()
+H.check("clearing empties the window too",
+	logFrame.bodyText:GetText():find("No rolls recorded", 1, true) ~= nil,
+	logFrame.bodyText:GetText())
+
+REH.UI.RollLog:Hide()
+roll("Bob", 50)
+H.check("a roll with the window closed is still recorded",
+	#select(1, Watcher:GetLog()) == 1)
+REH.UI.RollLog:Show()
+H.check("and is there when it is reopened",
+	logFrame.bodyText:GetText():find("50", 1, true) ~= nil,
+	logFrame.bodyText:GetText())
+REH.UI.RollLog:Hide()
+
 local watcherTab = REH.Fields:FindTab("watcher")
 H.check("there is a watcher tab in the editor", watcherTab ~= nil)
 H.check("with a subgroup field",

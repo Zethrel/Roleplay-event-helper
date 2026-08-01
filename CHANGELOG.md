@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.5 - 2026-08-01
+
+Fixes the roll log not updating while it is open.
+
+- The log window redrew only when it was opened, so a roll made while it was
+  already on screen never appeared. It now updates as each roll is
+  adjudicated, and when the log is cleared.
+- The scroll area inside the log grows with its contents and follows the
+  newest roll, instead of staying fixed at its original height so that
+  everything past the first screenful was unreachable.
+- The preview pane had the same latent problem and is fixed with it: a long
+  rule set can now be scrolled.
+
 ## 1.0.4 - 2026-08-01
 
 Fixes a Lua error when the client stops accepting messages mid-announcement,
