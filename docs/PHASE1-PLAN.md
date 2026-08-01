@@ -174,8 +174,39 @@ While armed, the addon listens for roll results in the room and adjudicates them
 
 ### 4.2 Filtering
 
-- Ignore rolls whose `min`/`max` do not match the preset's expected range (default: only `1-100`), with a toggle to accept any range.
-- Optional roster filter: only adjudicate rolls from names on the participant list (see 4.4).
+Two independent filters. A roll must pass both to be adjudicated.
+
+**Range filter.** Ignore rolls whose `min`/`max` do not match the preset's expected range (default: only `1-100`), with a toggle to accept any range. Cheap and catches most stray rolls — someone rolling `/roll 20` for loot is not part of your duel.
+
+**Participant filter.** `rollFilter` enum, set per preset:
+
+| Mode | Behaviour |
+|------|-----------|
+| `Group` | Only names in your current party or raid. **Default when the host is in a group.** |
+| `Group + subgroups` | Raid only: restrict further to chosen raid subgroups, e.g. subgroups 1–2 are the combatants and 3–8 are the audience. |
+| `Roster` | A host-curated name list, independent of the group. |
+| `Everyone` | Adjudicate every roll heard. Default when the host is not in a group. |
+
+#### Building the group roster
+
+Rebuild a lookup set on `GROUP_ROSTER_UPDATE` (and on arming the watcher), rather than scanning per roll:
+
+- `IsInRaid()` → iterate `raid1`…`raidN` via `GetNumGroupMembers()`. This includes the host.
+- `IsInGroup()` and not raid → iterate `party1`…`party4` **plus `player`**, since party tokens exclude yourself.
+- For subgroup filtering, `GetRaidRosterInfo(i)` supplies each member's subgroup number.
+
+#### Name normalization — the part that will bite us
+
+System roll messages render cross-realm players as `Name-Realm`, while same-realm players appear as bare `Name`. A naive string compare against `UnitName()` output silently drops every cross-realm participant — and at a large open-world RP event, cross-realm attendees are the norm, not the exception.
+
+So both sides get normalized to a canonical `Name-Realm` before comparison, with the host's own realm filled in when the suffix is absent (`Ambiguate(name, "none")`, `GetNormalizedRealmName()`). This is worth a dedicated unit-testable helper in `Util.lua` and explicit in-game testing with a cross-realm participant at M5.
+
+#### The 40-player ceiling
+
+A raid caps at 40. Events that outgrow that cannot be covered by `Group` mode alone, so:
+
+- If the host is not in a group, or the group is full while rolls arrive from unknown names, the watcher shows a non-blocking hint: *"12 rolls ignored from outside your group — switch filter?"* with a one-click switch. Never silent, because silently ignoring a participant's roll is worse than adjudicating a stranger's.
+- `Roster` mode exists for exactly this case: the host builds a list once and it survives group changes. Populate it with **Import from group** (snapshot the current party/raid) plus **Add everyone who rolls** (learn mode — arm it for a round, then turn it off and the list is locked).
 
 ### 4.3 Output
 
@@ -191,7 +222,9 @@ Verdict line format:
 
 A scrollable list of the event's rolls: name, value, verdict, timestamp. Per-name tallies (successes / failures / crits). Buttons: **Clear**, **Copy to clipboard** (a selectable multi-line edit box, since addons cannot write to the system clipboard directly).
 
-The roster is built passively from names seen rolling — the addon does not scan the area or track anyone who has not rolled.
+The log lists everyone the filter admitted. Names enter it either from your own group roster or from having rolled — the addon never scans the area, never inspects players who have not participated, and reads group membership only for the group you are yourself in.
+
+Per-name rows offer **Mute** (stop adjudicating this name for the rest of the session) for the inevitable bystander who keeps rolling for fun.
 
 ### 4.5 Safety
 
@@ -398,6 +431,7 @@ That is the whole positioning, and it should stay that way. Growing this into a 
 
 1. **Interface version.** Must be read from the live client; a wrong `## Interface:` number makes the addon show as out-of-date. First task of M0.
 2. **`SendChatMessage` restrictions.** Blizzard periodically tightens what addons may send and when (hardware-event requirements, throttles, restricted channels). Verify current behaviour on the live client at M3 and adapt the queue — including a graceful "your client blocked this send" path rather than a silent failure.
+3. **Which rolls actually reach the host's client.** `/roll` results are delivered to your group, and to nearby players within local chat range — but the precise scope, and whether a non-grouped bystander's roll is visible to you at all, needs confirming in-game at M5. It decides how much work the participant filter is really doing: if out-of-group rolls never arrive, `Group` mode is belt-and-braces; if they do, it is essential. Test with a helper outside the group at melee range and again at distance.
 
 ### Resolved in Phase 1
 
