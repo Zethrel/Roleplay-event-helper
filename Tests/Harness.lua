@@ -99,6 +99,7 @@ local timers = {}
 Harness.sent = {}
 Harness.popups = {}
 Harness.sendError = nil
+Harness.blockAfter = nil
 Harness.group = {
 	inGroup = false,
 	inRaid = false,
@@ -262,9 +263,18 @@ function Harness.installStubs()
 
 	-- Everything the addon would say to other players lands in Harness.sent
 	-- instead, so a test can assert on exactly what would have been broadcast.
+	--- Harness.blockAfter reproduces the live client's behaviour: once its
+	--- allowance is spent it refuses the send and fires ADDON_ACTION_BLOCKED
+	--- from inside the call, so the handler runs while the sender is still on
+	--- the stack.
 	function SendChatMessage(message, chatType, languageID, target)
 		if Harness.sendError then
 			error(Harness.sendError, 0)
+		end
+
+		if Harness.blockAfter and #Harness.sent >= Harness.blockAfter then
+			Harness.fire("ADDON_ACTION_BLOCKED", addonName, "UNKNOWN()")
+			return
 		end
 		Harness.sent[#Harness.sent + 1] = {
 			message = message, chatType = chatType, target = target,

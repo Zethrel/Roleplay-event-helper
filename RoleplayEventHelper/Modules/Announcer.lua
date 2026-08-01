@@ -34,6 +34,15 @@ function Announcer:ResolveSendMode(chatType, setting)
 	return NEEDS_HARDWARE_EVENT[chatType] and "burst" or "paced"
 end
 
+-- Where a blocked announcement stopped, so the next press can pick it up.
+-- The client's allowance for sends behind one hardware event runs out partway
+-- through a long announcement, and a fresh press is a fresh allowance.
+local resume = nil
+
+local function ClearResume()
+	resume = nil
+end
+
 local queue = {
 	active = false,
 	messages = nil,
@@ -149,12 +158,21 @@ local function ResetQueue()
 end
 
 function Announcer:Cancel()
+	-- After a block the queue is already stopped but a continuation is waiting.
+	-- Cancel has to reach that too, or there is no way to abandon the rest of a
+	-- half-sent announcement.
 	if not queue.active then
+		if resume then
+			ClearResume()
+			REH:PrintWarning(L["Discarded the rest of that announcement."])
+			return true
+		end
 		return false
 	end
 
 	local sent, total = queue.index, #queue.messages
 	ResetQueue()
+	ClearResume()
 	REH:PrintWarning(L["Announcement cancelled by you after %d of %d messages."]
 		:format(sent, total))
 	return true
@@ -171,18 +189,41 @@ function Announcer:AbortBlocked(functionName)
 
 	queue.blockReported = true
 
-	local index, total, chatType = queue.index, #queue.messages, queue.chatType
+	-- Captured before the reset: the blocked message was not delivered, so the
+	-- announcement resumes from it rather than after it.
+	local index, total = queue.index, #queue.messages
+	local chatType, target = queue.chatType, queue.target
+	local presetName, messages = queue.presetName, queue.messages
+
 	ResetQueue()
 
-	REH:PrintError(L["The client blocked message %d of %d on the way to %s, so the announcement stopped."]
-		:format(index, total, REH.DISPLAY.channel[chatType] or tostring(chatType)))
+	REH:PrintWarning(L["Sent %d of %d to %s, then your client stopped accepting messages."]
+		:format(index - 1, total, REH.DISPLAY.channel[chatType] or tostring(chatType)))
+
+	if index <= total then
+		resume = {
+			presetName = presetName,
+			messages = messages,
+			nextIndex = index,
+			chatType = chatType,
+			target = target,
+		}
+		REH:Print(L["Press Announce again to carry on from message %d."]:format(index))
+	end
 
 	if NEEDS_HARDWARE_EVENT[chatType] then
-		REH:PrintWarning(L["Your client restricts addons sending to /say, /yell, /emote, whispers and custom channels. Party, raid, guild and officer chat are not restricted."])
-		REH:Print(L["Try /reh channel party, or press Announce again -- the first message always goes through because your click is behind it."])
+		REH:PrintWarning(L["Your client limits how much an addon may send to /say, /yell, /emote, whispers and custom channels in one go. Party, raid, guild and officer chat have no such limit."])
 	end
 
 	return true
+end
+
+function Announcer:HasResume()
+	return resume ~= nil
+end
+
+function Announcer:ClearResume()
+	ClearResume()
 end
 
 --- Stop because the client refused a send. The host is told which message
@@ -200,19 +241,22 @@ function Announcer:SendNext()
 	end
 
 	queue.index = queue.index + 1
-	local message = queue.messages[queue.index]
+
+	-- Everything this call needs is captured up front. The client fires
+	-- ADDON_ACTION_BLOCKED *during* SendChatMessage, and its handler stops the
+	-- queue, so any field read after the send may already have been cleared.
+	local index = queue.index
+	local total = #queue.messages
+	local presetName = queue.presetName
+	local chatType = queue.chatType
+	local message = queue.messages[index]
 
 	if not message then
-		local total = queue.index - 1
-		local presetName = queue.presetName
 		ResetQueue()
-		REH:Print(L["Announced '%s': %d messages sent."]:format(presetName, total))
+		REH:Print(L["Announced '%s': %d messages sent."]:format(presetName, index - 1))
 		return
 	end
 
-	-- SendChatMessage can raise rather than return a failure -- a channel left
-	-- mid-announcement, a restriction on the client. Catch it so the addon
-	-- reports a clear stop instead of throwing a Lua error at the host.
 	-- Belt and braces: the formatter already strips these, but a message that
 	-- reaches the client with a colour escape in it is dropped silently, which
 	-- is the hardest kind of failure for a host to diagnose mid-event.
@@ -220,23 +264,29 @@ function Announcer:SendNext()
 
 	-- So that a blocked action can be attributed to a specific message rather
 	-- than to "something, at some point during the evening".
-	REH.Diagnostics:SetContext(("sending message %d of %d to %s")
-		:format(queue.index, #queue.messages, tostring(queue.chatType)))
+	REH.Diagnostics:SetContext(("sending message %d of %d to %s"):format(
+		index, total, tostring(chatType)))
 
-	local ok, err = pcall(SendChatMessage, message, queue.chatType, nil, queue.target)
+	-- SendChatMessage can raise rather than return a failure. Catch it so the
+	-- addon reports a clear stop instead of throwing a Lua error at the host.
+	local ok, err = pcall(SendChatMessage, message, chatType, nil, queue.target)
 
 	REH.Diagnostics:ClearContext()
 
-	if not ok then
-		Abort(queue.index, #queue.messages, err)
+	-- The queue may have been stopped underneath us by the block handler.
+	if not queue.active then
 		return
 	end
 
-	if queue.index >= #queue.messages then
-		local total = queue.index
-		local presetName = queue.presetName
+	if not ok then
+		Abort(index, total, err)
+		return
+	end
+
+	if index >= total then
 		ResetQueue()
-		REH:Print(L["Announced '%s': %d messages sent."]:format(presetName, total))
+		ClearResume()
+		REH:Print(L["Announced '%s': %d messages sent."]:format(presetName, index))
 		return
 	end
 
@@ -280,7 +330,20 @@ function Announcer:Announce(preset, presetName, overrides)
 		return false
 	end
 
-	local messages = REH.Formatter:BuildMessages(preset, overrides)
+	-- Carry on from where a blocked announcement stopped, if this is the same
+	-- preset going to the same place. Anything else starts fresh.
+	local startAt = 1
+	local messages
+
+	if resume and resume.presetName == presetName and resume.chatType == channel.type then
+		messages = resume.messages
+		startAt = resume.nextIndex
+		ClearResume()
+	else
+		ClearResume()
+		messages = REH.Formatter:BuildMessages(preset, overrides)
+	end
+
 	if #messages == 0 then
 		REH:PrintError(L["'%s' has no enabled rules to announce."]:format(presetName))
 		return false
@@ -296,7 +359,7 @@ function Announcer:Announce(preset, presetName, overrides)
 
 	queue.active = true
 	queue.messages = messages
-	queue.index = 0
+	queue.index = startAt - 1
 	queue.chatType = channel.type
 	queue.target = target
 	queue.presetName = presetName
@@ -304,7 +367,10 @@ function Announcer:Announce(preset, presetName, overrides)
 	queue.mode = self:ResolveSendMode(channel.type, settings.sendMode)
 	queue.blockReported = false
 
-	if queue.mode == "burst" then
+	if startAt > 1 then
+		REH:Print(L["Carrying on with '%s': messages %d to %d."]
+			:format(presetName, startAt, #messages))
+	elseif queue.mode == "burst" then
 		REH:Print(L["Announcing '%s' to %s: %d messages, all at once."]
 			:format(presetName, DescribeChannel(channel), #messages))
 	else

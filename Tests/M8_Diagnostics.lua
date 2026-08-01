@@ -94,8 +94,8 @@ H.check("the announcement started", REH.Announcer:IsSending())
 H.clearOutput()
 H.fire("ADDON_ACTION_BLOCKED", "RoleplayEventHelper", "UNKNOWN()")
 H.check("a block stops the queue", REH.Announcer:IsSending() == false)
-H.check("and names the message it died on",
-	H.outputText():find("message 1 of", 1, true) ~= nil, H.outputText())
+H.check("and says how many landed",
+	H.outputText():find("Sent 0 of", 1, true) ~= nil, H.outputText())
 
 local firstReport = H.outputText()
 H.fire("ADDON_ACTION_BLOCKED", "RoleplayEventHelper", "UNKNOWN()")
@@ -115,9 +115,9 @@ REH.Announcer:Announce(preset, "Test")
 H.clearOutput()
 H.fire("ADDON_ACTION_BLOCKED", "RoleplayEventHelper", "UNKNOWN()")
 H.check("a restricted channel is explained",
-	H.outputText():find("restricts addons", 1, true) ~= nil, H.outputText())
-H.check("with a channel that works instead",
-	H.outputText():find("party", 1, true) ~= nil, H.outputText())
+	H.outputText():find("limits how much", 1, true) ~= nil, H.outputText())
+H.check("with channels that work instead",
+	H.outputText():find("Party, raid, guild", 1, true) ~= nil, H.outputText())
 H.advance(600)
 
 --------------------------------------------------------------------------------
@@ -206,6 +206,86 @@ RoleplayEventHelperDB.settings.sendMode = "nonsense"
 REH = H.reload()
 DB = REH.Database
 H.checkEqual("a corrupt mode falls back to auto", DB:GetSettings().sendMode, "auto")
+
+--------------------------------------------------------------------------------
+H.section("A block fired from inside the send")
+--------------------------------------------------------------------------------
+
+-- The live client fires ADDON_ACTION_BLOCKED *during* SendChatMessage, so the
+-- handler stops the queue while the sender is still on the stack. Reading the
+-- queue after the send then finds it already cleared, which is how this
+-- produced "attempt to get length of field 'messages' (a nil value)".
+local wordy = DB:GetActivePreset()
+wordy.custom = { "Rule one.", "Rule two.", "Rule three.", "Rule four." }
+DB:ValidatePreset(wordy)
+REH.Announcer:SetChannel(wordy, "say")
+DB:GetSettings().sendMode = "auto"
+
+local total = #REH.Formatter:BuildMessages(wordy)
+H.check("there are several messages to send", total >= 4, total)
+
+Diagnostics:Clear()
+REH.Announcer:ClearResume()
+H.clearSent(); H.clearTimers(); H.clearOutput()
+H.blockAfter = 3
+
+local ranCleanly = pcall(function()
+	REH.Announcer:Announce(wordy, "Otters")
+end)
+H.check("a block during the send does not raise a Lua error", ranCleanly)
+H.checkEqual("the messages that got through were sent", #H.sent, 3)
+H.check("the queue stopped", REH.Announcer:IsSending() == false)
+H.check("the host is told how many landed",
+	H.outputText():find("Sent 3 of " .. total, 1, true) ~= nil, H.outputText())
+
+-- The allowance resets with the next click, so the announcement can carry on
+-- rather than being restarted from the top and repeating what already landed.
+H.check("and offered a way to continue", REH.Announcer:HasResume())
+H.check("naming the message to continue from",
+	H.outputText():find("message 4", 1, true) ~= nil, H.outputText())
+
+H.blockAfter = nil
+H.clearOutput()
+REH.Announcer:Announce(wordy, "Otters")
+H.check("pressing announce again carries on",
+	H.outputText():find("Carrying on", 1, true) ~= nil, H.outputText())
+H.checkEqual("and the whole announcement is delivered exactly once",
+	#H.sent, total)
+
+local expectedMessages = REH.Formatter:BuildMessages(wordy)
+local inOrder = true
+for index, entry in ipairs(H.sent) do
+	if entry.message ~= expectedMessages[index] then
+		inOrder = false
+	end
+end
+H.check("with no message repeated or skipped", inOrder)
+H.check("and nothing left pending", REH.Announcer:HasResume() == false)
+
+-- A resume belongs to one preset going to one place.
+H.blockAfter = 2
+H.clearSent(); H.clearOutput()
+REH.Announcer:Announce(wordy, "Otters")
+H.check("blocked again", REH.Announcer:HasResume())
+
+H.blockAfter = nil
+REH.Announcer:SetChannel(wordy, "party")
+H.group.inGroup = true
+H.clearSent(); H.clearOutput()
+REH.Announcer:Announce(wordy, "Otters")
+H.advance(600)
+H.check("changing channel starts over rather than resuming",
+	H.outputText():find("Carrying on", 1, true) == nil, H.outputText())
+H.checkEqual("sending the whole announcement", #H.sent, total)
+
+H.blockAfter = 2
+REH.Announcer:SetChannel(wordy, "say")
+H.clearSent(); H.clearOutput()
+REH.Announcer:Announce(wordy, "Otters")
+H.check("a pending resume exists", REH.Announcer:HasResume())
+H.blockAfter = nil
+REH.Announcer:Cancel()
+H.check("cancelling discards it", REH.Announcer:HasResume() == false)
 
 H.checkNoLeakedGlobals(H.ALLOWED_GLOBALS)
 

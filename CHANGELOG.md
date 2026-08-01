@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.0.4 - 2026-08-01
+
+Fixes a Lua error when the client stops accepting messages mid-announcement,
+and lets a stopped announcement carry on.
+
+- `ADDON_ACTION_BLOCKED` fires *during* `SendChatMessage`, so the handler that
+  stops the queue ran while the sender was still on the stack. The sender then
+  read a queue that had already been cleared: "attempt to get length of field
+  'messages' (a nil value)". Everything the send needs is now captured before
+  the call, and the queue state is re-checked afterwards.
+- `/say`, `/yell`, `/emote`, whispers and custom channels turn out to allow
+  only a limited number of addon messages behind one click, rather than
+  refusing all but the first. A blocked announcement now remembers where it
+  stopped, and pressing Announce again carries on from that message instead of
+  restarting and repeating what already landed.
+- `/reh cancel` discards a pending continuation.
+
 ## 1.0.3 - 2026-08-01
 
 Fixes announcements to `/say` stopping after the first message.
