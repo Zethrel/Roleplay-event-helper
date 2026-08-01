@@ -96,6 +96,12 @@ Register("help", nil, "show this command list", function()
 	end
 end)
 
+Register("window", nil, "open or close the main window", function()
+	if REH.UI and REH.UI.MainFrame then
+		REH.UI.MainFrame:Toggle()
+	end
+end)
+
 Register("list", nil, "list your presets", function()
 	local names = REH.Database:GetPresetNames()
 	local _, activeName = REH.Database:GetActivePreset()
@@ -328,8 +334,13 @@ function Commands:Handle(input)
 	local text = REH.Trim(input or "")
 	local command, argument = text:match("^(%S+)%s*(.-)$")
 
+	-- A bare /reh opens the window; the command list moved to /reh help.
 	if not command then
-		handlers.help("")
+		if REH.UI and REH.UI.MainFrame then
+			REH.UI.MainFrame:Toggle()
+		else
+			handlers.help("")
+		end
 		return
 	end
 

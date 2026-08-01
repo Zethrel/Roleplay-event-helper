@@ -24,8 +24,8 @@ watcher adjudicates the plain `/roll` everyone already uses.
 | M1 — Data layer: presets, defaults, migrations | ✅ done |
 | M2 — Formatter and preview | ✅ done |
 | M3 — Announcer (first milestone where it talks) | ✅ done |
-| M4 — Main UI | next |
-| M5 — Roll watcher | |
+| M4 — Main UI | ✅ done |
+| M5 — Roll watcher | next |
 | M6 — Export / import strings | |
 | M7 — Polish and first release | |
 
@@ -50,7 +50,8 @@ then restart the client or `/reload`.
 
 | Command | Effect |
 |---------|--------|
-| `/reh` | Command list |
+| `/reh` | Open or close the main window |
+| `/reh help` | Command list |
 | `/reh list` | List your presets, marking the active one |
 | `/reh show [name]` | Show a preset's rules in detail |
 | `/reh preview [name]` | Show exactly what would be sent to chat, sending nothing |
@@ -105,6 +106,21 @@ The suites cover the TOC staying consistent with the code, a clean load and
 event bootstrap, saved variables persisting across a reload, no stray globals,
 preset create/copy/rename/delete/reset, and the validation layer's handling of
 corrupt or hand-edited saved data.
+
+## The window
+
+`/reh` opens the main window. On the left is your preset list with New, Copy,
+Rename and Delete. On the right are tabbed editors — Event, Rolls, Health,
+Damage, Turns, Rules, Etiquette. Along the bottom is the **live preview**: the
+exact messages that will be sent, with byte counts and an estimate of how long
+the announcement takes. Editing any rule updates it immediately.
+
+Health rows and rule lists are edited as plain text, one entry per line
+(`Cloth 10`, `Shield equipped +1`), so a whole rule set can be pasted in or out.
+
+The Announce button disables itself when the target is unavailable and the
+status line says which condition failed, so a greyed-out button never leaves you
+guessing.
 
 ## Design principles
 

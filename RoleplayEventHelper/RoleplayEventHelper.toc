@@ -16,5 +16,12 @@ Core\Database.lua
 Modules\Formatter.lua
 Modules\Announcer.lua
 
+UI\Widgets.lua
+UI\Fields.lua
+UI\Editors.lua
+UI\Preview.lua
+UI\PresetList.lua
+UI\MainFrame.lua
+
 Core\Commands.lua
 Core\Init.lua

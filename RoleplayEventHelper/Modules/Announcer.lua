@@ -273,7 +273,13 @@ Announcer.CHANNEL_ALIASES = CHANNEL_ALIASES
 --- up "raid warning" before forming the raid. Availability is enforced at the
 --- moment of announcing, not here.
 function Announcer:SetChannel(preset, word, target)
+	-- Accept both what a host types ("rw") and the stored value the UI passes
+	-- back ("RAID_WARNING").
 	local kind = CHANNEL_ALIASES[tostring(word):lower()]
+	if not kind and REH.IsValidEnum(REH.CHANNEL_TYPES, tostring(word):upper()) then
+		kind = tostring(word):upper()
+	end
+
 	if not kind then
 		return false, L["'%s' is not a channel. Try: preview, say, yell, emote, party, raid, warning, instance, guild, officer, channel <name>, whisper <name>."]
 			:format(tostring(word))

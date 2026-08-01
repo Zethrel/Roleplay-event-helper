@@ -1,0 +1,418 @@
+-- M4: the editor schema and the main window.
+--
+-- The window itself is built against a widget mock that only allows methods
+-- that actually exist on the client, so building it at all proves the layout
+-- code calls nothing imaginary. Everything above the widgets -- reading and
+-- writing rules, refreshing the preview, enabling the announce button -- is
+-- tested directly.
+
+local here = (arg and arg[0] and arg[0]:match("^(.*)[/\\][^/\\]*$")) or "Tests"
+local H = dofile(here .. "/Harness.lua")
+
+H.installStubs()
+H.snapshotGlobals()
+H.wipeSavedVariables()
+
+local REH = H.login()
+local DB = REH.Database
+local Fields = REH.Fields
+local MainFrame = REH.UI.MainFrame
+
+--------------------------------------------------------------------------------
+H.section("The schema is complete")
+--------------------------------------------------------------------------------
+
+local preset = DB:GetActivePreset()
+local fieldCount = 0
+local allReadable, allWritable = true, true
+local unreadable, unwritable = nil, nil
+
+for _, tab in ipairs(Fields:GetTabs()) do
+	for _, field in ipairs(tab.fields) do
+		fieldCount = fieldCount + 1
+
+		if type(field.get) ~= "function" or field.get(preset) == nil then
+			allReadable = false
+			unreadable = tab.module .. "." .. field.key
+		end
+
+		if type(field.set) ~= "function" then
+			allWritable = false
+			unwritable = tab.module .. "." .. field.key
+		end
+	end
+end
+
+H.check("there are fields to edit", fieldCount > 15, fieldCount)
+H.check("every field reads a value from a default preset", allReadable, unreadable)
+H.check("every field can be written", allWritable, unwritable)
+
+local everyModuleHasATab = true
+for _, moduleKey in ipairs(REH.MODULE_KEYS) do
+	if not Fields:FindTab(moduleKey) then
+		everyModuleHasATab = false
+	end
+end
+H.check("every announceable module has an editor tab", everyModuleHasATab)
+
+local selectsAreValid = true
+for _, tab in ipairs(Fields:GetTabs()) do
+	for _, field in ipairs(tab.fields) do
+		if field.type == "select" then
+			local current = field.get(preset)
+			local found = false
+			for _, option in ipairs(field.options()) do
+				if option.value == current then
+					found = true
+				end
+			end
+			if not found then
+				selectsAreValid = false
+			end
+		end
+	end
+end
+H.check("every choice field's current value is among its options", selectsAreValid)
+
+--------------------------------------------------------------------------------
+H.section("List fields round-trip")
+--------------------------------------------------------------------------------
+
+local rows = Fields.ParseValueLines("Cloth 10\nLeather 11\nMail 12\nPlate 13", "hp")
+H.checkEqual("four health rows parsed", #rows, 4)
+H.checkEqual("label kept", rows[1].label, "Cloth")
+H.checkEqual("value kept", rows[4].hp, 13)
+
+H.checkEqual("and serialize back unchanged",
+	Fields.SerializeValueLines(rows, "hp", false),
+	"Cloth 10\nLeather 11\nMail 12\nPlate 13")
+
+local equals = Fields.ParseValueLines("Cloth = 10", "hp")
+H.checkEqual("an equals sign is accepted", equals[1].hp, 10)
+
+local spaced = Fields.ParseValueLines("Heavy Plate Armor 15", "hp")
+H.checkEqual("multi-word labels keep their spaces", spaced[1].label, "Heavy Plate Armor")
+H.checkEqual("and their value", spaced[1].hp, 15)
+
+local signed = Fields.ParseValueLines("Shield equipped +1\nTwo-handed -1", "bonus")
+H.checkEqual("a positive modifier parses", signed[1].bonus, 1)
+H.checkEqual("a negative modifier parses", signed[2].bonus, -1)
+H.checkEqual("and serializes with its sign",
+	Fields.SerializeValueLines(signed, "bonus", true), "Shield equipped +1\nTwo-handed -1")
+
+-- A half-typed line must not silently vanish while the host is still editing.
+local noNumber = Fields.ParseValueLines("Cloth 10\nLeather", "hp")
+H.checkEqual("a line with no number is kept", #noNumber, 2)
+H.checkEqual("with a value of zero", noNumber[2].hp, 0)
+
+local ruleLines = Fields.ParseStringLines("  No mounts.  \n\n\nNo consumables.\n   \n")
+H.checkEqual("blank lines are dropped", #ruleLines, 2)
+H.checkEqual("and the rest trimmed", ruleLines[1], "No mounts.")
+
+--------------------------------------------------------------------------------
+H.section("Writing through the schema")
+--------------------------------------------------------------------------------
+
+local scratch = REH.CreateDefaultPreset("Scratch")
+DB:ValidatePreset(scratch)
+
+local nameField = Fields:FindField("header", "eventName")
+H.check("a field can be found by module and key", nameField ~= nil)
+Fields:Set(scratch, nameField, "  Gurubashi Arena  ")
+H.checkEqual("text is trimmed on write", scratch.header.eventName, "Gurubashi Arena")
+
+local thresholdField = Fields:FindField("rolls", "successThreshold")
+Fields:Set(scratch, thresholdField, "25")
+H.checkEqual("a numeric string is stored as a number", scratch.rolls.successThreshold, 25)
+
+Fields:Set(scratch, thresholdField, "12.6")
+H.checkEqual("a fractional entry is rounded", scratch.rolls.successThreshold, 13)
+
+local ok, reason = Fields:Set(scratch, thresholdField, "ten")
+H.check("a non-numeric entry is rejected", ok == false)
+H.check("with a reason naming the field",
+	(reason or ""):find("Success at or above", 1, true) ~= nil, reason)
+H.checkEqual("and the old value is untouched", scratch.rolls.successThreshold, 13)
+
+-- Cross-field rules must hold the moment a field changes, not at the next
+-- reload: an impossible threshold left on screen is a rule the host will read
+-- out loud and be wrong about.
+Fields:Set(scratch, thresholdField, "90")
+Fields:Set(scratch, Fields:FindField("rolls", "dieMax"), "20")
+H.checkEqual("lowering the die max pulls the threshold down with it",
+	scratch.rolls.successThreshold, 20)
+
+local toggleField = Fields:FindField("rolls", "useCritical")
+Fields:Set(scratch, toggleField, false)
+H.checkEqual("a toggle stores false", scratch.rolls.useCritical, false)
+Fields:Set(scratch, toggleField, true)
+H.checkEqual("and true", scratch.rolls.useCritical, true)
+
+local tieField = Fields:FindField("rolls", "tieBreak")
+H.check("a valid choice is accepted", Fields:Set(scratch, tieField, "attacker"))
+H.checkEqual("and stored", scratch.rolls.tieBreak, "attacker")
+H.check("an invalid choice is refused", Fields:Set(scratch, tieField, "coinflip") == false)
+H.checkEqual("leaving the previous choice", scratch.rolls.tieBreak, "attacker")
+
+local rowsField = Fields:FindField("health", "rows")
+Fields:Set(scratch, rowsField, "Cloth 20\nPlate 40")
+H.checkEqual("a list field is replaced wholesale", #scratch.health.rows, 2)
+H.checkEqual("with the typed values", scratch.health.rows[2].hp, 40)
+
+Fields:Set(scratch, rowsField, "")
+H.checkEqual("clearing a list empties it", #scratch.health.rows, 0)
+
+local prefixField = Fields:FindField("etiquette", "linePrefix")
+Fields:Set(scratch, prefixField, "|cffff0000[Evil]")
+H.check("a colour escape typed into the prefix is stripped",
+	scratch.formatting.linePrefix:find("|", 1, true) == nil,
+	scratch.formatting.linePrefix)
+
+--------------------------------------------------------------------------------
+H.section("The window builds")
+--------------------------------------------------------------------------------
+
+-- The widget mock raises on any method outside its allowlist, so reaching the
+-- end of this without an error means the layout code only called API that
+-- exists on the client.
+MainFrame:Show()
+H.check("the window builds and shows", MainFrame:IsShown())
+H.check("it is registered for Escape to close", (function()
+	for _, name in ipairs(UISpecialFrames) do
+		if name == "RoleplayEventHelperFrame" then
+			return true
+		end
+	end
+	return false
+end)())
+
+local frame = MainFrame:GetFrame()
+H.check("a preset list was built", frame.presetList ~= nil)
+H.check("an editor area was built", frame.editors ~= nil)
+H.check("a preview pane was built", frame.preview ~= nil)
+H.check("an announce button was built", frame.announceButton ~= nil)
+H.checkEqual("one tab button per schema tab", #frame.tabButtons, #Fields:GetTabs())
+H.checkEqual("one editor page per schema tab", #frame.editors.pages, #Fields:GetTabs())
+
+MainFrame:Hide()
+H.check("and it hides again", MainFrame:IsShown() == false)
+MainFrame:Show()
+
+--------------------------------------------------------------------------------
+H.section("Tabs")
+--------------------------------------------------------------------------------
+
+MainFrame:SelectTab(2)
+H.check("the selected page is shown", frame.editors.pages[2].frame:IsShown())
+H.check("and the others are hidden", frame.editors.pages[1].frame:IsShown() == false)
+
+frame.tabButtons[3]:Click()
+H.checkEqual("clicking a tab button switches page", frame.editors.activeIndex, 3)
+H.check("the active tab's button is disabled so it reads as selected",
+	frame.tabButtons[3]:IsEnabled() == false)
+H.check("and the others stay clickable", frame.tabButtons[1]:IsEnabled())
+
+--------------------------------------------------------------------------------
+H.section("Editing through the widgets")
+--------------------------------------------------------------------------------
+
+local function findRow(moduleKey, fieldKey)
+	for _, page in ipairs(frame.editors.pages) do
+		if page.tab.module == moduleKey then
+			for _, row in ipairs(page.rows) do
+				if row.field.key == fieldKey then
+					return row
+				end
+			end
+		end
+	end
+	return nil
+end
+
+local active = DB:GetActivePreset()
+
+MainFrame:SelectTab(1)
+local nameRow = findRow("header", "eventName")
+H.check("the event name row exists", nameRow ~= nil)
+H.checkEqual("and shows the current value",
+	nameRow.control:GetText(), active.header.eventName)
+
+nameRow.control:SetText("Tavern Brawl Night")
+H.fireScript(nameRow.control, "OnEditFocusLost")
+H.checkEqual("typing into it updates the preset",
+	active.header.eventName, "Tavern Brawl Night")
+
+local rollsPage = 2
+MainFrame:SelectTab(rollsPage)
+local dieRow = findRow("rolls", "dieMax")
+dieRow.control:SetText("20")
+H.fireScript(dieRow.control, "OnEnterPressed")
+H.checkEqual("a number field writes through", active.rolls.dieMax, 20)
+
+local critRow = findRow("rolls", "useCritical")
+critRow.control:SetChecked(false)
+critRow.control:Click()
+H.checkEqual("a checkbox writes through", active.rolls.useCritical, false)
+
+local tieRow = findRow("rolls", "tieBreak")
+local beforeTie = active.rolls.tieBreak
+tieRow.control:Click()
+H.check("a choice button advances to the next option",
+	active.rolls.tieBreak ~= beforeTie, active.rolls.tieBreak)
+H.check("and the stored value is a legal one",
+	REH.IsValidEnum(REH.TIE_BREAKS, active.rolls.tieBreak))
+
+MainFrame:SelectTab(3)
+local rowsRow = findRow("health", "rows")
+rowsRow.control.editBox:SetText("Cloth 5\nPlate 9")
+H.fireScript(rowsRow.control.editBox, "OnEditFocusLost")
+H.checkEqual("a list field writes through", #active.health.rows, 2)
+H.checkEqual("with the typed value", active.health.rows[2].hp, 9)
+
+-- A rejected edit must not leave the bad text sitting in the box.
+MainFrame:SelectTab(2)
+local thresholdRow = findRow("rolls", "successThreshold")
+local goodValue = active.rolls.successThreshold
+thresholdRow.control:SetText("nonsense")
+H.fireScript(thresholdRow.control, "OnEditFocusLost")
+H.checkEqual("a rejected edit leaves the preset alone",
+	active.rolls.successThreshold, goodValue)
+H.checkEqual("and the box is put back to the real value",
+	thresholdRow.control:GetText(), tostring(goodValue))
+
+--------------------------------------------------------------------------------
+H.section("The preview pane")
+--------------------------------------------------------------------------------
+
+local Preview = REH.UI.Preview
+local text, count, seconds = Preview:BuildText(active)
+local expected = REH.Formatter:BuildMessages(active)
+
+H.checkEqual("the preview counts the real messages", count, #expected)
+H.check("and shows the first one", text:find(expected[1], 1, true) ~= nil)
+H.check("with a byte count", text:find("(" .. #expected[1] .. ")", 1, true) ~= nil)
+H.check("the estimate grows with the message count", seconds >= 0)
+
+H.checkEqual("one message reads in the singular", Preview:BuildSummary(1, 0), "1 message")
+H.check("several read in the plural",
+	Preview:BuildSummary(8, 5.6):find("8 messages", 1, true) ~= nil)
+
+local emptyPreset = REH.CreateDefaultPreset("Empty")
+for _, key in ipairs(REH.MODULE_KEYS) do
+	emptyPreset.moduleEnabled[key] = false
+end
+DB:ValidatePreset(emptyPreset)
+local emptyText, emptyCount = Preview:BuildText(emptyPreset)
+H.checkEqual("a preset with everything disabled has no messages", emptyCount, 0)
+H.check("and says so rather than showing a blank pane",
+	emptyText:find("Nothing to announce", 1, true) ~= nil, emptyText)
+
+MainFrame:RefreshPreview()
+H.check("the pane shows the current preset's rules",
+	frame.preview.bodyText:GetText():find("/roll", 1, true) ~= nil)
+
+nameRow = findRow("header", "eventName")
+MainFrame:SelectTab(1)
+nameRow.control:SetText("Renamed For Preview")
+H.fireScript(nameRow.control, "OnEditFocusLost")
+H.check("editing a rule updates the preview immediately",
+	frame.preview.bodyText:GetText():find("Renamed For Preview", 1, true) ~= nil,
+	frame.preview.bodyText:GetText())
+
+--------------------------------------------------------------------------------
+H.section("The announce controls")
+--------------------------------------------------------------------------------
+
+H.resetGroup()
+H.clearSent()
+
+REH.Announcer:SetChannel(active, "preview")
+MainFrame:RefreshPreview()
+H.check("preview is always available, so the button is enabled",
+	frame.announceButton:IsEnabled())
+H.check("the channel button names the target",
+	frame.channelButton:GetText():find("preview", 1, true) ~= nil,
+	frame.channelButton:GetText())
+
+REH.Announcer:SetChannel(active, "party")
+MainFrame:RefreshPreview()
+H.check("an unavailable channel disables the announce button",
+	frame.announceButton:IsEnabled() == false)
+H.check("and the status line says why",
+	frame.statusText:GetText():find("not in a party", 1, true) ~= nil,
+	frame.statusText:GetText())
+
+H.group.inGroup = true
+MainFrame:RefreshPreview()
+H.check("joining a party enables it again", frame.announceButton:IsEnabled())
+H.checkEqual("and clears the status line", frame.statusText:GetText(), "")
+
+frame.announceButton:Click()
+H.check("clicking announce sends", #H.sent > 0)
+H.check("the cancel button is enabled while sending", frame.cancelButton:IsEnabled())
+H.check("and announce is disabled so it cannot be double-sent",
+	frame.announceButton:IsEnabled() == false)
+H.check("the status line reports progress",
+	frame.statusText:GetText():find("Sending", 1, true) ~= nil, frame.statusText:GetText())
+
+frame.cancelButton:Click()
+H.check("cancel stops it", REH.Announcer:IsSending() == false)
+H.advance(600)
+
+H.clearSent()
+frame.channelButton:Click()
+H.check("the channel popup opens", frame.channelPopup:IsShown())
+frame.channelPopup.rows[2]:Click()
+H.check("choosing from it closes the popup", frame.channelPopup:IsShown() == false)
+H.check("and changes the target", active.channel.type ~= "PARTY", active.channel.type)
+
+--------------------------------------------------------------------------------
+H.section("The preset list")
+--------------------------------------------------------------------------------
+
+DB:CreatePreset("Second Preset")
+MainFrame:RefreshAll()
+
+local visibleRows = 0
+for _, row in ipairs(frame.presetList.rows) do
+	if row:IsShown() then
+		visibleRows = visibleRows + 1
+	end
+end
+H.checkEqual("the list shows every preset", visibleRows, DB:CountPresets())
+
+local targetRow
+for _, row in ipairs(frame.presetList.rows) do
+	if row:IsShown() and row.presetName == "Second Preset" then
+		targetRow = row
+	end
+end
+H.check("the new preset appears in the list", targetRow ~= nil)
+
+targetRow:Click()
+local _, nowActive = DB:GetActivePreset()
+H.checkEqual("clicking a row makes it active", nowActive, "Second Preset")
+H.check("and the editor follows it",
+	findRow("header", "eventName").control:GetText()
+		== DB:GetActivePreset().header.eventName)
+
+H.popups = {}
+frame.presetList.deleteButton:Click()
+H.check("delete asks for confirmation rather than acting immediately",
+	#H.popups > 0)
+H.check("and the preset is still there until confirmed",
+	DB:GetPreset("Second Preset") ~= nil)
+
+--------------------------------------------------------------------------------
+H.section("Position is remembered")
+--------------------------------------------------------------------------------
+
+frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 120, -80)
+H.fireScript(frame, "OnDragStop")
+local saved = DB:GetSettings().framePoint
+H.checkEqual("the dragged position is saved", saved.point, "TOPLEFT")
+H.checkEqual("with its offset", saved.x, 120)
+
+H.checkNoLeakedGlobals(H.ALLOWED_GLOBALS)
+
+H.finish()

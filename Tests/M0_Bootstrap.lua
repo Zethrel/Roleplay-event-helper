@@ -45,8 +45,13 @@ H.check("says nothing at login when the TOC matches the client", H.outputText() 
 	H.outputText())
 
 H.section("Slash commands")
-local out = H.runSlash("")
-H.check("bare /reh lists commands", out:find("/reh list", 1, true) ~= nil)
+local out = H.runSlash("help")
+H.check("/reh help lists commands", out:find("/reh list", 1, true) ~= nil)
+
+H.runSlash("")
+H.check("bare /reh opens the window", REH.UI.MainFrame:IsShown())
+H.runSlash("")
+H.check("and closes it again", REH.UI.MainFrame:IsShown() == false)
 
 out = H.runSlash("version")
 H.check("/reh version reports the interface number",

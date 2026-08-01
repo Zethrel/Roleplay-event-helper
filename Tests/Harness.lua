@@ -94,6 +94,7 @@ local frames = {}
 local timers = {}
 
 Harness.sent = {}
+Harness.popups = {}
 Harness.sendError = nil
 Harness.group = {
 	inGroup = false,
@@ -271,19 +272,180 @@ function Harness.installStubs()
 		end,
 	}
 
-	function CreateFrame()
-		local frame = {
-			_events = {},
-			RegisterEvent = function(self, event) self._events[event] = true end,
-			UnregisterEvent = function(self, event) self._events[event] = nil end,
-			IsEventRegistered = function(self, event) return self._events[event] == true end,
-			SetScript = function(self, which, fn)
-				if which == "OnEvent" then self._onEvent = fn end
-			end,
-		}
+	----------------------------------------------------------------------------
+	-- Widgets
+	----------------------------------------------------------------------------
+
+	UIParent = Harness.newWidget("Frame")
+	UISpecialFrames = {}
+	StaticPopupDialogs = {}
+	ACCEPT, CANCEL, YES, NO = "Accept", "Cancel", "Yes", "No"
+
+	GameTooltip = Harness.newWidget("GameTooltip")
+
+	function StaticPopup_Show(which, arg1)
+		Harness.popups[#Harness.popups + 1] = { which = which, arg1 = arg1 }
+		return Harness.newWidget("Frame")
+	end
+
+	function CreateFrame(frameType, name, parent, template)
+		local frame = Harness.newWidget(frameType or "Frame", template)
+		frame._name = name
+		frame._parent = parent
+
+		if name then
+			_G[name] = frame
+		end
+
 		frames[#frames + 1] = frame
 		return frame
 	end
+end
+
+--------------------------------------------------------------------------------
+-- Widget mock
+--------------------------------------------------------------------------------
+
+-- Methods the addon is allowed to call. Anything outside this set raises,
+-- rather than silently doing nothing: a no-op stub would let a misspelled or
+-- imaginary API method pass the tests and then break in the game. Adding an
+-- entry here is a deliberate statement that the method exists in the client.
+local WIDGET_METHODS = {
+	-- geometry
+	SetPoint = true, SetAllPoints = true, ClearAllPoints = true, GetPoint = true,
+	SetSize = true, SetWidth = true, SetHeight = true, GetWidth = true, GetHeight = true,
+	-- visibility
+	Show = true, Hide = true, IsShown = true, IsVisible = true, SetShown = true,
+	SetAlpha = true, GetAlpha = true,
+	-- hierarchy and identity
+	GetParent = true, SetParent = true, GetName = true, SetID = true, GetID = true,
+	SetFrameStrata = true, SetFrameLevel = true, SetToplevel = true,
+	SetClampedToScreen = true,
+	-- scripts and events
+	SetScript = true, GetScript = true, HookScript = true,
+	RegisterEvent = true, UnregisterEvent = true, IsEventRegistered = true,
+	RegisterForDrag = true, RegisterForClicks = true,
+	EnableMouse = true, SetMovable = true, StartMoving = true, StopMovingOrSizing = true,
+	SetPropagateKeyboardInput = true,
+	-- children
+	CreateFontString = true, CreateTexture = true,
+	-- text
+	SetText = true, GetText = true, SetJustifyH = true, SetJustifyV = true,
+	SetTextColor = true, SetFontObject = true, SetNormalFontObject = true,
+	SetMaxLetters = true, SetMultiLine = true, SetAutoFocus = true, SetNumeric = true,
+	SetCursorPosition = true, HighlightText = true, SetFocus = true, ClearFocus = true,
+	-- buttons
+	Click = true, SetEnabled = true, Enable = true, Disable = true, IsEnabled = true,
+	SetChecked = true, GetChecked = true,
+	-- textures
+	SetColorTexture = true, SetTexture = true, SetVertexColor = true,
+	-- scrolling
+	SetScrollChild = true, GetScrollChild = true, SetVerticalScroll = true,
+	GetVerticalScrollRange = true, UpdateScrollChildRect = true,
+	-- tooltip
+	SetOwner = true, AddLine = true, AddDoubleLine = true, ClearLines = true,
+}
+
+Harness.WIDGET_METHODS = WIDGET_METHODS
+
+local widgetMeta = {}
+
+widgetMeta.__index = function(widget, key)
+	if WIDGET_METHODS[key] then
+		return function(self, ...)
+			return Harness.widgetCall(self, key, ...)
+		end
+	end
+	return nil
+end
+
+--- The behaviour of the stubbed methods that actually need to do something.
+function Harness.widgetCall(widget, method, a, b, c, d, e)
+	if method == "Show" then
+		widget._shown = true
+	elseif method == "Hide" then
+		widget._shown = false
+	elseif method == "SetShown" then
+		widget._shown = a and true or false
+	elseif method == "IsShown" or method == "IsVisible" then
+		return widget._shown and true or false
+	elseif method == "SetText" then
+		widget._text = tostring(a or "")
+	elseif method == "GetText" then
+		return widget._text or ""
+	elseif method == "SetChecked" then
+		widget._checked = a and true or false
+	elseif method == "GetChecked" then
+		return widget._checked and true or false
+	elseif method == "SetEnabled" then
+		widget._enabled = a and true or false
+	elseif method == "Enable" then
+		widget._enabled = true
+	elseif method == "Disable" then
+		widget._enabled = false
+	elseif method == "IsEnabled" then
+		return widget._enabled ~= false
+	elseif method == "SetScript" then
+		widget._scripts[a] = b
+		if a == "OnEvent" then
+			widget._onEvent = b
+		end
+	elseif method == "GetScript" then
+		return widget._scripts[a]
+	elseif method == "HookScript" then
+		widget._scripts[a] = b
+	elseif method == "RegisterEvent" then
+		widget._events[a] = true
+	elseif method == "UnregisterEvent" then
+		widget._events[a] = nil
+	elseif method == "IsEventRegistered" then
+		return widget._events[a] == true
+	elseif method == "SetPoint" then
+		widget._point = { a, b, c, d, e }
+	elseif method == "GetPoint" then
+		local point = widget._point or { "CENTER", nil, "CENTER", 0, 0 }
+		return point[1], point[2], point[3], point[4], point[5]
+	elseif method == "GetName" then
+		return widget._name
+	elseif method == "GetParent" then
+		return widget._parent
+	elseif method == "CreateFontString" then
+		return Harness.newWidget("FontString")
+	elseif method == "CreateTexture" then
+		return Harness.newWidget("Texture")
+	elseif method == "SetScrollChild" then
+		widget._scrollChild = a
+	elseif method == "GetScrollChild" then
+		return widget._scrollChild
+	elseif method == "Click" then
+		local handler = widget._scripts["OnClick"]
+		if handler then
+			handler(widget, a or "LeftButton")
+		end
+	end
+
+	return widget
+end
+
+function Harness.newWidget(widgetType, template)
+	local widget = {
+		_type = widgetType,
+		_template = template,
+		_scripts = {},
+		_events = {},
+		_shown = false,
+	}
+	return setmetatable(widget, widgetMeta)
+end
+
+--- Fire a named script handler on a widget, as the client would.
+function Harness.fireScript(widget, scriptName, ...)
+	local handler = widget._scripts[scriptName]
+	if not handler then
+		return false
+	end
+	handler(widget, ...)
+	return true
 end
 
 --------------------------------------------------------------------------------
@@ -378,6 +540,7 @@ end
 Harness.ALLOWED_GLOBALS = {
 	RoleplayEventHelper = true,
 	RoleplayEventHelperDB = true,
+	RoleplayEventHelperFrame = true,
 	SLASH_ROLEPLAYEVENTHELPER1 = true,
 	SLASH_ROLEPLAYEVENTHELPER2 = true,
 }
