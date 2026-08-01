@@ -233,6 +233,12 @@ later.
 | [LibDeflate](https://github.com/SafeteeWoW/LibDeflate) | zlib | Compressing export strings |
 | [LibSerialize](https://github.com/rossnichols/LibSerialize) | MIT | Serializing presets |
 
+## Support
+
+If this saves you time at your events, you can support development at
+[ko-fi.com/zethrel](https://ko-fi.com/zethrel). Entirely optional — the addon is free and always will
+be.
+
 ## Design principles
 
 1. **The host is in control.** Nothing reaches chat that the host did not

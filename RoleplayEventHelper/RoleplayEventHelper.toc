@@ -8,6 +8,7 @@
 ## IconTexture: Interface\Icons\INV_Misc_Dice_01
 ## AddonCompartmentFunc: RoleplayEventHelper_OnCompartmentClick
 ## X-Website: https://github.com/Zethrel/Roleplay-event-helper
+## X-Donate: https://ko-fi.com/zethrel
 
 Libs\LibStub\LibStub.lua
 Libs\LibDeflate\LibDeflate.lua

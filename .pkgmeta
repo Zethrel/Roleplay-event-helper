@@ -1,0 +1,16 @@
+package-as: RoleplayEventHelper
+
+# The libraries are vendored in Libs/ rather than pulled in at package time, so
+# the addon has no external dependencies and the uploaded zip is complete.
+enable-nolib-creation: no
+
+manual-changelog:
+    filename: CHANGELOG.md
+    markup-type: markdown
+
+# Development files that should not ship to players.
+ignore:
+    - Tests
+    - docs
+    - .pkgmeta
+    - .gitignore
