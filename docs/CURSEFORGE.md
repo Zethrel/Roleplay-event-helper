@@ -103,6 +103,11 @@ scans the area — it reads your own group's roster and nothing else.
 
 World of Warcraft **Retail**, interface `120007` (patch 12.0.7).
 
+### Licence
+
+MIT. The bundled libraries (LibStub, LibDeflate, LibSerialize) are
+redistributed under their own licences, included with them.
+
 ### Bugs and suggestions
 
 Please report anything odd on the

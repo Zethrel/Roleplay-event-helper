@@ -233,6 +233,11 @@ later.
 | [LibDeflate](https://github.com/SafeteeWoW/LibDeflate) | zlib | Compressing export strings |
 | [LibSerialize](https://github.com/rossnichols/LibSerialize) | MIT | Serializing presets |
 
+## Licence
+
+[MIT](LICENSE). The libraries in `RoleplayEventHelper/Libs/` are third-party
+work redistributed under their own licences, which ship alongside them.
+
 ## Support
 
 If this saves you time at your events, you can support development at
