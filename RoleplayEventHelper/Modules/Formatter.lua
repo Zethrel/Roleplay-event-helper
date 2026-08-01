@@ -5,15 +5,21 @@ REH.Formatter = Formatter
 
 -- Turns a preset into the exact lines that will be sent to chat.
 --
--- Two stages, deliberately separate. BuildLines produces logical lines -- one
--- rule, one line, however long it needs to be. BuildMessages then packs those
--- into chat-sized messages. Keeping them apart means the wording can be
--- reviewed without thinking about byte limits, and the byte limits can be
--- tested without thinking about wording.
+-- Three stages, deliberately separate:
+--
+--   BuildLines     one rule per line, however long it needs to be
+--   BuildMessages  those lines packed into chat-sized messages
+--   Preview        the messages printed locally, sending nothing
+--
+-- Keeping them apart means the wording can be reviewed without thinking about
+-- byte limits, and the byte limits can be tested without thinking about
+-- wording.
 
 local COLOR_HEADING = "|cffffd100"
 local COLOR_LABEL = "|cff8fd3ff"
 local COLOR_END = "|r"
+
+local SEPARATOR = "---"
 
 local SUMMARY_MODULES = { header = true, rolls = true, health = true }
 
@@ -37,17 +43,24 @@ local function JoinSentences(parts)
 	return table.concat(parts, " ")
 end
 
+local function Capitalize(text)
+	return text:sub(1, 1):upper() .. text:sub(2)
+end
+
 --------------------------------------------------------------------------------
 -- Module builders
 --------------------------------------------------------------------------------
 
--- Each builder appends zero or more logical lines. A module that has nothing
--- to say adds nothing at all -- an empty custom-rules list should not produce a
--- heading, a separator, or a lonely "none".
+-- Each builder is handed an `emit(text, standalone)` function and calls it once
+-- per logical line. A module that has nothing to say emits nothing at all -- an
+-- empty custom-rules list should not produce a heading, a separator, or a
+-- lonely "none".
+--
+-- `standalone` marks a line that must never share a chat message with another.
 
 local builders = {}
 
-builders.header = function(preset, lines, options)
+builders.header = function(preset, emit, options)
 	local header = preset.header
 	local title = header.eventName
 
@@ -55,18 +68,20 @@ builders.header = function(preset, lines, options)
 		title = ("%s - hosted by %s"):format(title, header.hostName)
 	end
 
-	lines[#lines + 1] = Colorize(("=== %s ==="):format(title), COLOR_HEADING, options.useColors)
+	-- The title gets its own message: it is what people scrolling back look
+	-- for, and burying it inside a merged block defeats the point of it.
+	emit(Colorize(("=== %s ==="):format(title), COLOR_HEADING, options.useColors), true)
 
 	if header.description ~= "" then
-		lines[#lines + 1] = header.description
+		emit(header.description)
 	end
 
 	if header.showTimestamp and date then
-		lines[#lines + 1] = ("(rules posted at %s)"):format(date("%H:%M"))
+		emit(("(rules posted at %s)"):format(date("%H:%M")))
 	end
 end
 
-builders.rolls = function(preset, lines, options)
+builders.rolls = function(preset, emit, options)
 	local rolls = preset.rolls
 	local bands = {}
 
@@ -82,8 +97,8 @@ builders.rolls = function(preset, lines, options)
 		bands[#bands + 1] = ("%d-%d = %s"):format(rolls.successThreshold, rolls.dieMax, rolls.successText)
 	end
 
-	lines[#lines + 1] = Labelled("Rolls", ("use /roll %d. %s."):format(
-		rolls.dieMax, table.concat(bands, ". ")), options.useColors)
+	emit(Labelled("Rolls", ("use /roll %d. %s."):format(
+		rolls.dieMax, table.concat(bands, ". ")), options.useColors))
 
 	if rolls.useCritical then
 		local crits = {}
@@ -100,7 +115,7 @@ builders.rolls = function(preset, lines, options)
 			crits[#crits + 1] = ("%d or lower is a critical failure"):format(rolls.critFailAt)
 		end
 
-		lines[#lines + 1] = table.concat(crits, ", ") .. "."
+		emit(table.concat(crits, ", ") .. ".")
 	end
 
 	local closers = {}
@@ -112,13 +127,13 @@ builders.rolls = function(preset, lines, options)
 
 	local tieText = REH.DISPLAY.tieBreak[rolls.tieBreak]
 	if tieText then
-		closers[#closers + 1] = tieText:sub(1, 1):upper() .. tieText:sub(2) .. "."
+		closers[#closers + 1] = Capitalize(tieText) .. "."
 	end
 
-	lines[#lines + 1] = JoinSentences(closers)
+	emit(JoinSentences(closers))
 end
 
-builders.health = function(preset, lines, options)
+builders.health = function(preset, emit, options)
 	local health = preset.health
 
 	if #health.rows == 0 and #health.modifiers == 0 then
@@ -143,14 +158,14 @@ builders.health = function(preset, lines, options)
 		sentences[#sentences + 1] = table.concat(parts, ", ") .. "."
 	end
 
-	lines[#lines + 1] = Labelled("Health", JoinSentences(sentences), options.useColors)
+	emit(Labelled("Health", JoinSentences(sentences), options.useColors))
 
 	if health.note ~= "" then
-		lines[#lines + 1] = health.note
+		emit(health.note)
 	end
 end
 
-builders.damage = function(preset, lines, options)
+builders.damage = function(preset, emit, options)
 	local damage = preset.damage
 	local sentences = {}
 
@@ -162,24 +177,24 @@ builders.damage = function(preset, lines, options)
 		sentences[#sentences + 1] = deathText
 	end
 
-	lines[#lines + 1] = Labelled("Damage", JoinSentences(sentences), options.useColors)
+	emit(Labelled("Damage", JoinSentences(sentences), options.useColors))
 
 	if damage.healingAllowed then
 		local healing = ("%d restored per successful heal."):format(damage.healPerSuccess)
 		if damage.healsPerEvent > 0 then
 			healing = healing .. (" %d heals each per event."):format(damage.healsPerEvent)
 		end
-		lines[#lines + 1] = Labelled("Healing", healing, options.useColors)
+		emit(Labelled("Healing", healing, options.useColors))
 	end
 end
 
-builders.turns = function(preset, lines, options)
+builders.turns = function(preset, emit, options)
 	local turns = preset.turns
 	local sentences = {}
 
 	local modeText = REH.DISPLAY.initiative[turns.mode]
 	if modeText then
-		sentences[#sentences + 1] = modeText:sub(1, 1):upper() .. modeText:sub(2) .. "."
+		sentences[#sentences + 1] = Capitalize(modeText) .. "."
 	end
 
 	if turns.turnTimeSeconds > 0 then
@@ -187,27 +202,27 @@ builders.turns = function(preset, lines, options)
 	end
 
 	if #sentences > 0 then
-		lines[#lines + 1] = Labelled("Turn order", JoinSentences(sentences), options.useColors)
+		emit(Labelled("Turn order", JoinSentences(sentences), options.useColors))
 	end
 
 	if turns.note ~= "" then
-		lines[#lines + 1] = turns.note
+		emit(turns.note)
 	end
 end
 
-builders.custom = function(preset, lines, options)
+builders.custom = function(preset, emit, options)
 	for index, rule in ipairs(preset.custom) do
 		if options.numberCustomRules then
-			lines[#lines + 1] = ("%d. %s"):format(index, rule)
+			emit(("%d. %s"):format(index, rule))
 		else
-			lines[#lines + 1] = rule
+			emit(rule)
 		end
 	end
 end
 
-builders.etiquette = function(preset, lines, options)
+builders.etiquette = function(preset, emit, options)
 	for _, rule in ipairs(preset.etiquette) do
-		lines[#lines + 1] = rule
+		emit(rule)
 	end
 end
 
@@ -221,10 +236,12 @@ function Formatter:ResolveOptions(preset, overrides)
 	local options = {
 		useColors = settings.useColors,
 		useSeparators = settings.useSeparators,
+		mergeLines = settings.mergeLines,
 		linePrefix = preset.formatting.linePrefix,
 		numberCustomRules = preset.formatting.numberCustomRules,
 		style = preset.announceStyle,
 		maxBytes = REH.MAX_CHAT_BYTES,
+		continuationPrefix = "",
 	}
 
 	if overrides then
@@ -241,9 +258,13 @@ end
 --------------------------------------------------------------------------------
 
 --- The logical lines for a preset: one rule per line, any length.
+---
+--- Returns the lines as display strings (prefix applied), plus an info table
+--- carrying the resolved options and per-line metadata. BuildMessages needs the
+--- metadata; callers that only want to read the rules can ignore it.
 function Formatter:BuildLines(preset, overrides)
 	local options = self:ResolveOptions(preset, overrides)
-	local lines = {}
+	local records = {}
 
 	for _, moduleKey in ipairs(preset.moduleOrder) do
 		local include = preset.moduleEnabled[moduleKey]
@@ -252,40 +273,93 @@ function Formatter:BuildLines(preset, overrides)
 		end
 
 		if include and builders[moduleKey] then
-			local before = #lines
-			builders[moduleKey](preset, lines, options)
+			local before = #records
+
+			builders[moduleKey](preset, function(text, standalone)
+				records[#records + 1] = {
+					text = text,
+					module = moduleKey,
+					standalone = standalone and true or false,
+				}
+			end, options)
 
 			-- Only separate modules that actually produced something, so a
 			-- disabled or empty module never leaves a dangling rule line.
-			if options.useSeparators and #lines > before and before > 0 then
-				table.insert(lines, before + 1, "---")
+			if options.useSeparators and #records > before and before > 0 then
+				table.insert(records, before + 1, {
+					text = SEPARATOR,
+					module = "separator",
+					standalone = true,
+				})
 			end
 		end
 	end
 
-	-- The prefix is applied last so it lands on the separator lines too, and so
-	-- module builders never have to think about it.
-	if options.linePrefix ~= "" then
-		for index, line in ipairs(lines) do
-			lines[index] = options.linePrefix .. " " .. line
-		end
+	local prefix = options.linePrefix ~= "" and (options.linePrefix .. " ") or ""
+	local lines = {}
+	for index, record in ipairs(records) do
+		lines[index] = prefix .. record.text
 	end
 
-	return lines, options
+	return lines, { records = records, options = options, prefix = prefix }
 end
 
---- Chat-ready messages: logical lines packed to the byte limit.
---- Returns the messages, plus the logical lines they came from.
+--- Chat-ready messages: logical lines merged where they fit, then split where
+--- they do not. Returns the messages, the logical lines, and the options used.
 function Formatter:BuildMessages(preset, overrides)
-	local lines, options = self:BuildLines(preset, overrides)
+	local lines, info = self:BuildLines(preset, overrides)
+	local records, options, prefix = info.records, info.options, info.prefix
+
+	-- The prefix is charged against every message's budget, and is applied
+	-- after merging so two merged rules do not each carry a copy of it.
+	local budget = options.maxBytes - #prefix
 	local messages = {}
 
-	for _, line in ipairs(lines) do
-		local pieces = REH.SplitMessage(line, options.maxBytes, options.continuationPrefix or "")
-		for _, piece in ipairs(pieces) do
-			messages[#messages + 1] = piece
+	local pending, pendingModule = nil, nil
+
+	local function flush()
+		if pending then
+			messages[#messages + 1] = prefix .. pending
+			pending, pendingModule = nil, nil
 		end
 	end
+
+	local function emitLong(text)
+		for _, piece in ipairs(REH.SplitMessage(text, budget, options.continuationPrefix)) do
+			messages[#messages + 1] = prefix .. piece
+		end
+	end
+
+	for _, record in ipairs(records) do
+		local text = record.text
+
+		if not options.mergeLines or record.standalone then
+			flush()
+			if #text > budget then
+				emitLong(text)
+			else
+				messages[#messages + 1] = prefix .. text
+			end
+
+		elseif #text > budget then
+			-- Too long to merge with anything; it becomes its own run of
+			-- messages rather than dragging a neighbour into a split.
+			flush()
+			emitLong(text)
+
+		elseif pending and pendingModule == record.module
+			and #pending + 1 + #text <= budget then
+			-- Merging stays within a module so each labelled topic still starts
+			-- a fresh message, which is what makes the announcement scannable.
+			pending = pending .. " " .. text
+
+		else
+			flush()
+			pending, pendingModule = text, record.module
+		end
+	end
+
+	flush()
 
 	return messages, lines, options
 end

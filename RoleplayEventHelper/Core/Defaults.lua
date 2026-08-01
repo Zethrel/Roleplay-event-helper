@@ -95,7 +95,18 @@ REH.DEFAULT_SETTINGS = {
 	framePoint = { point = "CENTER", relativePoint = "CENTER", x = 0, y = 0 },
 	sendDelay = 0.7,
 	useColors = true,
-	useSeparators = true,
+
+	-- Off by default. Each separator costs a whole chat message and a send
+	-- delay, and the module labels ("Rolls:", "Health:") already give the
+	-- announcement its structure. Hosts who want the visual break can switch
+	-- it on and pay the extra seconds.
+	useSeparators = false,
+
+	-- Pack adjacent rules from the same module into one message where they
+	-- fit. Holding a busy channel for twenty messages is worse than one dense
+	-- message per topic.
+	mergeLines = true,
+
 	debug = false,
 }
 

@@ -470,6 +470,92 @@ end
 H.check("every message is colour-balanced on its own", allBalanced)
 
 --------------------------------------------------------------------------------
+H.section("Merge-packing")
+--------------------------------------------------------------------------------
+
+-- Holding a busy channel for twenty messages is worse than one dense message
+-- per topic, so adjacent rules from the same module are packed together.
+
+local packable = REH.CreateDefaultPreset("Packable")
+packable.header.description = "Free-for-all, last one standing wins the pot."
+packable.custom = { "No mounts inside the ring.", "No consumables between rounds." }
+packable.etiquette = { "OOC in double parentheses.", "Disputes are settled by the host." }
+DB:ValidatePreset(packable)
+
+local unmerged = Formatter:BuildMessages(packable,
+	{ useColors = false, useSeparators = false, mergeLines = false })
+local merged = Formatter:BuildMessages(packable,
+	{ useColors = false, useSeparators = false, mergeLines = true })
+
+H.check("merging reduces the message count", #merged < #unmerged,
+	("%d merged vs %d unmerged"):format(#merged, #unmerged))
+H.check("every merged message still fits", allWithin(merged, REH.MAX_CHAT_BYTES))
+H.checkEqual("no visible text is lost by merging",
+	visibleText(table.concat(merged, " ")), visibleText(table.concat(unmerged, " ")))
+
+local mergedText = table.concat(merged, "\n")
+H.check("the roll bands and criticals share a message",
+	mergedText:find("10%-100 = SUCCESS%. A natural 100") ~= nil, mergedText)
+H.check("the health table and its note share a message",
+	mergedText:find("Plate 13%. Shield equipped %+1%.") ~= nil, mergedText)
+H.check("both custom rules share a message",
+	mergedText:find("1%. No mounts inside the ring%. 2%. No consumables") ~= nil, mergedText)
+
+-- Merging across modules would run "Health: ..." into the end of the damage
+-- rules, and the announcement stops being scannable.
+local labelStartsMessage = true
+for _, message in ipairs(merged) do
+	local _, occurrences = message:gsub("Health:", "")
+	if occurrences > 0 and message:sub(1, 7) ~= "Health:" then
+		labelStartsMessage = false
+	end
+end
+H.check("a module label always starts its own message", labelStartsMessage)
+
+H.checkEqual("the title is never merged into another rule", merged[1],
+	"=== " .. packable.header.eventName .. " - hosted by " .. H.playerName .. " ===")
+
+-- The prefix is charged to each message once, not once per merged rule.
+local prefixedMerged = Formatter:BuildMessages(packable, {
+	useColors = false, useSeparators = false, mergeLines = true, linePrefix = "[Event]",
+})
+local singlePrefix = true
+for _, message in ipairs(prefixedMerged) do
+	local _, occurrences = message:gsub("%[Event%]", "")
+	if occurrences ~= 1 then
+		singlePrefix = false
+	end
+end
+H.check("a merged message carries the prefix exactly once", singlePrefix)
+H.check("prefixed messages still fit", allWithin(prefixedMerged, REH.MAX_CHAT_BYTES))
+
+-- A rule too long to merge must not drag a neighbour into its split.
+local longRule = REH.CreateDefaultPreset("LongRule")
+longRule.custom = {
+	("Combatants must describe their action in full before rolling. "):rep(6),
+	"Short rule.",
+}
+DB:ValidatePreset(longRule)
+local longMessages = Formatter:BuildMessages(longRule,
+	{ useColors = false, useSeparators = false, mergeLines = true })
+H.check("every message fits when one rule is over-long",
+	allWithin(longMessages, REH.MAX_CHAT_BYTES))
+H.check("the short rule survives intact",
+	table.concat(longMessages, "\n"):find("2. Short rule.", 1, true) ~= nil)
+
+local separated2 = Formatter:BuildMessages(packable,
+	{ useColors = false, useSeparators = true, mergeLines = true })
+local separatorStandalone = true
+for _, message in ipairs(separated2) do
+	if message:find("---", 1, true) and message ~= "---" then
+		separatorStandalone = false
+	end
+end
+H.check("separators are never merged into a rule", separatorStandalone)
+H.check("separators cost messages, so they are off by default",
+	REH.DEFAULT_SETTINGS.useSeparators == false)
+
+--------------------------------------------------------------------------------
 H.section("/reh preview")
 --------------------------------------------------------------------------------
 
