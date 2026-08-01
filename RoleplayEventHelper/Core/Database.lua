@@ -95,7 +95,6 @@ function Database:ValidateSettings(settings)
 	-- The send delay paces the announcement queue. Too low and the client
 	-- drops messages; too high and the host holds the channel for a minute.
 	settings.sendDelay = REH.ClampNumber(settings.sendDelay, 0.3, 5.0, 0.7)
-	settings.useColors = REH.ToBoolean(settings.useColors, true)
 	settings.useSeparators = REH.ToBoolean(settings.useSeparators, false)
 	settings.mergeLines = REH.ToBoolean(settings.mergeLines, true)
 	settings.debug = REH.ToBoolean(settings.debug, false)

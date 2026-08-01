@@ -169,6 +169,11 @@ function Announcer:SendNext()
 	-- SendChatMessage can raise rather than return a failure -- a channel left
 	-- mid-announcement, a restriction on the client. Catch it so the addon
 	-- reports a clear stop instead of throwing a Lua error at the host.
+	-- Belt and braces: the formatter already strips these, but a message that
+	-- reaches the client with a colour escape in it is dropped silently, which
+	-- is the hardest kind of failure for a host to diagnose mid-event.
+	message = REH.StripChatEscapes(message)
+
 	local ok, err = pcall(SendChatMessage, message, queue.chatType, nil, queue.target)
 	if not ok then
 		Abort(queue.index, #queue.messages, err)

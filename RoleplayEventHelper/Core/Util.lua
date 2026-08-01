@@ -183,6 +183,30 @@ end
 -- other way costs a silently truncated rule.
 REH.MAX_CHAT_BYTES = 255
 
+--- Remove escapes that stop a chat message from being delivered.
+---
+--- The client silently drops an outgoing chat message containing colour codes
+--- or inline textures: SendChatMessage returns normally, nothing errors, and
+--- the message simply never appears. Item hyperlinks and escaped pipes are
+--- legitimate in player chat and are left alone.
+---
+--- This runs on everything bound for chat, not only on text the addon colours
+--- itself, because a host who pastes a colour code into a custom rule would
+--- otherwise watch that one rule vanish with no explanation.
+function REH.StripChatEscapes(text)
+	text = tostring(text or "")
+
+	text = text:gsub("|[cC]%x%x%x%x%x%x%x%x", "")
+	text = text:gsub("|[rR]", "")
+	text = text:gsub("|[Tt].-|[Tt]", "")
+	text = text:gsub("|[Aa].-|[Aa]", "")
+
+	-- Collapse any whitespace the removals left doubled up.
+	text = text:gsub("%s%s+", " ")
+
+	return REH.Trim(text)
+end
+
 --- Break a string into tokens the splitter may reorder or break between.
 ---
 --- The interesting cases are WoW's inline escapes. A colour run is

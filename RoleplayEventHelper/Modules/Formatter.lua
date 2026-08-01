@@ -234,7 +234,12 @@ function Formatter:ResolveOptions(preset, overrides)
 	local settings = REH.Database:GetSettings()
 
 	local options = {
-		useColors = settings.useColors,
+		-- Rule text going to chat is never coloured. The client drops an
+		-- outgoing message containing colour escapes without reporting a
+		-- failure, so a coloured announcement arrives as silence. Local output
+		-- -- the preview pane's numbering, /reh show -- is coloured separately
+		-- and is unaffected.
+		useColors = false,
 		useSeparators = settings.useSeparators,
 		mergeLines = settings.mergeLines,
 		linePrefix = preset.formatting.linePrefix,
@@ -308,7 +313,8 @@ end
 --- they do not. Returns the messages, the logical lines, and the options used.
 function Formatter:BuildMessages(preset, overrides)
 	local lines, info = self:BuildLines(preset, overrides)
-	local records, options, prefix = info.records, info.options, info.prefix
+	local records, options = info.records, info.options
+	local prefix = options.linePrefix
 
 	-- The prefix is charged against every message's budget, and is applied
 	-- after merging so two merged rules do not each carry a copy of it.
@@ -331,7 +337,9 @@ function Formatter:BuildMessages(preset, overrides)
 	end
 
 	for _, record in ipairs(records) do
-		local text = record.text
+		-- Stripped before splitting rather than after, so the byte budget is
+		-- measured against what is actually sent.
+		local text = REH.StripChatEscapes(record.text)
 
 		if not options.mergeLines or record.standalone then
 			flush()

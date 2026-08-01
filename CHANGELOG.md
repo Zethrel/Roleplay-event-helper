@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.0.1 - 2026-08-01
+
+Fixes announcements arriving as a single message.
+
+- The client silently drops an outgoing chat message that contains colour
+  escapes. `SendChatMessage` returns normally and nothing errors, so the
+  addon counted every dropped message as sent: a six-message announcement
+  delivered only the one line that happened to have no colour in it, while
+  reporting all six as sent.
+- Rule text bound for chat is no longer coloured, and escapes are stripped
+  from every message before it is sent -- including colour codes a host
+  pastes into a rule themselves, which would otherwise make that one rule
+  vanish with no explanation.
+- The preview pane therefore shows exactly what is sent, which was always
+  the intent.
+- The "Colour the announcement" option is removed, since it could only ever
+  break delivery. Local output -- `/reh show`, the preview numbering, roll
+  verdicts in your own chat frame -- is still coloured.
+
 ## 1.0.0 - 2026-08-01
 
 First release. Everything described in

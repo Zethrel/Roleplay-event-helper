@@ -98,10 +98,10 @@ H.check("the target resolves to the settings table",
 
 local settings = DB:GetSettings()
 
-local colorField = Fields:FindField("settings", "useColors")
-Fields:Set(settings, colorField, false, "settings")
-H.checkEqual("a settings toggle writes through", settings.useColors, false)
-Fields:Set(settings, colorField, true, "settings")
+local mergeField = Fields:FindField("settings", "mergeLines")
+Fields:Set(settings, mergeField, false, "settings")
+H.checkEqual("a settings toggle writes through", settings.mergeLines, false)
+Fields:Set(settings, mergeField, true, "settings")
 
 local delayField = Fields:FindField("settings", "sendDelay")
 Fields:Set(settings, delayField, "1.5", "settings")
@@ -127,15 +127,14 @@ Fields:Set(settings, hideField, false, "settings")
 -- Editing a setting must not corrupt the preset, and vice versa.
 local preset = DB:GetActivePreset()
 local presetBefore = preset.rolls.dieMax
-Fields:Set(settings, colorField, false, "settings")
+Fields:Set(settings, mergeField, false, "settings")
 H.checkEqual("editing settings leaves the preset alone", preset.rolls.dieMax, presetBefore)
-Fields:Set(settings, colorField, true, "settings")
+Fields:Set(settings, mergeField, true, "settings")
 
 --------------------------------------------------------------------------------
 H.section("Options reach the announcement")
 --------------------------------------------------------------------------------
 
-settings.useColors = false
 settings.mergeLines = false
 settings.useSeparators = false
 local unmerged = REH.Formatter:BuildMessages(preset)
@@ -145,14 +144,25 @@ local merged = REH.Formatter:BuildMessages(preset)
 H.check("turning packing on reduces the message count", #merged < #unmerged,
 	("%d vs %d"):format(#merged, #unmerged))
 
-settings.useColors = true
-local colored = table.concat(REH.Formatter:BuildMessages(preset), "\n")
-H.check("turning colours on colours the output", colored:find("|c", 1, true) ~= nil)
+-- The client silently drops an outgoing chat message containing colour
+-- escapes, so an announcement that carried one would simply never arrive and
+-- the addon would report it as sent. Nothing bound for chat may contain one.
+preset.header.description = "A |cffff0000red|r description a host pasted in."
+preset.custom = { "Rule with |cff00ff00colour|r in it.", "Plain rule." }
+DB:ValidatePreset(preset)
 
-settings.useColors = false
-local plain = table.concat(REH.Formatter:BuildMessages(preset), "\n")
-H.check("and turning them off removes them", plain:find("|c", 1, true) == nil)
-settings.useColors = true
+local outgoing = table.concat(REH.Formatter:BuildMessages(preset), "\n")
+H.check("no announcement message carries a colour escape",
+	outgoing:find("|c", 1, true) == nil, outgoing)
+H.check("nor a colour terminator", outgoing:find("|r", 1, true) == nil, outgoing)
+H.check("but the words the host typed survive",
+	outgoing:find("red description", 1, true) ~= nil, outgoing)
+H.check("and so does the rule text",
+	outgoing:find("Rule with colour in it.", 1, true) ~= nil, outgoing)
+
+preset.header.description = ""
+preset.custom = {}
+DB:ValidatePreset(preset)
 
 --------------------------------------------------------------------------------
 H.section("Grouped help")

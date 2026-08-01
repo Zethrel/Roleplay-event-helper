@@ -108,7 +108,6 @@ REH.DEFAULT_SETTINGS = {
 	minimapButton = { hide = false, minimapPos = 220 },
 	framePoint = { point = "CENTER", relativePoint = "CENTER", x = 0, y = 0 },
 	sendDelay = 0.7,
-	useColors = true,
 
 	-- Off by default. Each separator costs a whole chat message and a send
 	-- delay, and the module labels ("Rolls:", "Health:") already give the

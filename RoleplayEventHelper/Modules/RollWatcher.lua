@@ -352,7 +352,8 @@ local function PumpVerdictQueue()
 	end
 
 	verdictSending = true
-	pcall(SendChatMessage, message.text, message.chatType, nil, message.target)
+	pcall(SendChatMessage, REH.StripChatEscapes(message.text),
+		message.chatType, nil, message.target)
 
 	C_Timer.After(VERDICT_SEND_DELAY, PumpVerdictQueue)
 end

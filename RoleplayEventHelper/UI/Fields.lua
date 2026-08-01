@@ -366,12 +366,6 @@ Fields.TABS[#Fields.TABS + 1] = {
 	scope = "settings",
 	fields = {
 		{
-			key = "useColors", label = "Colour the announcement", type = "toggle",
-			tooltip = "Colour codes count toward the 255-byte chat limit, so turning this off fits slightly more text per message.",
-			get = function(s) return s.useColors end,
-			set = function(s, v) s.useColors = v end,
-		},
-		{
 			key = "mergeLines", label = "Pack rules into fewer messages", type = "toggle",
 			tooltip = "Combines adjacent rules from the same section into one message. Off sends one message per rule, which takes longer.",
 			get = function(s) return s.mergeLines end,

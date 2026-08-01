@@ -434,15 +434,29 @@ H.check("a colour escape in the prefix is stripped",
 H.section("Colours")
 --------------------------------------------------------------------------------
 
+-- Rule text bound for chat is never coloured: the client drops an outgoing
+-- message containing colour escapes without reporting a failure, so a coloured
+-- announcement arrives as silence while the addon reports it as sent.
 local plainText = table.concat(
-	Formatter:BuildLines(preset, { useColors = false, useSeparators = false }), "\n")
-H.check("colours are absent when disabled", plainText:find("|c", 1, true) == nil)
+	Formatter:BuildLines(preset, { useSeparators = false }), "\n")
+H.check("rule lines carry no colour", plainText:find("|c", 1, true) == nil, plainText)
 
-local colorText = table.concat(
-	Formatter:BuildLines(preset, { useColors = true, useSeparators = false }), "\n")
-H.check("colours are present when enabled", colorText:find("|c", 1, true) ~= nil)
-H.checkEqual("and every colour is closed",
-	countOccurrences(colorText, "|c"), countOccurrences(colorText, "|r"))
+local sent = table.concat(Formatter:BuildMessages(preset), "\n")
+H.check("and neither do the messages sent", sent:find("|c", 1, true) == nil, sent)
+H.check("nor a colour terminator", sent:find("|r", 1, true) == nil, sent)
+
+-- The splitter still has to understand colour, because a host can paste one
+-- into a rule -- and when they do it is stripped rather than swallowing the
+-- whole message.
+local pastedColour = REH.CreateDefaultPreset("Pasted")
+pastedColour.custom = { "Wear |cffff0000red|r if you are a combatant." }
+DB:ValidatePreset(pastedColour)
+local pastedMessages = table.concat(Formatter:BuildMessages(pastedColour), "\n")
+H.check("a pasted colour code is stripped from what is sent",
+	pastedMessages:find("|c", 1, true) == nil, pastedMessages)
+H.check("leaving the host's words intact",
+	pastedMessages:find("Wear red if you are a combatant.", 1, true) ~= nil,
+	pastedMessages)
 
 --------------------------------------------------------------------------------
 H.section("Messages fit the chat limit")
