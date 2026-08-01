@@ -1,0 +1,30 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Lua 5.1 specifically: it is the version the WoW client runs, so the
+      # tests exercise the same language the addon will.
+      - name: Install Lua 5.1
+        run: sudo apt-get update && sudo apt-get install -y lua5.1
+
+      - name: Check every file compiles
+        run: |
+          sudo apt-get install -y luajit || true
+          find RoleplayEventHelper Tests -name '*.lua' -print0 \
+            | xargs -0 luac5.1 -p || \
+          find RoleplayEventHelper Tests -name '*.lua' -exec lua5.1 -e \
+            'local f=...; assert(loadfile(f))' {} \;
+
+      - name: Run the test suites
+        run: ./Tests/run.sh

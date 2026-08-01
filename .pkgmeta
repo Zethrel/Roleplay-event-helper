@@ -12,5 +12,6 @@ manual-changelog:
 ignore:
     - Tests
     - docs
+    - .github
     - .pkgmeta
     - .gitignore

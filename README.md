@@ -108,6 +108,26 @@ cancels it, so a stale prompt can never be answered by a later `confirm`.
 If the client updates to a patch newer than the addon's TOC, the addon says so at
 login and tells you the exact `## Interface:` number to change it to.
 
+## Releasing
+
+Tagging is the release. Pushing a `v*` tag runs the test suites and then builds
+and uploads the addon zip from [`.pkgmeta`](.pkgmeta):
+
+```sh
+git tag -a v1.6.0 -m "Roleplay Event Helper v1.6.0"
+git push origin v1.6.0
+```
+
+Two things are needed once, before the first automated upload:
+
+1. **`CF_API_KEY`** as a repository secret (*Settings → Secrets and variables →
+   Actions*), taken from your CurseForge account's API Tokens page.
+2. **`## X-Curse-Project-ID`** uncommented in the TOC and set to the numeric id
+   shown on the CurseForge project page.
+
+Without those the workflow still packages the zip and attaches it to a GitHub
+release; it just does not upload to CurseForge.
+
 ## Running the tests
 
 The addon is tested outside the game against a stub of the WoW API, so bootstrap

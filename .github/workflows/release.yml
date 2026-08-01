@@ -1,0 +1,37 @@
+name: Package and release
+
+# Tagging is the release. Pushing a v-tag builds the addon zip from .pkgmeta
+# and uploads it, so the packaged file always matches a commit in the history
+# rather than whatever happened to be on someone's disk.
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The packager reads the tag and the commit history for the version
+          # and changelog, so it needs the full clone rather than a shallow one.
+          fetch-depth: 0
+
+      - name: Install Lua 5.1
+        run: sudo apt-get update && sudo apt-get install -y lua5.1
+
+      # A release that fails its own tests should not reach anybody.
+      - name: Run the test suites
+        run: ./Tests/run.sh
+
+      - name: Package and upload
+        uses: BigWigsMods/packager@master
+        env:
+          # Provided automatically by Actions; used to attach the zip to a
+          # GitHub release.
+          GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+          # Add this yourself: Settings > Secrets and variables > Actions.
+          # Get the token from your CurseForge account under API Tokens.
+          CF_API_KEY: ${{ secrets.CF_API_KEY }}
