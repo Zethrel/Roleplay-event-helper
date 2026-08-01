@@ -202,6 +202,232 @@ Register("channel", "[type] [name]", "choose where announcements are sent", func
 	end
 end)
 
+--------------------------------------------------------------------------------
+-- Roll watcher
+--------------------------------------------------------------------------------
+
+local WATCH_MODE_TEXT = {
+	off = "off",
+	["local"] = "on, showing verdicts here only",
+	announce = "on, announcing verdicts to your channel",
+}
+
+Register("watch", "[on|off|announce]", "arm or disarm the roll watcher", function(argument)
+	local watcher = REH.RollWatcher
+	local word = argument:lower()
+
+	if word == "" or word == "status" then
+		REH:Print(L["Roll watcher is %s."]:format(WATCH_MODE_TEXT[watcher:GetMode()]))
+		if watcher:IsWatching() then
+			local _, count = watcher:GetRoster()
+			local preset = REH.Database:GetActivePreset()
+			REH:Print(L["Tracking %s (%d in your group)."]:format(
+				REH.DISPLAY.rollFilter[preset.rollFilter.mode] or preset.rollFilter.mode, count))
+		end
+		return
+	end
+
+	local mode
+	if word == "on" or word == "local" then
+		mode = "local"
+	elseif word == "off" or word == "stop" then
+		mode = "off"
+	elseif word == "announce" then
+		mode = "announce"
+	end
+
+	local ok, reason = watcher:SetMode(mode or word)
+	if not ok then
+		REH:PrintError(reason)
+		return
+	end
+
+	REH:Print(L["Roll watcher is %s."]:format(WATCH_MODE_TEXT[watcher:GetMode()]))
+
+	if mode == "announce" then
+		local preset = REH.Database:GetActivePreset()
+		if preset.channel.type == "PREVIEW" then
+			REH:PrintWarning(L["This preset announces to preview only, so verdicts will show here rather than in chat."])
+		end
+	end
+end)
+
+Register("log", "[clear]", "show the roll log for this session", function(argument)
+	local watcher = REH.RollWatcher
+	local entries, tallies = watcher:GetLog()
+
+	if argument:lower() == "clear" then
+		watcher:ClearLog()
+		REH:Print(L["Roll log cleared."])
+		return
+	end
+
+	if #entries == 0 then
+		REH:Print(L["No rolls recorded yet."])
+		return
+	end
+
+	REH:Print(L["Roll log (%d):"]:format(#entries))
+
+	local first = math.max(1, #entries - 19)
+	for index = first, #entries do
+		local entry = entries[index]
+		local preset = REH.Database:GetActivePreset()
+		REH:Print("  %s %s", entry.time,
+			watcher:FormatVerdict(preset, entry.name, entry.roll, entry.verdict, true))
+	end
+
+	REH:Print(L["Totals:"])
+	for _, name in ipairs(REH.SortedKeys(tallies)) do
+		local tally = tallies[name]
+		REH:Print("  %s: %d rolls, %d success, %d failure, %d critical",
+			watcher:DisplayName(name), tally.total, tally.successes,
+			tally.failures, tally.criticals)
+	end
+end)
+
+Register("mute", "<name>", "stop adjudicating one name this session", function(argument)
+	if argument == "" then
+		REH:PrintError(L["Usage: %s"]:format("/reh mute <name>"))
+		return
+	end
+
+	local ok, full = REH.RollWatcher:Mute(argument)
+	if ok then
+		REH:Print(L["Muted %s for this session."]:format(REH.RollWatcher:DisplayName(full)))
+	end
+end)
+
+Register("unmute", "<name>", "adjudicate a muted name again", function(argument)
+	if argument == "" then
+		REH:PrintError(L["Usage: %s"]:format("/reh unmute <name>"))
+		return
+	end
+
+	local ok, full = REH.RollWatcher:Unmute(argument)
+	if ok then
+		REH:Print(L["Unmuted %s."]:format(REH.RollWatcher:DisplayName(full)))
+	end
+end)
+
+Register("filter", "[group|subgroup|roster|everyone]", "choose whose rolls are tracked",
+	function(argument)
+		local preset = REH.Database:GetActivePreset()
+		local word = argument:lower()
+
+		if word == "" then
+			REH:Print(L["Tracking %s."]:format(
+				REH.DISPLAY.rollFilter[preset.rollFilter.mode] or preset.rollFilter.mode))
+			return
+		end
+
+		if not REH.IsValidEnum(REH.ROLL_FILTER_MODES, word) then
+			REH:PrintError(L["Filter must be group, subgroup, roster or everyone."])
+			return
+		end
+
+		preset.rollFilter.mode = word
+		REH:Print(L["Tracking %s."]:format(REH.DISPLAY.rollFilter[word] or word))
+
+		if word == "subgroup" and #preset.rollFilter.subgroups == 0 then
+			REH:PrintWarning(L["No subgroups chosen yet, so the whole raid counts. Set them with /reh subgroups 1 2."])
+		end
+	end)
+
+Register("subgroups", "<numbers>", "raid subgroups counted as combatants", function(argument)
+	local preset = REH.Database:GetActivePreset()
+
+	if argument == "" then
+		if #preset.rollFilter.subgroups == 0 then
+			REH:Print(L["No subgroups chosen; the whole raid counts."])
+		else
+			REH:Print(L["Combatant subgroups: %s"]:format(
+				table.concat(preset.rollFilter.subgroups, ", ")))
+		end
+		return
+	end
+
+	local chosen = {}
+	for number in argument:gmatch("%d+") do
+		chosen[#chosen + 1] = tonumber(number)
+	end
+
+	preset.rollFilter.subgroups = chosen
+	REH.Database:ValidatePreset(preset)
+
+	if #preset.rollFilter.subgroups == 0 then
+		REH:PrintWarning(L["No valid subgroups in that. Subgroups are 1 to 8."])
+		return
+	end
+
+	preset.rollFilter.mode = "subgroup"
+	REH:Print(L["Combatant subgroups: %s"]:format(
+		table.concat(preset.rollFilter.subgroups, ", ")))
+end)
+
+Register("roster", "[import|add <name>|remove <name>|clear]", "edit the saved roster",
+	function(argument)
+		local preset = REH.Database:GetActivePreset()
+		local word, rest = argument:match("^(%S*)%s*(.-)$")
+		word = word:lower()
+
+		if word == "" or word == "list" then
+			if #preset.rollFilter.roster == 0 then
+				REH:Print(L["The saved roster is empty."])
+			else
+				REH:Print(L["Saved roster (%d):"]:format(#preset.rollFilter.roster))
+				for _, name in ipairs(preset.rollFilter.roster) do
+					REH:Print("  %s", name)
+				end
+			end
+			return
+
+		elseif word == "import" then
+			-- A raid caps at 40. An event that outgrows one needs a roster that
+			-- survives group changes, and this is how it gets seeded.
+			REH.RollWatcher:RebuildRoster()
+			local group = REH.RollWatcher:GetRoster()
+
+			local names = {}
+			for full in pairs(group) do
+				names[#names + 1] = full
+			end
+			table.sort(names)
+
+			preset.rollFilter.roster = names
+			preset.rollFilter.mode = "roster"
+			REH.Database:ValidatePreset(preset)
+
+			REH:Print(L["Imported %d names from your group into the roster."]:format(#names))
+			return
+
+		elseif word == "add" and rest ~= "" then
+			table.insert(preset.rollFilter.roster, REH.RollWatcher:NormalizeName(rest))
+			REH.Database:ValidatePreset(preset)
+			REH:Print(L["Added %s to the roster."]:format(rest))
+			return
+
+		elseif word == "remove" and rest ~= "" then
+			local target = REH.RollWatcher:NormalizeName(rest)
+			for index, name in ipairs(preset.rollFilter.roster) do
+				if REH.RollWatcher:NormalizeName(name) == target then
+					table.remove(preset.rollFilter.roster, index)
+					REH:Print(L["Removed %s from the roster."]:format(rest))
+					return
+				end
+			end
+			REH:PrintWarning(L["%s is not on the roster."]:format(rest))
+			return
+
+		elseif word == "clear" then
+			preset.rollFilter.roster = {}
+			REH:Print(L["Roster cleared."])
+			return
+		end
+
+		REH:PrintError(L["Usage: %s"]:format("/reh roster [import|add <name>|remove <name>|clear]"))
+	end)
+
 Register("use", "<name>", "switch the active preset", function(argument)
 	if argument == "" then
 		REH:PrintError(L["Usage: %s"]:format("/reh use <name>"))

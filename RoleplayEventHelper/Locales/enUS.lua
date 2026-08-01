@@ -71,5 +71,34 @@ L["No whisper target set. Use /reh channel whisper <name>."] = "No whisper targe
 L["Which channel? Use /reh channel channel <name>."] = "Which channel? Use /reh channel channel <name>."
 L["Whisper whom? Use /reh channel whisper <name>."] = "Whisper whom? Use /reh channel whisper <name>."
 
+-- Roll watcher
+L["Roll watcher is %s."] = "Roll watcher is %s."
+L["Watcher mode must be off, local or announce."] = "Watcher mode must be off, local or announce."
+L["Tracking %s."] = "Tracking %s."
+L["Tracking %s (%d in your group)."] = "Tracking %s (%d in your group)."
+L["Filter must be group, subgroup, roster or everyone."] = "Filter must be group, subgroup, roster or everyone."
+L["%d rolls ignored from outside your group. Use /reh filter everyone to include them."] = "%d rolls ignored from outside your group. Use /reh filter everyone to include them."
+L["Too many rolls to announce (%d a minute). Verdicts are showing here only."] = "Too many rolls to announce (%d a minute). Verdicts are showing here only."
+L["This preset announces to preview only, so verdicts will show here rather than in chat."] = "This preset announces to preview only, so verdicts will show here rather than in chat."
+L["No subgroups chosen yet, so the whole raid counts. Set them with /reh subgroups 1 2."] = "No subgroups chosen yet, so the whole raid counts. Set them with /reh subgroups 1 2."
+L["No subgroups chosen; the whole raid counts."] = "No subgroups chosen; the whole raid counts."
+L["Combatant subgroups: %s"] = "Combatant subgroups: %s"
+L["No valid subgroups in that. Subgroups are 1 to 8."] = "No valid subgroups in that. Subgroups are 1 to 8."
+L["Muted %s for this session."] = "Muted %s for this session."
+L["Unmuted %s."] = "Unmuted %s."
+
+-- Roster and log
+L["The saved roster is empty."] = "The saved roster is empty."
+L["Saved roster (%d):"] = "Saved roster (%d):"
+L["Imported %d names from your group into the roster."] = "Imported %d names from your group into the roster."
+L["Added %s to the roster."] = "Added %s to the roster."
+L["Removed %s from the roster."] = "Removed %s from the roster."
+L["%s is not on the roster."] = "%s is not on the roster."
+L["Roster cleared."] = "Roster cleared."
+L["Roll log (%d):"] = "Roll log (%d):"
+L["Roll log cleared."] = "Roll log cleared."
+L["No rolls recorded yet."] = "No rolls recorded yet."
+L["Totals:"] = "Totals:"
+
 -- Saved data
 L["Your saved data is from a newer version (format %d, this build reads %d). It has been left untouched. Update the addon to use it."] = "Your saved data is from a newer version (format %d, this build reads %d). It has been left untouched. Update the addon to use it."

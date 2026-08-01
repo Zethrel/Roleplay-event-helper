@@ -182,9 +182,31 @@ local function Build()
 	cancelButton:SetPoint("RIGHT", announceButton, "LEFT", -6, 0)
 	frame.cancelButton = cancelButton
 
+	local WATCH_OPTIONS = {
+		{ value = "off", label = "Watcher: off" },
+		{ value = "local", label = "Watcher: verdicts to me" },
+		{ value = "announce", label = "Watcher: verdicts to channel" },
+	}
+
+	local watchButton = UI.CreateCycleButton(frame, WATCH_OPTIONS, 210, function(value)
+		REH.RollWatcher:SetMode(value)
+		MainFrame:RefreshPreview()
+	end)
+	watchButton:SetPoint("LEFT", channelButton, "RIGHT", 6, 0)
+	frame.watchButton = watchButton
+
+	UI.SetTooltip(watchButton, "Roll watcher",
+		"Reads /roll results and calls each one a success or failure against these rules. Always starts off when you log in.")
+
+	local logButton = UI.CreateButton(frame, "Log", 60, 24, function()
+		UI.RollLog:Toggle()
+	end)
+	logButton:SetPoint("LEFT", watchButton, "RIGHT", 6, 0)
+	frame.logButton = logButton
+
 	local statusText = UI.CreateLabel(frame, "", "GameFontDisableSmall")
-	statusText:SetPoint("LEFT", channelButton, "RIGHT", 10, 0)
-	statusText:SetWidth(WIDTH - 520)
+	statusText:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 8, 38)
+	statusText:SetWidth(WIDTH - 200)
 	frame.statusText = statusText
 
 	-- Escape closes the window, the way every other panel behaves.
@@ -262,6 +284,7 @@ function MainFrame:RefreshPreview()
 
 	local channel = preset.channel
 	frame.channelButton:SetText(REH.Announcer:DescribeChannel(channel))
+	frame.watchButton:SetValue(REH.RollWatcher:GetMode())
 
 	local sending = REH.Announcer:IsSending()
 	local available, reason = REH.Announcer:CheckAvailability(channel)

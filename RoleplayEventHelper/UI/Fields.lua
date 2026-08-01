@@ -316,6 +316,48 @@ Fields.TABS = {
 	},
 }
 
+-- The watcher tab edits the preset's filter, not the armed state. Arming lives
+-- on the main window's bottom bar, because it is a per-event action rather than
+-- part of the rules.
+Fields.TABS[#Fields.TABS + 1] = {
+	module = "watcher",
+	title = "Watcher",
+	fields = {
+		{
+			key = "mode", label = "Track rolls from", type = "select",
+			options = function() return OptionsFrom(REH.ROLL_FILTER_MODES, REH.DISPLAY.rollFilter) end,
+			tooltip = "Group: everyone in your party or raid. Subgroups: only the raid subgroups you choose, so combatants can be separated from the audience.",
+			get = function(p) return p.rollFilter.mode end,
+			set = function(p, v) p.rollFilter.mode = v end,
+		},
+		{
+			key = "subgroups", label = "Combatant subgroups", type = "text", maxLength = 40,
+			tooltip = "Raid subgroup numbers, e.g. '1 2'. Put combatants in those groups and the audience elsewhere. Empty means the whole raid.",
+			get = function(p) return table.concat(p.rollFilter.subgroups, " ") end,
+			set = function(p, v)
+				local chosen = {}
+				for number in tostring(v or ""):gmatch("%d+") do
+					chosen[#chosen + 1] = tonumber(number)
+				end
+				p.rollFilter.subgroups = chosen
+			end,
+		},
+		{
+			key = "matchRangeOnly", label = "Only count rolls matching the die size",
+			type = "toggle",
+			tooltip = "Ignores a /roll 20 for loot while your event runs on /roll 100.",
+			get = function(p) return p.rollFilter.matchRangeOnly end,
+			set = function(p, v) p.rollFilter.matchRangeOnly = v end,
+		},
+		{
+			key = "roster", label = "Saved roster", type = "lines", height = 150,
+			tooltip = "One name per line, used when tracking a saved roster. Seed it from your group with /reh roster import.",
+			get = function(p) return SerializeStringLines(p.rollFilter.roster) end,
+			set = function(p, v) p.rollFilter.roster = ParseStringLines(v) end,
+		},
+	},
+}
+
 --- Suggested etiquette lines offered as one-click inserts.
 Fields.ETIQUETTE_SUGGESTIONS = {
 	"Keep emotes to two sentences so the round moves.",

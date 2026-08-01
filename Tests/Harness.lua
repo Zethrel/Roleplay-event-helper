@@ -88,6 +88,8 @@ end
 Harness.output = {}
 Harness.clientInterface = nil  -- defaults to the TOC value
 Harness.playerName = "Testchar"
+Harness.realm = "Argent Dawn"
+Harness.rollResultFormat = "%s rolls %d (%d-%d)"
 Harness.now = 1000
 
 local frames = {}
@@ -104,7 +106,15 @@ Harness.group = {
 	isLeader = false,
 	isAssistant = false,
 	channels = {},
+	members = {},
 }
+
+--- Populate the group with members. Each entry is { name, realm, subgroup }.
+function Harness.setGroup(members, asRaid)
+	Harness.group.members = members or {}
+	Harness.group.inRaid = asRaid and true or false
+	Harness.group.inGroup = (#Harness.group.members > 0)
+end
 
 function Harness.clearOutput()
 	Harness.output = {}
@@ -117,7 +127,7 @@ end
 function Harness.resetGroup()
 	Harness.group = {
 		inGroup = false, inRaid = false, inGuild = false, inInstance = false,
-		isLeader = false, isAssistant = false, channels = {},
+		isLeader = false, isAssistant = false, channels = {}, members = {},
 	}
 end
 
@@ -200,10 +210,37 @@ function Harness.installStubs()
 	-- WoW exposes date() as a global; standalone Lua has it under os.
 	date = os.date
 
+	--- Party tokens exclude the player; raid tokens include everyone. The realm
+	--- is returned separately and only for cross-realm members, as in the game.
 	function UnitName(unit)
 		if unit == "player" then
 			return Harness.playerName
 		end
+
+		local index = unit and unit:match("^raid(%d+)$")
+		if index then
+			local member = Harness.group.members[tonumber(index)]
+			if member then
+				return member.name, (member.realm ~= Harness.realm) and member.realm or nil
+			end
+			return nil
+		end
+
+		index = unit and unit:match("^party(%d+)$")
+		if index then
+			-- party1 is the first member who is not the player.
+			local seen = 0
+			for _, member in ipairs(Harness.group.members) do
+				if member.name ~= Harness.playerName then
+					seen = seen + 1
+					if seen == tonumber(index) then
+						return member.name,
+							(member.realm ~= Harness.realm) and member.realm or nil
+					end
+				end
+			end
+		end
+
 		return nil
 	end
 
@@ -258,6 +295,34 @@ function Harness.installStubs()
 	end
 
 	--- Returns 0 when not joined, matching the live API.
+	-- The client's own roll-result format string. The watcher builds its parser
+	-- from this rather than from English text.
+	RANDOM_ROLL_RESULT = Harness.rollResultFormat
+
+	function GetNormalizedRealmName()
+		return Harness.realm
+	end
+
+	function GetNumGroupMembers()
+		return #Harness.group.members
+	end
+
+	--- Raid roster entries return the realm already appended for cross-realm
+	--- members, matching the live API.
+	function GetRaidRosterInfo(index)
+		local member = Harness.group.members[index]
+		if not member then
+			return nil
+		end
+
+		local name = member.name
+		if member.realm and member.realm ~= Harness.realm then
+			name = name .. "-" .. member.realm
+		end
+
+		return name, "", member.subgroup or 1
+	end
+
 	function GetChannelName(name)
 		local id = Harness.group.channels[name]
 		if not id then
@@ -539,6 +604,7 @@ end
 
 Harness.ALLOWED_GLOBALS = {
 	RoleplayEventHelper = true,
+	RoleplayEventHelperLogFrame = true,
 	RoleplayEventHelperDB = true,
 	RoleplayEventHelperFrame = true,
 	SLASH_ROLEPLAYEVENTHELPER1 = true,

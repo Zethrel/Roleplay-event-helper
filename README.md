@@ -25,8 +25,8 @@ watcher adjudicates the plain `/roll` everyone already uses.
 | M2 — Formatter and preview | ✅ done |
 | M3 — Announcer (first milestone where it talks) | ✅ done |
 | M4 — Main UI | ✅ done |
-| M5 — Roll watcher | next |
-| M6 — Export / import strings | |
+| M5 — Roll watcher | ✅ done |
+| M6 — Export / import strings | next |
 | M7 — Polish and first release | |
 
 The full feature design lives in [`docs/PHASE1-PLAN.md`](docs/PHASE1-PLAN.md).
@@ -65,6 +65,12 @@ then restart the client or `/reload`.
 | `/reh delete <name>` | Delete a preset (asks to confirm) |
 | `/reh reset` | Reset the active preset to defaults (asks to confirm) |
 | `/reh confirm` | Confirm the pending action |
+| `/reh watch [on\|off\|announce]` | Arm or disarm the roll watcher |
+| `/reh log [clear]` | Show this session's rolls and per-name totals |
+| `/reh filter [mode]` | Whose rolls are tracked |
+| `/reh subgroups <numbers>` | Raid subgroups counted as combatants |
+| `/reh roster [import\|add\|remove\|clear]` | Edit the saved roster |
+| `/reh mute <name>` / `/reh unmute <name>` | Ignore one name this session |
 | `/reh version` | Addon version, client build, and interface numbers |
 
 `/rpevent` works as an alias for `/reh`. Preset names may contain spaces.
@@ -121,6 +127,36 @@ Health rows and rule lists are edited as plain text, one entry per line
 The Announce button disables itself when the target is unavailable and the
 status line says which condition failed, so a greyed-out button never leaves you
 guessing.
+
+## The roll watcher
+
+`/reh watch on` starts adjudicating `/roll` results against the active preset —
+`Bob rolled 74 -> SUCCESS`. `/reh watch announce` also posts each verdict to
+your channel, capped at 20 a minute so a busy free-for-all cannot flood it.
+
+**The watcher always starts off.** It is never running because it was running
+last week, and arming is not saved across a reload or a logout.
+
+Whose rolls count is set per preset:
+
+| Filter | Tracks |
+|--------|--------|
+| `group` | Everyone in your party or raid (default) |
+| `subgroup` | Only the raid subgroups you choose |
+| `roster` | A saved name list, independent of the group |
+| `everyone` | Every roll heard |
+
+`subgroup` is the one for large events: put combatants in raid subgroups 1–2 and
+the audience in 3–8, and spectators rolling for fun are ignored. An empty
+selection means the whole raid, never nobody.
+
+A raid caps at 40. If your event outgrows that, `/reh roster import` snapshots
+the current group into a list that survives group changes. And when rolls are
+being ignored by your filter, the addon says so once — silently dropping a
+participant's roll is worse than adjudicating a stranger's.
+
+Cross-realm names are normalized on both sides, so `Faraway-Moon Guard` matches
+whether the roster or the system message spells it with a space.
 
 ## Design principles
 

@@ -57,6 +57,7 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
 		-- file scope.
 		REH.Database:Initialize()
 		REH.Commands:Register()
+		REH.RollWatcher:Initialize()
 
 		self:UnregisterEvent("ADDON_LOADED")
 
