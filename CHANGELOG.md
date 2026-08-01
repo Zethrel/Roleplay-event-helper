@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.2.0 - 2026-08-01
+
+**Starting a round tells the room.** The main window's log button is now
+**Start Round**: one press starts a round, announces it to your channel, and
+opens the roll log. The log's own **New round** button announces too, as does
+`/reh round new`. Right-clicking Start Round just opens the log, for checking
+back through earlier rounds without starting anything.
+
+The message is set on the Watcher tab and defaults to "Round {round} begins.";
+`{round}` is replaced with the number. It is a placeholder rather than a
+printf token deliberately, so a percent sign typed into the text prints
+instead of erroring. Announcing rounds can be switched off there, which leaves
+the button starting rounds silently.
+
+A round marker is held back while a rules announcement is still going out,
+rather than interleaving with it, and a preview-only preset shows the marker
+locally like everything else.
+
 ## 1.1.0 - 2026-08-01
 
 **Rounds in the roll log.** A **New round** button starts a fresh round, and

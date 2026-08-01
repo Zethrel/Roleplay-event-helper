@@ -350,7 +350,19 @@ Fields.TABS[#Fields.TABS + 1] = {
 			set = function(p, v) p.rollFilter.matchRangeOnly = v end,
 		},
 		{
-			key = "roster", label = "Saved roster", type = "lines", height = 150,
+			key = "announceRounds", label = "Announce each new round", type = "toggle",
+			tooltip = "Sends a short line to your channel when you start a round, so everyone knows the next exchange has begun.",
+			get = function(p) return p.rounds.announce end,
+			set = function(p, v) p.rounds.announce = v end,
+		},
+		{
+			key = "roundMessage", label = "Round message", type = "text", maxLength = 120,
+			tooltip = "{round} is replaced with the round number.",
+			get = function(p) return p.rounds.message end,
+			set = function(p, v) p.rounds.message = v end,
+		},
+		{
+			key = "roster", label = "Saved roster", type = "lines", height = 120,
 			tooltip = "One name per line, used when tracking a saved roster. Seed it from your group with /reh roster import.",
 			get = function(p) return SerializeStringLines(p.rollFilter.roster) end,
 			set = function(p, v) p.rollFilter.roster = ParseStringLines(v) end,

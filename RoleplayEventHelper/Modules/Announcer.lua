@@ -384,6 +384,66 @@ function Announcer:Announce(preset, presetName, overrides)
 end
 
 --------------------------------------------------------------------------------
+-- Round markers
+--------------------------------------------------------------------------------
+
+--- The round message with its placeholder filled in.
+function Announcer:RoundMessage(preset, roundNumber)
+	local text = preset.rounds.message
+
+	-- gsub rather than format: the text is host-editable, and a stray % in a
+	-- format string errors instead of printing.
+	text = text:gsub("{round}", tostring(roundNumber))
+
+	return REH.StripChatEscapes(text)
+end
+
+--- Announce the start of a round. One message, sent from whatever click asked
+--- for it, so the restricted chat types have their hardware event.
+--- Returns true if it reached chat.
+function Announcer:AnnounceRound(preset, roundNumber)
+	if not preset.rounds.announce then
+		return false, "off"
+	end
+
+	local text = self:RoundMessage(preset, roundNumber)
+	if text == "" then
+		return false, "empty"
+	end
+
+	local channel = preset.channel
+
+	if channel.type == "PREVIEW" then
+		REH:Print(L["Round marker (preview only): %s"]:format(text))
+		return false, "preview"
+	end
+
+	-- Slipping a round marker between the messages of a rule announcement
+	-- would interleave them in the channel.
+	if queue.active then
+		REH:PrintWarning(L["Still announcing the rules; the round marker was not sent."])
+		return false, "busy"
+	end
+
+	local available, reason = self:CheckAvailability(channel)
+	if not available then
+		REH:PrintError(reason)
+		return false, "unavailable"
+	end
+
+	local target = channel.target
+	if channel.type == "CHANNEL" then
+		target = GetChannelName(channel.target)
+	end
+
+	REH.Diagnostics:SetContext(("announcing a round marker to %s"):format(tostring(channel.type)))
+	local ok = pcall(SendChatMessage, text, channel.type, nil, target)
+	REH.Diagnostics:ClearContext()
+
+	return ok and true or false, ok and "sent" or "blocked"
+end
+
+--------------------------------------------------------------------------------
 -- Channel selection
 --------------------------------------------------------------------------------
 

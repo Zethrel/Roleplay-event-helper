@@ -432,6 +432,26 @@ function RollWatcher:NewRound()
 	return currentRound, true
 end
 
+--- Start a round and tell the room about it.
+---
+--- The marker is announced whether or not a new round object was created: the
+--- first round of an event still needs announcing, and the host pressing the
+--- button means "we are starting now" regardless of the bookkeeping.
+function RollWatcher:BeginRound()
+	local number, created = self:NewRound()
+	local preset = REH.Database:GetActivePreset()
+
+	REH.Announcer:AnnounceRound(preset, number)
+
+	-- Starting rounds without tracking rolls is a reasonable thing to want, so
+	-- this is a note rather than an assumption that the watcher should be on.
+	if not self:IsWatching() then
+		REH:Print(L["The roll watcher is off, so rolls in this round are not being tracked."])
+	end
+
+	return number, created
+end
+
 function RollWatcher:GetRoundCount()
 	return #rounds
 end

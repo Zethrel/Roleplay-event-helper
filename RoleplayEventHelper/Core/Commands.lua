@@ -384,7 +384,7 @@ Register("round", "[new]", "start a new round, or show the current one", functio
 	local watcher = REH.RollWatcher
 
 	if argument:lower() == "new" then
-		local number, created = watcher:NewRound()
+		local number, created = watcher:BeginRound()
 		if created then
 			REH:Print(L["Round %d."]:format(number))
 		else

@@ -111,6 +111,11 @@ L["Round %d."] = "Round %d."
 L["Round %d of %d."] = "Round %d of %d."
 L["Still on round %d; nothing has been rolled in it yet."] = "Still on round %d; nothing has been rolled in it yet."
 
+-- Round markers
+L["Round marker (preview only): %s"] = "Round marker (preview only): %s"
+L["Still announcing the rules; the round marker was not sent."] = "Still announcing the rules; the round marker was not sent."
+L["The roll watcher is off, so rolls in this round are not being tracked."] = "The roll watcher is off, so rolls in this round are not being tracked."
+
 -- Diagnostics
 L["The client blocked '%s'.%s"] = "The client blocked '%s'.%s"
 L["This happened while %s."] = "This happened while %s."

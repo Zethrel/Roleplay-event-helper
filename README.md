@@ -176,6 +176,11 @@ Whose rolls count is set per preset:
 the audience in 3–8, and spectators rolling for fun are ignored. An empty
 selection means the whole raid, never nobody.
 
+**Start Round** on the main window starts a round, announces it to your channel
+("Round 2 begins."), and opens the roll log. Right-click it to just open the log.
+The message is editable on the Watcher tab, where announcing rounds can also be
+turned off.
+
 The log groups rolls into **rounds**. **New round** starts a fresh one; the
 arrows read back through earlier rounds, and stepping back past round one shows
 the whole event together with per-name totals. The log follows live rolls while

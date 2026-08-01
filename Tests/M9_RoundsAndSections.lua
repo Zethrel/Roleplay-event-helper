@@ -181,6 +181,112 @@ out = H.runSlash("include nonsense")
 H.check("an unknown section is refused",
 	out:find("No section called", 1, true) ~= nil, out)
 
+--------------------------------------------------------------------------------
+H.section("Starting a round tells the room")
+--------------------------------------------------------------------------------
+
+local roundPreset = DB:GetActivePreset()
+REH.Announcer:SetChannel(roundPreset, "party")
+H.group.inGroup = true
+Watcher:ClearLog()
+
+H.clearSent()
+H.clearOutput()
+frame = nil
+
+local number = Watcher:BeginRound()
+H.checkEqual("the first round announces without needing a round to exist first",
+	#H.sent, 1)
+H.check("with the round number in it",
+	H.sent[1].message:find("Round " .. number, 1, true) ~= nil, H.sent[1].message)
+H.checkEqual("to the preset's channel", H.sent[1].chatType, "PARTY")
+
+roll("Bob", 50)
+H.clearSent()
+Watcher:BeginRound()
+H.checkEqual("each new round announces", #H.sent, 1)
+H.check("counting up", H.sent[1].message:find("Round 2", 1, true) ~= nil, H.sent[1].message)
+
+-- The text belongs to the host, and a stray % in it must not blow up a
+-- format call, which is why the placeholder is {round} rather than %d.
+roundPreset.rounds.message = "50% chance -- round {round}!"
+DB:ValidatePreset(roundPreset)
+roll("Bob", 60)
+H.clearSent()
+local ok = pcall(function() Watcher:BeginRound() end)
+H.check("a percent sign in the round message is harmless", ok)
+H.check("and the number still lands",
+	#H.sent == 1 and H.sent[1].message:find("round 3", 1, true) ~= nil,
+	H.sent[1] and H.sent[1].message)
+roundPreset.rounds.message = "Round {round} begins."
+
+roundPreset.rounds.announce = false
+roll("Bob", 70)
+H.clearSent()
+Watcher:BeginRound()
+H.checkEqual("turning the announcement off keeps it local", #H.sent, 0)
+H.checkEqual("but the round still starts", Watcher:GetCurrentRound(), 4)
+roundPreset.rounds.announce = true
+
+-- A round marker in the middle of a rules announcement would interleave.
+roll("Bob", 80)
+H.clearSent()
+DB:GetSettings().sendMode = "paced"
+REH.Announcer:Announce(roundPreset, "Test")
+H.clearOutput()
+local sentDuring = #H.sent
+Watcher:BeginRound()
+H.checkEqual("a round marker waits rather than interleaving", #H.sent, sentDuring)
+H.check("and says why",
+	H.outputText():find("Still announcing", 1, true) ~= nil, H.outputText())
+H.advance(600)
+
+-- Preview presets stay silent, as everywhere else.
+REH.Announcer:SetChannel(roundPreset, "preview")
+roll("Bob", 90)
+H.clearSent()
+H.clearOutput()
+Watcher:BeginRound()
+H.checkEqual("a preview preset broadcasts no round marker", #H.sent, 0)
+H.check("but shows the host what it would have said",
+	H.outputText():find("preview only", 1, true) ~= nil, H.outputText())
+
+--------------------------------------------------------------------------------
+H.section("The buttons that start a round")
+--------------------------------------------------------------------------------
+
+REH.Announcer:SetChannel(roundPreset, "party")
+REH.UI.MainFrame:Show()
+local mainFrame = REH.UI.MainFrame:GetFrame()
+REH.UI.RollLog:Hide()
+Watcher:ClearLog()
+roll("Bob", 50)
+
+H.clearSent()
+mainFrame.logButton:Click("LeftButton")
+H.check("the main window button starts a round", Watcher:GetCurrentRound() > 1)
+H.checkEqual("announces it", #H.sent, 1)
+H.check("and opens the log", REH.UI.RollLog:IsShown())
+
+-- Checking back through the log should not start anything.
+H.clearSent()
+mainFrame.logButton:Click("RightButton")
+H.check("right-click just closes the log", REH.UI.RollLog:IsShown() == false)
+H.checkEqual("without announcing", #H.sent, 0)
+mainFrame.logButton:Click("RightButton")
+H.check("and opens it again", REH.UI.RollLog:IsShown())
+H.checkEqual("still without announcing", #H.sent, 0)
+
+roll("Bob", 60)
+H.clearSent()
+local roundBefore = Watcher:GetCurrentRound()
+REH.UI.RollLog:GetFrame().newRoundButton:Click()
+H.checkEqual("the log's own button starts a round too", Watcher:GetCurrentRound(),
+	roundBefore + 1)
+H.checkEqual("and announces it", #H.sent, 1)
+
+REH.UI.RollLog:Hide()
+
 H.checkNoLeakedGlobals(H.ALLOWED_GLOBALS)
 
 H.finish()

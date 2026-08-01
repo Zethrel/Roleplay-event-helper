@@ -473,10 +473,10 @@ H.check("the control reflects the current mode",
 frame.watchButton:Click()
 H.check("clicking it changes the mode", Watcher:GetMode() ~= "local")
 
-frame.logButton:Click()
-H.check("the log window opens", REH.UI.RollLog:IsShown())
-frame.logButton:Click()
-H.check("and closes", REH.UI.RollLog:IsShown() == false)
+frame.logButton:Click("LeftButton")
+H.check("the round button opens the log", REH.UI.RollLog:IsShown())
+frame.logButton:Click("RightButton")
+H.check("and right-click closes it again", REH.UI.RollLog:IsShown() == false)
 
 --------------------------------------------------------------------------------
 H.section("The log window keeps up with the event")

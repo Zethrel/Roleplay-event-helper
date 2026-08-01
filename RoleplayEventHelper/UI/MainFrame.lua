@@ -200,11 +200,34 @@ local function Build()
 	UI.SetTooltip(watchButton, "Roll watcher",
 		"Reads /roll results and calls each one a success or failure against these rules. Always starts off when you log in.")
 
-	local logButton = UI.CreateButton(frame, "Log", 60, 24, function()
-		UI.RollLog:Toggle()
+	-- One press does what a host actually does at that moment: call the round,
+	-- tell the room, and put the roll log where they can see it. Right-click
+	-- still just opens the log, for checking back without starting anything.
+	local logButton = UI.CreateButton(frame, "Start Round", 110, 24)
+	logButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	logButton:SetScript("OnClick", function(_, mouseButton)
+		if mouseButton == "RightButton" then
+			UI.RollLog:Toggle()
+			return
+		end
+
+		REH.RollWatcher:BeginRound()
+		UI.RollLog:Show()
+		MainFrame:RefreshPreview()
 	end)
 	logButton:SetPoint("LEFT", watchButton, "RIGHT", 6, 0)
 	frame.logButton = logButton
+
+	UI.SetTooltip(logButton, "Start Round", function()
+		local preset = REH.Database:GetActivePreset()
+		local where = REH.Announcer:DescribeChannel(preset.channel)
+
+		if not preset.rounds.announce then
+			return "Starts a new round and opens the roll log.\n\nAnnouncing rounds is switched off on the Watcher tab.\n\nRight-click: just open the log."
+		end
+
+		return ("Starts a new round, announces it to %s, and opens the roll log.\n\nRight-click: just open the log."):format(where)
+	end)
 
 	local statusText = UI.CreateLabel(frame, "", "GameFontDisableSmall")
 	statusText:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 8, 38)

@@ -161,16 +161,21 @@ local function Build()
 	frame.bodyText = body
 
 	local newRoundButton = UI.CreateButton(frame, "New round", 100, 22, function()
-		local number, created = REH.RollWatcher:NewRound()
-		if created then
-			REH:Print(("Round %d."):format(number))
-		end
+		REH.RollWatcher:BeginRound()
 		RollLog:OnRoundChanged()
 	end)
 	newRoundButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 10)
 	frame.newRoundButton = newRoundButton
-	UI.SetTooltip(newRoundButton, "New round",
-		"Starts a fresh round. Earlier rounds stay in the log and can be read back with the arrows.")
+	UI.SetTooltip(newRoundButton, "New round", function()
+		local preset = REH.Database:GetActivePreset()
+
+		if not preset.rounds.announce then
+			return "Starts a fresh round. Earlier rounds stay in the log and can be read back with the arrows.\n\nAnnouncing rounds is switched off on the Watcher tab."
+		end
+
+		return ("Starts a fresh round and announces it to %s. Earlier rounds stay in the log and can be read back with the arrows."):format(
+			REH.Announcer:DescribeChannel(preset.channel))
+	end)
 
 	local clearButton = UI.CreateButton(frame, "Clear", 90, 22, function()
 		REH.RollWatcher:ClearLog()

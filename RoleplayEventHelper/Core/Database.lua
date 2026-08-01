@@ -172,6 +172,11 @@ function Database:ValidatePreset(preset)
 	preset.custom = ValidateStringList(preset.custom, REH.MAX_CUSTOM_RULES)
 	preset.etiquette = ValidateStringList(preset.etiquette, REH.MAX_CUSTOM_RULES)
 
+	-- Rounds
+	local roundRules = preset.rounds
+	roundRules.announce = REH.ToBoolean(roundRules.announce, true)
+	roundRules.message = REH.CleanString(roundRules.message, 120, "Round {round} begins.")
+
 	-- Roll filter
 	local filter = preset.rollFilter
 	if not REH.IsValidEnum(REH.ROLL_FILTER_MODES, filter.mode) then

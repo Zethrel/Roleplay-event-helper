@@ -187,6 +187,14 @@ local PRESET_TEMPLATE = {
 	custom = {},
 	etiquette = {},
 
+	rounds = {
+		announce = true,
+		-- {round} is replaced with the number. A placeholder rather than a
+		-- printf token on purpose: this text is host-editable, and a stray %
+		-- in a format string would error rather than print.
+		message = "Round {round} begins.",
+	},
+
 	rollFilter = {
 		mode = "group",
 		subgroups = {},          -- raid subgroup numbers when mode == "subgroup"
