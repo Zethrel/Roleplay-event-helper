@@ -16,9 +16,10 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**Feature complete, not yet tested in the game.** Everything is implemented and
-covered by tests that run outside the client; the next step is loading it in
-WoW and fixing whatever the game says.
+**v1.0.0.** Every planned feature is implemented and covered by 702 checks
+across eight test suites. Those suites run against a stub of the WoW API rather
+than the client, so anything purely visual is still unverified -- see the known
+gaps in the [changelog](CHANGELOG.md).
 
 | Milestone | State |
 |-----------|-------|
@@ -37,7 +38,7 @@ The full feature design lives in [`docs/PHASE1-PLAN.md`](docs/PHASE1-PLAN.md).
 
 - World of Warcraft **Retail**, interface `120007` (patch 12.0.7).
 
-## Installing (development build)
+## Installing
 
 Copy the `RoleplayEventHelper` folder into:
 

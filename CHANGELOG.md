@@ -1,10 +1,10 @@
 # Changelog
 
-## 0.9.0-beta
+## 1.0.0 - 2026-08-01
 
-First feature-complete build. Everything described in
-[`docs/PHASE1-PLAN.md`](docs/PHASE1-PLAN.md) is implemented, but nothing has
-been run in the game yet, so this is a beta rather than a 1.0.
+First release. Everything described in
+[`docs/PHASE1-PLAN.md`](docs/PHASE1-PLAN.md) is implemented and covered by
+702 checks across eight test suites that run outside the client.
 
 **Presets**
 - Named rule presets with health by armor class, roll thresholds, criticals,
@@ -37,6 +37,11 @@ been run in the game yet, so this is a beta rather than a 1.0.
 - Options tab for colours, message packing, send delay and the minimap button
 
 **Known gaps**
-- Not yet loaded in the game: layout, sizing and clipping are unverified
-- No broker (Titan/ElvUI datatext) plugin
-- English only, though every string goes through the localization table
+- The test suites run against a stub of the WoW API, not the client. Anything
+  purely visual -- window layout, sizing, text clipping, whether all nine editor
+  tabs fit across the tab strip -- is unverified, as is the behaviour of the
+  Blizzard templates the interface builds on.
+- No broker (Titan Panel / ElvUI datatext) plugin. The minimap button is
+  self-contained so the addon has no external dependencies.
+- English only, though every user-facing string goes through the localization
+  table, so adding a locale needs no code changes.
