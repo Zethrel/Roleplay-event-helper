@@ -118,14 +118,12 @@ git tag -a v1.6.0 -m "Roleplay Event Helper v1.6.0"
 git push origin v1.6.0
 ```
 
-Two things are needed once, before the first automated upload:
+The CurseForge project id is already set in the TOC. One thing is still needed
+before the first automated upload: **`CF_API_KEY`** as a repository secret
+(*Settings → Secrets and variables → Actions*), taken from your CurseForge
+account's API Tokens page.
 
-1. **`CF_API_KEY`** as a repository secret (*Settings → Secrets and variables →
-   Actions*), taken from your CurseForge account's API Tokens page.
-2. **`## X-Curse-Project-ID`** uncommented in the TOC and set to the numeric id
-   shown on the CurseForge project page.
-
-Without those the workflow still packages the zip and attaches it to a GitHub
+Without it the workflow still packages the zip and attaches it to a GitHub
 release; it just does not upload to CurseForge.
 
 ## Running the tests

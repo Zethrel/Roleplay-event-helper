@@ -9,10 +9,8 @@
 ## AddonCompartmentFunc: RoleplayEventHelper_OnCompartmentClick
 ## X-Website: https://github.com/Zethrel/Roleplay-event-helper
 
-# Uncomment and set to the numeric project id from your CurseForge project page
-# for the packaging workflow to upload there. Left commented deliberately: a
-# made-up id would try to publish to somebody else's project.
-# ## X-Curse-Project-ID: 000000
+# Read by the packaging workflow to know which CurseForge project to upload to.
+## X-Curse-Project-ID: 1635075
 
 Libs\LibStub\LibStub.lua
 Libs\LibDeflate\LibDeflate.lua
