@@ -129,6 +129,9 @@ function Harness.installStubs()
 		return Harness.now
 	end
 
+	-- WoW exposes date() as a global; standalone Lua has it under os.
+	date = os.date
+
 	function UnitName(unit)
 		if unit == "player" then
 			return Harness.playerName

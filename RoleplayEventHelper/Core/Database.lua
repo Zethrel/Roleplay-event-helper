@@ -211,6 +211,13 @@ function Database:ValidatePreset(preset)
 		preset.announceStyle = "full"
 	end
 
+	-- Formatting. The prefix is capped short and stripped of pipes: it is
+	-- repeated on every line, and a stray colour escape there would bleed
+	-- through the whole announcement.
+	local formatting = preset.formatting
+	formatting.linePrefix = REH.CleanString(formatting.linePrefix, 20):gsub("|", "")
+	formatting.numberCustomRules = REH.ToBoolean(formatting.numberCustomRules, true)
+
 	-- Channel. An unrecognised type falls back to PREVIEW, which cannot speak.
 	local channel = preset.channel
 	if not REH.IsValidEnum(REH.CHANNEL_TYPES, channel.type) then

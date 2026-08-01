@@ -22,8 +22,8 @@ watcher adjudicates the plain `/roll` everyone already uses.
 |-----------|-------|
 | M0 — Skeleton: loads clean, `/reh`, saved variables | ✅ done |
 | M1 — Data layer: presets, defaults, migrations | ✅ done |
-| M2 — Formatter and preview | next |
-| M3 — Announcer (first milestone where it talks) | |
+| M2 — Formatter and preview | ✅ done |
+| M3 — Announcer (first milestone where it talks) | next |
 | M4 — Main UI | |
 | M5 — Roll watcher | |
 | M6 — Export / import strings | |
@@ -53,6 +53,7 @@ then restart the client or `/reload`.
 | `/reh` | Command list |
 | `/reh list` | List your presets, marking the active one |
 | `/reh show [name]` | Show a preset's rules in detail |
+| `/reh preview [name]` | Show exactly what would be sent to chat, sending nothing |
 | `/reh use <name>` | Switch the active preset |
 | `/reh new <name>` | Create a preset from the defaults |
 | `/reh copy <new name>` | Copy the active preset |

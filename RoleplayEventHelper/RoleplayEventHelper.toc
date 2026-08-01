@@ -12,5 +12,8 @@ Locales\enUS.lua
 Core\Util.lua
 Core\Defaults.lua
 Core\Database.lua
+
+Modules\Formatter.lua
+
 Core\Commands.lua
 Core\Init.lua

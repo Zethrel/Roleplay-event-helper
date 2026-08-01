@@ -33,28 +33,6 @@ end
 -- Display helpers
 --------------------------------------------------------------------------------
 
-local TIE_BREAK_TEXT = {
-	reroll = "reroll",
-	armor = "higher armor wins",
-	attacker = "attacker wins",
-	defender = "defender wins",
-	host = "host decides",
-}
-
-local INITIATIVE_TEXT = {
-	initiative = "roll for initiative",
-	host = "host calls turns",
-	roundrobin = "round-robin",
-	freeform = "free-form",
-}
-
-local FILTER_TEXT = {
-	group = "party/raid members",
-	subgroup = "chosen raid subgroups",
-	roster = "a saved roster",
-	everyone = "everyone in range",
-}
-
 local function DescribePreset(preset, name)
 	local rolls = preset.rolls
 
@@ -69,7 +47,7 @@ local function DescribePreset(preset, name)
 	REH:Print("  Rolls: /roll %d, %d+ is %s, below that is %s%s",
 		rolls.dieMax, rolls.successThreshold, rolls.successText, rolls.failText, critText)
 	REH:Print("  Ties: %s. Rolls per turn: %d.",
-		TIE_BREAK_TEXT[rolls.tieBreak] or rolls.tieBreak, rolls.rollsPerTurn)
+		REH.DISPLAY.tieBreakShort[rolls.tieBreak] or rolls.tieBreak, rolls.rollsPerTurn)
 
 	local parts = {}
 	for _, row in ipairs(preset.health.rows) do
@@ -82,10 +60,11 @@ local function DescribePreset(preset, name)
 
 	REH:Print("  Damage: %d per hit, %d on a crit.", preset.damage.perHit, preset.damage.onCrit)
 	REH:Print("  Turns: %s%s.",
-		INITIATIVE_TEXT[preset.turns.mode] or preset.turns.mode,
+		REH.DISPLAY.initiativeShort[preset.turns.mode] or preset.turns.mode,
 		preset.turns.turnTimeSeconds > 0 and (", " .. preset.turns.turnTimeSeconds .. "s per turn") or "")
 	REH:Print("  Custom rules: %d. Etiquette lines: %d.", #preset.custom, #preset.etiquette)
-	REH:Print("  Roll watcher tracks: %s.", FILTER_TEXT[preset.rollFilter.mode] or preset.rollFilter.mode)
+	REH:Print("  Roll watcher tracks: %s.",
+		REH.DISPLAY.rollFilter[preset.rollFilter.mode] or preset.rollFilter.mode)
 	REH:Print("  Announce target: %s%s", preset.channel.type,
 		preset.channel.target ~= "" and (" -> " .. preset.channel.target) or "")
 end
@@ -144,6 +123,21 @@ Register("show", "[name]", "show a preset's rules in detail", function(argument)
 	end
 
 	DescribePreset(preset, name)
+end)
+
+Register("preview", "[name]", "show exactly what would be sent to chat", function(argument)
+	local preset, name
+	if argument ~= "" then
+		preset, name = REH.Database:GetPreset(argument)
+		if not preset then
+			REH:PrintError(L["No preset named '%s'."]:format(argument))
+			return
+		end
+	else
+		preset, name = REH.Database:GetActivePreset()
+	end
+
+	REH.Formatter:Preview(preset, name)
 end)
 
 Register("use", "<name>", "switch the active preset", function(argument)

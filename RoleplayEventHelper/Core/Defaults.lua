@@ -30,6 +30,49 @@ REH.CHANNEL_TYPES = {
 
 REH.MODULE_KEYS = { "header", "rolls", "health", "damage", "turns", "custom", "etiquette" }
 
+-- Human-readable text for the stored enumeration keys. Kept here so the
+-- announcement, the /reh show summary and the UI all describe a rule the same
+-- way, and so a translator has one place to change.
+REH.DISPLAY = {
+	tieBreak = {
+		reroll = "ties are rerolled",
+		armor = "on a tie the heavier armor wins",
+		attacker = "the attacker wins ties",
+		defender = "the defender wins ties",
+		host = "the host settles ties",
+	},
+	tieBreakShort = {
+		reroll = "reroll",
+		armor = "higher armor wins",
+		attacker = "attacker wins",
+		defender = "defender wins",
+		host = "host decides",
+	},
+	deathRule = {
+		out = "You are out at 0 HP.",
+		downed = "At 0 HP you are downed but can be revived.",
+		host = "The host decides what happens at 0 HP.",
+	},
+	initiative = {
+		initiative = "roll for initiative, highest goes first",
+		host = "the host calls each turn",
+		roundrobin = "round-robin in join order",
+		freeform = "free-form, no fixed order",
+	},
+	initiativeShort = {
+		initiative = "roll for initiative",
+		host = "host calls turns",
+		roundrobin = "round-robin",
+		freeform = "free-form",
+	},
+	rollFilter = {
+		group = "party/raid members",
+		subgroup = "chosen raid subgroups",
+		roster = "a saved roster",
+		everyone = "everyone in range",
+	},
+}
+
 --- Membership test for the enumerations above.
 function REH.IsValidEnum(list, value)
 	if type(value) ~= "string" then
@@ -135,6 +178,11 @@ local PRESET_TEMPLATE = {
 	},
 
 	announceStyle = "full",
+
+	formatting = {
+		linePrefix = "",         -- e.g. "[Event]" to stand out in a busy channel
+		numberCustomRules = true,
+	},
 
 	-- Deliberately PREVIEW on a fresh preset: the first press of Announce can
 	-- never spam a channel by accident. The host chooses a real target once,
