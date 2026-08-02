@@ -357,7 +357,11 @@ function Harness.installStubs()
 	----------------------------------------------------------------------------
 
 	UIParent = Harness.newWidget("Frame")
+
+	-- Sized like the retail minimap rather than left at zero: the button's orbit
+	-- is measured from it, so a zero-sized stub would hide a placement bug.
 	Minimap = Harness.newWidget("Frame")
+	Minimap:SetSize(198, 198)
 
 	function GetCursorPosition()
 		return Harness.cursor.x, Harness.cursor.y

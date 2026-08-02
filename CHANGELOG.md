@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.5.1 - 2026-08-02
+
+Fixes the minimap button sitting inside the minimap's border, on top of the map.
+
+- The orbit radius was a fixed 80 pixels, which is only correct for a 140-pixel
+  minimap. The retail minimap is larger than that, so the icon was drawn well
+  inside the ring. The radius is now measured from the minimap itself -- half its
+  width and height plus a few pixels -- so the button rides the edge at any
+  minimap size or UI scale.
+- The button follows the minimap when it is resized afterwards, by an interface
+  option, a patch or a UI pack, instead of keeping the position it was given at
+  login.
+- Square minimaps (SexyMap and several UI packs) put the button on the square's
+  edge rather than on the circle it does not have.
+
 ## 1.5.0 - 2026-08-01
 
 **Each custom rule and etiquette line is announced as its own message.**

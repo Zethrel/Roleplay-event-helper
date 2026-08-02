@@ -18,7 +18,16 @@ UI.MinimapButton = MinimapButton
 
 local BUTTON_SIZE = 31
 local ICON_SIZE = 20
-local ORBIT_RADIUS = 80
+
+-- How far outside the minimap's own edge the button rides. The orbit itself is
+-- measured from the live minimap, never assumed: a fixed radius is only correct
+-- for one minimap size, and lands the icon on top of the map the moment the
+-- client, an interface option or another addon changes that size.
+local EDGE_PADDING = 5
+
+-- Used only if the minimap has not been given a size yet at the moment we first
+-- place the button; the size hook below corrects it as soon as it has one.
+local FALLBACK_MINIMAP_SIZE = 140
 
 local ICON_TEXTURE = "Interface\\Icons\\INV_Misc_Dice_01"
 local BORDER_TEXTURE = "Interface\\Minimap\\MiniMap-TrackingBorder"
@@ -35,16 +44,50 @@ local function Settings()
 	return settings.minimapButton
 end
 
+--- Half the minimap's width and height, plus the padding that puts the button
+--- outside the border rather than on the map.
+local function OrbitRadii()
+	local width = Minimap.GetWidth and Minimap:GetWidth() or 0
+	local height = Minimap.GetHeight and Minimap:GetHeight() or 0
+
+	if not width or width <= 0 then
+		width = FALLBACK_MINIMAP_SIZE
+	end
+	if not height or height <= 0 then
+		height = FALLBACK_MINIMAP_SIZE
+	end
+
+	return width / 2 + EDGE_PADDING, height / 2 + EDGE_PADDING
+end
+
+--- Where the button sits for a given angle, in offsets from the minimap centre.
+---
+--- A round minimap is an ellipse, so the angle maps straight onto the radii. A
+--- square one -- what SexyMap and several UI packs give you -- has corners, so
+--- the point is pushed out along the diagonal and then clamped to the edges.
+local function OrbitOffset(angle)
+	local radiusX, radiusY = OrbitRadii()
+	local x, y = math.cos(angle), math.sin(angle)
+
+	local shape = GetMinimapShape and GetMinimapShape() or "ROUND"
+	if shape ~= "ROUND" then
+		x = math.max(-radiusX, math.min(x * math.sqrt(2) * radiusX, radiusX))
+		y = math.max(-radiusY, math.min(y * math.sqrt(2) * radiusY, radiusY))
+		return x, y
+	end
+
+	return x * radiusX, y * radiusY
+end
+
 --- Place the button on its orbit around the minimap.
 function MinimapButton:UpdatePosition()
 	if not button or not Minimap then
 		return
 	end
 
-	local angle = math.rad(Settings().minimapPos or 220)
+	local x, y = OrbitOffset(math.rad(Settings().minimapPos or 220))
 	button:ClearAllPoints()
-	button:SetPoint("CENTER", Minimap, "CENTER",
-		math.cos(angle) * ORBIT_RADIUS, math.sin(angle) * ORBIT_RADIUS)
+	button:SetPoint("CENTER", Minimap, "CENTER", x, y)
 end
 
 --- Follow the cursor around the minimap while dragging.
@@ -116,6 +159,16 @@ local function Build()
 		return ("Active preset: %s\nRoll watcher: %s\n\nLeft-click: open the window\nRight-click: open the roll log\nDrag: move this button")
 			:format(name, watching and "on" or "off")
 	end)
+
+	-- The minimap is resized by the interface options, by patches, and by UI
+	-- packs -- and it is often still unsized when we first place the button at
+	-- login. Following its size keeps the icon on the edge instead of stranding
+	-- it on the map at whatever size happened to be true at load.
+	if Minimap.HookScript then
+		Minimap:HookScript("OnSizeChanged", function()
+			MinimapButton:UpdatePosition()
+		end)
+	end
 
 	MinimapButton.button = button
 	MinimapButton:UpdatePosition()

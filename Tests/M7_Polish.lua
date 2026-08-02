@@ -33,6 +33,49 @@ H.check("and is not shown", Button:IsShown() == false)
 Button:SetHidden(false)
 H.check("showing it again works", Button:IsShown())
 
+--------------------------------------------------------------------------------
+H.section("Where it sits")
+--------------------------------------------------------------------------------
+
+-- The complaint this guards against: a hardcoded radius put the icon inside the
+-- minimap's border, on top of the map. The orbit has to be measured from the
+-- minimap the client actually drew.
+
+local function orbitDistance()
+	local _, relativeTo, _, x, y = Button.button:GetPoint()
+	return math.sqrt(x * x + y * y), relativeTo
+end
+
+local distance, anchor = orbitDistance()
+H.check("it is anchored to the minimap", anchor == Minimap)
+H.check("and sits outside the minimap's edge, not on the map",
+	distance > Minimap:GetWidth() / 2,
+	("radius %.1f vs edge %.1f"):format(distance, Minimap:GetWidth() / 2))
+
+local wideDistance = distance
+
+Minimap:SetSize(140, 140)
+H.fireScript(Minimap, "OnSizeChanged")
+local narrowDistance = orbitDistance()
+H.check("the orbit shrinks with the minimap", narrowDistance < wideDistance,
+	("%.1f -> %.1f"):format(wideDistance, narrowDistance))
+H.check("and still clears the smaller edge", narrowDistance > Minimap:GetWidth() / 2)
+
+Minimap:SetSize(198, 198)
+H.fireScript(Minimap, "OnSizeChanged")
+local grownDistance = orbitDistance()
+H.check("and grows back with it", math.abs(grownDistance - wideDistance) < 0.01)
+
+-- A minimap that has not been laid out yet must not collapse the orbit to zero,
+-- or the icon lands dead centre on the map and stays there.
+Minimap:SetSize(0, 0)
+Button:UpdatePosition()
+local unsizedDistance = orbitDistance()
+H.check("a zero-sized minimap falls back rather than centring the icon",
+	unsizedDistance > 50, ("radius %.1f"):format(unsizedDistance))
+Minimap:SetSize(198, 198)
+H.fireScript(Minimap, "OnSizeChanged")
+
 -- Dragging stores an angle, so the button keeps its place on the orbit.
 local before = DB:GetSettings().minimapButton.minimapPos
 H.cursor = { x = 1000, y = 600 }
