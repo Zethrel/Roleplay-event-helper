@@ -1,5 +1,15 @@
 package-as: RoleplayEventHelper
 
+# The addon lives in a subdirectory of the repository rather than at its root,
+# so that the repository can also hold the tests, the docs and the workflows
+# without any of them sitting next to the TOC. The packager looks for the TOC
+# beside .pkgmeta and finds nothing there, so it has to be told where the addon
+# actually is: this lifts RoleplayEventHelper/ out of the copied checkout and
+# makes it the root of the zip. Without it the release fails with "Could not
+# find an addon TOC file".
+move-folders:
+    RoleplayEventHelper/RoleplayEventHelper: RoleplayEventHelper
+
 # The libraries are vendored in Libs/ rather than pulled in at package time, so
 # the addon has no external dependencies and the uploaded zip is complete.
 enable-nolib-creation: no
@@ -8,10 +18,13 @@ manual-changelog:
     filename: CHANGELOG.md
     markup-type: markdown
 
-# Development files that should not ship to players.
+# Development files that should not ship to players. README.md is among them: it
+# carries the Ko-fi link, and nothing that asks for money belongs in a folder
+# that ships to a game client. It stays on GitHub and on the project page.
 ignore:
     - Tests
     - docs
     - .github
     - .pkgmeta
     - .gitignore
+    - README.md

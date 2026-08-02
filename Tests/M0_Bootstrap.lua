@@ -20,6 +20,54 @@ for _, file in ipairs(files) do
 	if handle then handle:close() end
 end
 
+H.section("Packaging")
+
+-- The release is built by BigWigsMods/packager from .pkgmeta, and it looks for
+-- the TOC beside .pkgmeta -- at the repository root. This addon's TOC is a
+-- directory down, so .pkgmeta has to say so or the release fails with "Could
+-- not find an addon TOC file", which is a failure nobody sees until a tag is
+-- pushed. These checks state that arrangement in terms the tests can hold on to.
+
+local repoRoot = H.addonDir:match("^(.*)[/\\][^/\\]+$") or "."
+local addonFolder = H.addonDir:match("([^/\\]+)$")
+
+local pkgmeta do
+	local handle = io.open(repoRoot .. "/.pkgmeta", "r")
+	H.check(".pkgmeta exists", handle ~= nil)
+	if handle then
+		pkgmeta = handle:read("*a")
+		handle:close()
+	end
+end
+
+if pkgmeta then
+	local packageAs = pkgmeta:match("\npackage%-as:%s*(%S+)")
+		or pkgmeta:match("^package%-as:%s*(%S+)")
+	H.checkEqual("package-as names the addon folder", packageAs, addonFolder)
+
+	local tocAtRoot = io.open(repoRoot .. "/" .. tostring(packageAs) .. ".toc", "r")
+	if tocAtRoot then
+		tocAtRoot:close()
+		H.check("the TOC sits where the packager looks for it", true)
+	else
+		-- Written as the packager reads it: "<package>/<subpath>: <destination>".
+		local expected = ("%s/%s: %s"):format(packageAs, addonFolder, packageAs)
+		H.check("move-folders lifts the addon folder to the root of the zip",
+			pkgmeta:find("move%-folders") ~= nil
+				and pkgmeta:find(expected, 1, true) ~= nil,
+			expected)
+	end
+
+	for _, ignored in ipairs({ "Tests", "docs", ".github" }) do
+		H.check("packaging ignores " .. ignored,
+			pkgmeta:find("%s*%-%s*" .. ignored:gsub("%.", "%%.") .. "%s*\n") ~= nil)
+	end
+
+	-- The addon may not ask for money in anything that reaches a game client,
+	-- and the README carries the Ko-fi link.
+	H.check("packaging ignores README.md", pkgmeta:find("- README.md", 1, true) ~= nil)
+end
+
 H.section("Fresh install")
 H.wipeSavedVariables()
 local REH = H.loadAddon()
