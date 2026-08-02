@@ -68,6 +68,21 @@ if pkgmeta then
 	H.check("packaging ignores README.md", pkgmeta:find("- README.md", 1, true) ~= nil)
 end
 
+do
+	-- The release job attaches the zip to a GitHub release, which the default
+	-- token cannot do. Without this the packaging succeeds and the job still
+	-- fails, 403, at the last step.
+	local handle = io.open(repoRoot .. "/.github/workflows/release.yml", "r")
+	H.check("the release workflow exists", handle ~= nil)
+	if handle then
+		local workflow = handle:read("*a")
+		handle:close()
+		H.check("the release job may write releases",
+			workflow:find("permissions:") ~= nil
+				and workflow:find("contents:%s*write") ~= nil)
+	end
+end
+
 H.section("Fresh install")
 H.wipeSavedVariables()
 local REH = H.loadAddon()

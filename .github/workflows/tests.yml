@@ -10,6 +10,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    # Running the tests needs nothing but the code.
+    permissions:
+      contents: read
+
     steps:
       - uses: actions/checkout@v4
 

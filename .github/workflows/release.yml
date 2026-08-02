@@ -12,6 +12,13 @@ jobs:
   release:
     runs-on: ubuntu-latest
 
+    # The default token is read-only, so attaching the zip to a GitHub release
+    # comes back as 403 "Resource not accessible by integration" -- after the
+    # packaging has already succeeded, which makes it look like a build failure.
+    # Writing to releases is the only extra thing this job needs.
+    permissions:
+      contents: write
+
     steps:
       - uses: actions/checkout@v4
         with:

@@ -16,7 +16,7 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**v1.5.1**, in use and being fixed as the game finds things. Covered by 933
+**v1.5.1**, in use and being fixed as the game finds things. Covered by 935
 checks across ten suites, which run against a stub of the WoW API rather than
 the client -- see the [changelog](CHANGELOG.md) for what that does and does not
 catch.
