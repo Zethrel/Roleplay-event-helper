@@ -134,6 +134,48 @@ H.checkEqual("all of which come up", REH.CountKeys(caught), #alternatives)
 
 H.check("it also ships roll effects", #fishing.rollEffects > 0)
 
+-- The effects fire on the result rather than on a number, which is what shows
+-- that silencing verdicts does not stop them being used.
+local verdictTriggered = 0
+for _, effect in ipairs(fishing.rollEffects) do
+	if effect.trigger == "verdict" then
+		verdictTriggered = verdictTriggered + 1
+	end
+end
+H.checkEqual("all of which fire on a result", verdictTriggered, #fishing.rollEffects)
+
+-- End to end: a great cast still sets off the reaction, with nothing announced
+-- as a success anywhere.
+local greatCast = REH.RollWatcher:Judge(fishing, 18, fishing.rolls.dieMax)
+H.checkEqual("18 is a great cast at this event", greatCast, "critsuccess")
+
+local reactions = REH.RollWatcher:MatchEffects(fishing, 18, greatCast)
+H.checkEqual("which sets off the pair of reactions", #reactions, 2)
+H.checkEqual("one of which is chosen",
+	#REH.RollWatcher:ResolveEffects(reactions), 1)
+
+H.checkEqual("a snapped line is its own reaction",
+	#REH.RollWatcher:MatchEffects(fishing, 1,
+		REH.RollWatcher:Judge(fishing, 1, fishing.rolls.dieMax)), 1)
+
+H.checkEqual("and an ordinary cast sets off none",
+	#REH.RollWatcher:MatchEffects(fishing, 7,
+		REH.RollWatcher:Judge(fishing, 7, fishing.rolls.dieMax)), 0)
+
+-- Moving the band moves the reaction with it, which is the reason to trigger
+-- on the result rather than on the numbers.
+fishing.rolls.critSuccessAt = 20
+DB:ValidatePreset(fishing)
+H.checkEqual("narrowing the critical band narrows what reacts",
+	#REH.RollWatcher:MatchEffects(fishing, 18,
+		REH.RollWatcher:Judge(fishing, 18, fishing.rolls.dieMax)), 0)
+H.checkEqual("while the top of the die still does",
+	#REH.RollWatcher:MatchEffects(fishing, 20,
+		REH.RollWatcher:Judge(fishing, 20, fishing.rolls.dieMax)), 2)
+
+fishing = Templates:Build("fishing")
+DB:ValidatePreset(fishing)
+
 local randomEffects = 0
 for _, effect in ipairs(fishing.rollEffects) do
 	if effect.random then

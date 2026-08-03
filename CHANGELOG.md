@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.15.1 - 2026-08-03
+
+**The Fishing Night starter's effects now fire on the result rather than on the
+numbers.** With verdicts silenced, its critical bands became the event's own
+idea of a great cast and a wasted one — 18 and up is the catch of the evening, a
+natural 1 is a snapped line — and the reactions hang off those instead of
+repeating `18-20` and `1`. Move the critical band on the Rolls tab and the
+reactions move with it.
+
+It also demonstrates the thing worth knowing about the new toggle: an event can
+switch its verdicts off and still use them. Nothing is announced as a success,
+and the effects that fire on one work exactly as before.
+
+Only the starter changed. A Fishing Night preset you already created is
+untouched.
+
 ## 1.15.0 - 2026-08-03
 
 **Rolls do not have to be a success or a failure.** New toggle on the Rolls tab:

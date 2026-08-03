@@ -83,13 +83,20 @@ Templates.LIST = {
 
 			preset.rolls.dieMax = 20
 			preset.rolls.successThreshold = 8
-			preset.rolls.useCritical = true
-			preset.rolls.critSuccessAt = 20
-			preset.rolls.critFailAt = 1
 
-			-- Nothing here succeeds or fails. A 7 is a fat carp, and calling it
-			-- a FAILURE in the same breath contradicts the catch.
+			-- Nothing here succeeds or fails out loud. A 7 is a fat carp, and
+			-- calling it a FAILURE in the same breath contradicts the catch.
 			preset.rolls.useVerdicts = false
+
+			-- The critical bands are still worked out, and with the verdict
+			-- silenced they become the fishing night's own idea of a great cast
+			-- and a wasted one: 18 and up is the catch of the evening, a natural
+			-- 1 is a snapped line. The effects below fire on those rather than
+			-- repeating the numbers, so moving the band moves the reaction with
+			-- it.
+			preset.rolls.useCritical = true
+			preset.rolls.critSuccessAt = 18
+			preset.rolls.critFailAt = 1
 
 			-- The table is the point of this one. Bands written twice or three
 			-- times are alternatives, one chosen at random, which is what makes
@@ -117,22 +124,27 @@ Templates.LIST = {
 			-- was caught. Two of them share a trigger and are marked as
 			-- alternatives, so a big catch does not get the same line twice in
 			-- an evening.
+			--
+			-- They fire on the result rather than on a number, which is the
+			-- point worth showing: an event can silence its verdicts and still
+			-- use them. The bands are left in place so switching a row back to
+			-- "a roll of" gives the same rolls it fires on now.
 			preset.rollEffects = {
 				{
-					enabled = true, trigger = "band", min = 1, max = 1,
-					verdict = "critfail", chance = 100, delaySeconds = 5, random = false,
+					enabled = true, trigger = "verdict", verdict = "critfail",
+					min = 1, max = 1, chance = 100, delaySeconds = 5, random = false,
 					target = "channel",
 					message = "{name} stares at the empty line for a moment.",
 				},
 				{
-					enabled = true, trigger = "band", min = 18, max = 20,
-					verdict = "critsuccess", chance = 100, delaySeconds = 5, random = true,
+					enabled = true, trigger = "verdict", verdict = "critsuccess",
+					min = 18, max = 20, chance = 100, delaySeconds = 5, random = true,
 					target = "channel",
 					message = "The dock creaks as {name} hauls it in.",
 				},
 				{
-					enabled = true, trigger = "band", min = 18, max = 20,
-					verdict = "critsuccess", chance = 100, delaySeconds = 5, random = true,
+					enabled = true, trigger = "verdict", verdict = "critsuccess",
+					min = 18, max = 20, chance = 100, delaySeconds = 5, random = true,
 					target = "channel",
 					message = "Somebody drops their tankard watching {name} land it.",
 				},
