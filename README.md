@@ -16,7 +16,7 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**v1.14.0**, in use and being fixed as the game finds things. Covered by 1275
+**v1.15.0**, in use and being fixed as the game finds things. Covered by 1295
 checks across thirteen suites, which run against a stub of the WoW API rather than
 the client -- see the [changelog](CHANGELOG.md) for what that does and does not
 catch.
@@ -118,8 +118,8 @@ Tagging is the release. Pushing a `v*` tag runs the test suites and then builds
 and uploads the addon zip from [`.pkgmeta`](.pkgmeta):
 
 ```sh
-git tag -a v1.14.0 -m "Roleplay Event Helper v1.14.0"
-git push origin v1.14.0
+git tag -a v1.15.0 -m "Roleplay Event Helper v1.15.0"
+git push origin v1.15.0
 ```
 
 The CurseForge project id is already set in the TOC. One thing is still needed
@@ -362,6 +362,18 @@ leaving you guessing mid-event:
   true, and switching results on says it too.
 - **the channel is not available** — not in that party, not in that raid.
 - **the preset is still on preview only**, which sends nothing by design.
+
+### Events with no success or failure
+
+Not every event judges rolls. At a fishing night the roll decides *what
+happens*, not *whether it worked*, and `rolled 7 -> FAILURE` followed by `reels
+in a fat carp` contradicts itself.
+
+Switch off **Call rolls a success or failure** on the Rolls tab and nothing is
+judged out loud: no SUCCESS or FAILURE, no verdict sent to the room, and the
+announced rules drop the success bands. The roll is still shown to you, still
+logged, still tallied, and the loot table and roll effects work exactly as
+before — including effects that fire on a result.
 
 ## Sharing presets
 

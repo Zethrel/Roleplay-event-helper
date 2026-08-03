@@ -44,8 +44,13 @@ local function DescribePreset(preset, name)
 	if rolls.useCritical then
 		critText = (", crit success at %d+, crit fail at %d-"):format(rolls.critSuccessAt, rolls.critFailAt)
 	end
-	REH:Print("  Rolls: /roll %d, %d+ is %s, below that is %s%s",
-		rolls.dieMax, rolls.successThreshold, rolls.successText, rolls.failText, critText)
+	if rolls.useVerdicts then
+		REH:Print("  Rolls: /roll %d, %d+ is %s, below that is %s%s",
+			rolls.dieMax, rolls.successThreshold, rolls.successText, rolls.failText, critText)
+	else
+		REH:Print("  Rolls: /roll %d. Rolls are not called a success or a failure.",
+			rolls.dieMax)
+	end
 	REH:Print("  Ties: %s. Rolls per turn: %d.",
 		REH.DISPLAY.tieBreakShort[rolls.tieBreak] or rolls.tieBreak, rolls.rollsPerTurn)
 

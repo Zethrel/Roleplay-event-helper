@@ -190,6 +190,17 @@ local PRESET_TEMPLATE = {
 		successText = "SUCCESS",
 		failText = "FAILURE",
 		useCritical = true,
+
+		-- Whether a roll is called a success or a failure at all. Off suits an
+		-- event where the roll decides what happens rather than whether it
+		-- worked: at a fishing night, "rolled 7 -> FAILURE" followed by "reels
+		-- in a fat carp" contradicts itself, and the catch is the result.
+		--
+		-- It governs the saying, not the judging. The verdict is still worked
+		-- out, so the log, the tallies and effects that fire on a result all
+		-- keep working; it is simply not announced.
+		useVerdicts = true,
+
 		critSuccessAt = 100,
 		critFailAt = 1,
 		tieBreak = "reroll",

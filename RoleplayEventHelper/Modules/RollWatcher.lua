@@ -375,8 +375,16 @@ function RollWatcher:FormatVerdict(preset, name, roll, verdict, colored, maxRoll
 		end
 	end
 
-	local text = ("%s rolled %d%s -> %s"):format(
-		self:DisplayName(name), roll, die, self:VerdictText(preset, verdict))
+	-- With verdicts off the roll is still recorded and still reported; it is
+	-- just not called anything. "Rennek rolled 7" is a fact, and the loot line
+	-- that follows it is the result.
+	local text
+	if preset.rolls.useVerdicts then
+		text = ("%s rolled %d%s -> %s"):format(
+			self:DisplayName(name), roll, die, self:VerdictText(preset, verdict))
+	else
+		text = ("%s rolled %d%s"):format(self:DisplayName(name), roll, die)
+	end
 
 	if colored then
 		return (VERDICT_COLORS[verdict] or "|cffffffff") .. text .. "|r"
@@ -1050,7 +1058,10 @@ function RollWatcher:HandleSystemMessage(message)
 
 	REH:Print(self:FormatVerdict(preset, fullName, roll, verdict, true, maxRoll))
 
-	if self.mode == "announce" then
+	-- Nothing is announced to the room with verdicts off: without the verdict
+	-- the line is "Rennek rolled 7", which everyone present has already seen
+	-- the client say.
+	if self.mode == "announce" and preset.rolls.useVerdicts then
 		self:QueueLine(preset,
 			self:FormatVerdict(preset, fullName, roll, verdict, false, maxRoll))
 	end

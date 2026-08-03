@@ -96,6 +96,20 @@ H.section("Each one demonstrates what it was written for")
 local fishing = Templates:Build("fishing")
 DB:ValidatePreset(fishing)
 
+-- The reason this switch exists: a 7 is a fat carp, and calling it a FAILURE
+-- in the same breath contradicts the catch.
+H.check("the fishing night does not call rolls a success or failure",
+	fishing.rolls.useVerdicts == false)
+
+local fishingRolls
+for _, message in ipairs(REH.Formatter:BuildMessages(fishing)) do
+	if message:find("Rolls:", 1, true) then
+		fishingRolls = message
+	end
+end
+H.check("so its rules announce no success band",
+	(fishingRolls or ""):find("SUCCESS", 1, true) == nil, fishingRolls)
+
 H.check("the fishing night has its results table on", fishing.loot.enabled)
 H.check("with a full table of bands", #fishing.loot.entries >= 8, #fishing.loot.entries)
 H.check("every band inside its die", (function()
@@ -152,6 +166,11 @@ H.check("the tavern night has no combat sections",
 -- seconds after a roll. The drinks go to the host to read out instead.
 H.check("its drinks come to the host rather than the channel",
 	tavern.loot.enabled and tavern.loot.announce == false)
+H.check("and you cannot fail at being handed a drink",
+	tavern.rolls.useVerdicts == false)
+
+-- The two that are about winning and losing keep their verdicts.
+H.check("the arena still calls rolls a success or failure", arena.rolls.useVerdicts)
 
 local duel = Templates:Build("duel")
 DB:ValidatePreset(duel)

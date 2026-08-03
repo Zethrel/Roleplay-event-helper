@@ -83,6 +83,23 @@ end
 
 builders.rolls = function(preset, emit, options)
 	local rolls = preset.rolls
+
+	-- With verdicts switched off the roll decides what happens rather than
+	-- whether it worked, so announcing a success band would be announcing a
+	-- rule the event does not have. What survives is how to roll and how often.
+	if not rolls.useVerdicts then
+		local sentences = { ("use /roll %d."):format(rolls.dieMax) }
+
+		if rolls.rollsPerTurn == 1 then
+			sentences[#sentences + 1] = "One roll per turn."
+		else
+			sentences[#sentences + 1] = ("%d rolls per turn."):format(rolls.rollsPerTurn)
+		end
+
+		emit(Labelled("Rolls", JoinSentences(sentences), options.useColors))
+		return
+	end
+
 	local bands = {}
 
 	-- A threshold of 1 leaves no failure band at all. Saying "1-0 = FAILURE"

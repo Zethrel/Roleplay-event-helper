@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.15.0 - 2026-08-03
+
+**Rolls do not have to be a success or a failure.** New toggle on the Rolls tab:
+**Call rolls a success or failure**, on by default.
+
+Reported from a fishing night: a 7 announced `Rennek rolled 7 -> FAILURE` and
+then, three seconds later, `Rennek reels in a fat carp.` The two lines
+contradicted each other, because at that event the roll decides *what happens*,
+not *whether it worked*.
+
+Switched off:
+
+- nothing is called a SUCCESS or a FAILURE, and no verdict is announced to the
+  room — the roll is still shown to you as `Rennek rolled 7`
+- the announced rules drop the success bands and the critical rules, keeping
+  how to roll and how many rolls each person gets
+- everything downstream keeps working: the roll log, the per-name tallies, the
+  loot table and roll effects, including effects that fire on a result
+
+**Fishing Night and Tavern Night now ship with it switched off**, which is what
+they always should have done. Existing presets are untouched — the toggle is on
+unless you turn it off.
+
 ## 1.14.0 - 2026-08-03
 
 **The roll effects window opened underneath the main window.** It opened at the

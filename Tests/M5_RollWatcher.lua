@@ -642,6 +642,67 @@ REH.Fields:Set(DB:GetActivePreset(), subgroupField, "1 2")
 H.checkEqual("typing subgroups into the editor works",
 	table.concat(DB:GetActivePreset().rollFilter.subgroups, ","), "1,2")
 
+--------------------------------------------------------------------------------
+H.section("Events where a roll is not a success or a failure")
+--------------------------------------------------------------------------------
+
+-- Asked for from a fishing night: a 7 announced "rolled 7 -> FAILURE" and then,
+-- three seconds later, "reels in a fat carp". The roll decides what happens
+-- there, not whether it worked, and the two lines contradicted each other.
+H.clearOutput()
+H.clearSent()
+H.clearTimers()
+H.resetGroup()
+Watcher:ClearLog()
+
+local quiet = DB:GetActivePreset()
+quiet.rolls.dieMax = 20
+quiet.rolls.successThreshold = 8
+quiet.rolls.useVerdicts = false
+quiet.channel.type = "PARTY"
+DB:ValidatePreset(quiet)
+
+H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Rennek", subgroup = 1 } })
+Watcher:SetMode("announce")
+
+Watcher:HandleSystemMessage("Rennek rolls 7 (1-20)")
+
+H.check("the roll is still reported to the host",
+	H.outputText():find("Rennek rolled 7", 1, true) ~= nil, H.outputText())
+H.check("but it is not called anything",
+	H.outputText():find("FAILURE", 1, true) == nil, H.outputText())
+H.checkEqual("and nothing is announced to the room", #H.sentMessages(), 0)
+
+-- The verdict is still worked out, so everything downstream of it keeps
+-- working: the log, the tallies, and effects that fire on a result.
+local entries = select(1, Watcher:GetLog())
+H.checkEqual("the roll is still logged", #entries, 1)
+H.checkEqual("with the verdict still recorded", entries[1].verdict, "fail")
+H.checkEqual("and the tallies still counted",
+	select(2, Watcher:GetLog())["Rennek-ArgentDawn"].failures, 1)
+
+H.checkEqual("a verdict-triggered effect still knows what the roll was",
+	Watcher:Judge(quiet, 7, 20), "fail")
+
+-- The log reads without verdicts too, since that is where a host reviews the
+-- evening.
+H.check("the log line drops the verdict as well",
+	Watcher:FormatVerdict(quiet, "Rennek-ArgentDawn", 7, "fail", false, 20)
+		:find("->", 1, true) == nil,
+	Watcher:FormatVerdict(quiet, "Rennek-ArgentDawn", 7, "fail", false, 20))
+
+-- Switched back on, nothing has changed.
+quiet.rolls.useVerdicts = true
+H.clearOutput()
+H.clearSent()
+Watcher:HandleSystemMessage("Rennek rolls 7 (1-20)")
+H.check("with verdicts on the roll is judged again",
+	H.outputText():find("FAILURE", 1, true) ~= nil, H.outputText())
+H.checkEqual("and announced", #H.sentMessages(), 1)
+
+Watcher:SetMode("off")
+H.resetGroup()
+
 H.checkNoLeakedGlobals(H.ALLOWED_GLOBALS)
 
 H.finish()

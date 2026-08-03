@@ -604,6 +604,45 @@ out = H.runSlash("preview Nonexistent")
 H.check("preview reports an unknown preset", out:find("No preset named", 1, true) ~= nil, out)
 
 H.check("preview broadcast nothing to other players", #H.sent == 0)
+--------------------------------------------------------------------------------
+H.section("Rules for an event with no success or failure")
+--------------------------------------------------------------------------------
+
+-- With verdicts switched off, announcing a success band would announce a rule
+-- the event does not have.
+local quiet = REH.CreateDefaultPreset("Quiet")
+quiet.rolls.dieMax = 20
+quiet.rolls.useVerdicts = false
+REH.Database:ValidatePreset(quiet)
+
+local quietLine
+for _, message in ipairs(REH.Formatter:BuildMessages(quiet)) do
+	if message:find("Rolls:", 1, true) then
+		quietLine = message
+	end
+end
+
+H.check("the rolls line still says how to roll",
+	(quietLine or ""):find("/roll 20", 1, true) ~= nil, quietLine)
+H.check("without a success band", (quietLine or ""):find("SUCCESS", 1, true) == nil, quietLine)
+H.check("or a failure band", (quietLine or ""):find("FAILURE", 1, true) == nil, quietLine)
+H.check("and without critical rolls, which are the same idea",
+	(quietLine or ""):find("critical", 1, true) == nil, quietLine)
+H.check("but keeping how many rolls each person gets",
+	(quietLine or ""):find("One roll per turn", 1, true) ~= nil, quietLine)
+
+-- Nothing else about the announcement changes.
+quiet.rolls.useVerdicts = true
+REH.Database:ValidatePreset(quiet)
+local loudLine
+for _, message in ipairs(REH.Formatter:BuildMessages(quiet)) do
+	if message:find("Rolls:", 1, true) then
+		loudLine = message
+	end
+end
+H.check("switching it back on restores the bands",
+	(loudLine or ""):find("SUCCESS", 1, true) ~= nil, loudLine)
+
 H.checkNoLeakedGlobals(H.ALLOWED_GLOBALS)
 
 H.finish()

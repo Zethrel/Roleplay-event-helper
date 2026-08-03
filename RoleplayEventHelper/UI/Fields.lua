@@ -199,6 +199,12 @@ Fields.TABS = {
 				set = function(p, v) p.rolls.failText = v end,
 			},
 			{
+				key = "useVerdicts", label = "Call rolls a success or failure", type = "toggle",
+				tooltip = "Off for an event where the roll decides what happens rather than whether it worked -- a fishing night, a drinks table. 'Rennek rolled 7' is still shown and still logged, but nothing is called a FAILURE and the success bands are left out of the announcement.",
+				get = function(p) return p.rolls.useVerdicts end,
+				set = function(p, v) p.rolls.useVerdicts = v end,
+			},
+			{
 				key = "useCritical", label = "Use critical rolls", type = "toggle",
 				tooltip = "Off means every roll is simply a success or a failure. On adds a top and bottom band that count for more.",
 				get = function(p) return p.rolls.useCritical end,

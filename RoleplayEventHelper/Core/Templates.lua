@@ -87,6 +87,10 @@ Templates.LIST = {
 			preset.rolls.critSuccessAt = 20
 			preset.rolls.critFailAt = 1
 
+			-- Nothing here succeeds or fails. A 7 is a fat carp, and calling it
+			-- a FAILURE in the same breath contradicts the catch.
+			preset.rolls.useVerdicts = false
+
 			-- The table is the point of this one. Bands written twice or three
 			-- times are alternatives, one chosen at random, which is what makes
 			-- an evening of the same roll stay interesting.
@@ -166,6 +170,9 @@ Templates.LIST = {
 			preset.rolls.useCritical = false
 			preset.rolls.critSuccessAt = 20
 			preset.rolls.critFailAt = 1
+
+			-- You do not fail at being handed a drink.
+			preset.rolls.useVerdicts = false
 
 			preset.turns.mode = "freeform"
 			preset.turns.turnTimeSeconds = 0
