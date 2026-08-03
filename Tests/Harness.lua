@@ -686,6 +686,7 @@ Harness.ALLOWED_GLOBALS = {
 
 	RoleplayEventHelper = true,
 	RoleplayEventHelper_OnCompartmentClick = true,
+	RoleplayEventHelperEffectsFrame = true,
 	RoleplayEventHelperLogFrame = true,
 	RoleplayEventHelperMinimapButton = true,
 	RoleplayEventHelperTransferFrame = true,

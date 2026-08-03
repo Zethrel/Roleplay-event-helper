@@ -35,12 +35,20 @@ for _, tab in ipairs(Fields:GetTabs()) do
 	for _, field in ipairs(tab.fields) do
 		fieldCount = fieldCount + 1
 
-		if type(field.get) ~= "function" or field.get(target) == nil then
+		-- An action row is a button through to another window; it edits no
+		-- value, so it has nothing to read or write.
+		if field.type == "action" then
+			if type(field.onClick) ~= "function" then
+				allReadable = false
+				unreadable = tab.module .. "." .. field.key .. " (no onClick)"
+			end
+
+		elseif type(field.get) ~= "function" or field.get(target) == nil then
 			allReadable = false
 			unreadable = tab.module .. "." .. field.key
 		end
 
-		if type(field.set) ~= "function" then
+		if field.type ~= "action" and type(field.set) ~= "function" then
 			allWritable = false
 			unwritable = tab.module .. "." .. field.key
 		end

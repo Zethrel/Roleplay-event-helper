@@ -357,6 +357,15 @@ Fields.TABS = {
 				set = function(p, v) p.loot.delaySeconds = v end,
 			},
 			{
+				-- The loot table answers "what did that roll catch". Anything
+				-- more -- firing on a result, several things at once, a chance --
+				-- lives in its own window rather than growing this tab until the
+				-- two-minute setup needs the complicated UI.
+				key = "effects", label = "Roll effects...", type = "action", width = 160,
+				tooltip = "Effects go further than the table above: they can fire on a success or a critical failure rather than a number, several can answer the same roll, and each has its own chance, delay and destination.",
+				onClick = function() REH.UI.EffectsFrame:Toggle() end,
+			},
+			{
 				key = "announce", label = "Send results to my channel", type = "toggle",
 				tooltip = "Off keeps them in your own chat frame. Your client only lets an addon send to /say, /yell, /emote, whispers and custom channels right after a click, so party, raid, guild and instance chat are the reliable ones for this.",
 				get = function(p) return p.loot.announce end,

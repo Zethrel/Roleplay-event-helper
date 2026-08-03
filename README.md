@@ -16,8 +16,8 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**v1.6.0**, in use and being fixed as the game finds things. Covered by 1010
-checks across eleven suites, which run against a stub of the WoW API rather than
+**v1.7.0**, in use and being fixed as the game finds things. Covered by 1082
+checks across twelve suites, which run against a stub of the WoW API rather than
 the client -- see the [changelog](CHANGELOG.md) for what that does and does not
 catch.
 
@@ -73,6 +73,7 @@ then restart the client or `/reload`.
 | `/reh log [clear]` | Show this session's rolls and per-name totals |
 | `/reh round [new]` | Start a new round, or show the current one |
 | `/reh loot [on\|off\|test <roll>]` | The result table read off each roll |
+| `/reh effects [list\|test <roll>]` | Open the roll effects window |
 | `/reh filter [mode]` | Whose rolls are tracked |
 | `/reh subgroups <numbers>` | Raid subgroups counted as combatants |
 | `/reh range [atmost\|exact\|any]` | Which dice sizes count |
@@ -115,8 +116,8 @@ Tagging is the release. Pushing a `v*` tag runs the test suites and then builds
 and uploads the addon zip from [`.pkgmeta`](.pkgmeta):
 
 ```sh
-git tag -a v1.6.0 -m "Roleplay Event Helper v1.6.0"
-git push origin v1.6.0
+git tag -a v1.7.0 -m "Roleplay Event Helper v1.7.0"
+git push origin v1.7.0
 ```
 
 The CurseForge project id is already set in the TOC. One thing is still needed
@@ -259,6 +260,38 @@ let an addon reach `/say`, `/yell`, `/emote`, whispers or custom channels that
 way. Party, raid, guild, officer and instance chat are delivered every time. The
 addon says so once when you set it up against a restricted channel; if your
 event runs in `/say`, turn *Send results to my channel* off and read them out.
+
+## Roll effects
+
+The loot table answers *what did that roll catch*. An effect answers *what
+happens on that roll*, and it can do three things the table cannot. Open it with
+**Roll effects...** on the Loot tab, or `/reh effects`.
+
+| | |
+|---|---|
+| **Fires on** | a number, a range, a success, a failure, a critical either way, or every roll |
+| **How many** | all the effects that match, not just the first |
+| **Each one has** | its own chance, delay, and destination |
+
+So a fishing night can say `Rennek's line snaps.` on a natural 1, `A monster!`
+on a critical success 25% of the time, and `A splash.` on every cast — three
+separate lines, each on its own timing.
+
+`{name}`, `{roll}` and `{result}` are filled in, and `{item}` reaches across to
+whatever the loot table gave that same roll, so the catch and what happens next
+can be two lines rather than one crowded one.
+
+**Try it** in the window — or `/reh effects test 1` — shows what a roll would
+set off without waiting for anyone to roll it and without sending anything.
+Chance and delay are ignored there so you see every effect that matches.
+`/reh effects list` reads the whole set back in plain English.
+
+Effects are per preset and travel in export strings. An event with none behaves
+exactly as it did before they existed.
+
+The delayed-message limitation from the loot table applies here too — but an
+effect set to **to me only** is never subject to it, which is how to run this at
+a `/say` event: the addon tells you what happened and you say it in character.
 
 ## Sharing presets
 

@@ -113,7 +113,28 @@ local function BuildLinesRow(page, field, width, onEdited, onResize)
 	}
 end
 
+--- A row that is a single button rather than a value: a way through to a
+--- window that edits something too wide for a one-line row.
+local function BuildActionRow(page, field, width, onEdited)
+	local button = UI.CreateButton(page, field.label, field.width or 200, UI.ROW_HEIGHT,
+		function()
+			field.onClick()
+		end)
+
+	if field.tooltip then
+		UI.SetTooltip(button, field.label, field.tooltip)
+	end
+
+	return {
+		field = field,
+		control = button,
+		height = UI.ROW_HEIGHT,
+		apply = function() end,
+	}
+end
+
 local BUILDERS = {
+	action = BuildActionRow,
 	text = BuildTextRow,
 	number = BuildNumberRow,
 	decimal = BuildNumberRow,

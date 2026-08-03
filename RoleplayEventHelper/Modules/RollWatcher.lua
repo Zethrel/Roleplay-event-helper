@@ -465,6 +465,33 @@ function RollWatcher:QueueVerdict(preset, text)
 end
 
 --------------------------------------------------------------------------------
+-- Delayed lines
+--------------------------------------------------------------------------------
+
+-- Anything the addon says a few seconds after a roll -- loot, roll effects --
+-- is sent from a timer with no click behind it, and the client only lets an
+-- addon reach /say, /yell, /emote, whispers and custom channels on the back of
+-- one. Party, raid, guild, officer and instance chat have no such rule.
+--
+-- The host is told once, naming their channel, rather than being left to work
+-- out mid-event why the room has gone quiet.
+function RollWatcher:WarnDelayedChannel(preset)
+	if self.delayedChannelWarned then
+		return false
+	end
+
+	if not REH.Announcer.NEEDS_HARDWARE_EVENT[preset.channel.type] then
+		return false
+	end
+
+	self.delayedChannelWarned = true
+	REH:PrintWarning(L["Results are sent a few seconds after the roll, and your client only lets an addon send to %s right after you click something. Party, raid, guild, officer and instance chat are delivered every time."]
+		:format(REH.DISPLAY.channel[preset.channel.type] or preset.channel.type))
+
+	return true
+end
+
+--------------------------------------------------------------------------------
 -- Loot
 --------------------------------------------------------------------------------
 
@@ -531,12 +558,8 @@ function RollWatcher:ScheduleLoot(preset, name, roll)
 
 	local announce = preset.loot.announce and preset.channel.type ~= "PREVIEW"
 
-	if announce and REH.Announcer.NEEDS_HARDWARE_EVENT[preset.channel.type] then
-		if not self.lootChannelWarned then
-			self.lootChannelWarned = true
-			REH:PrintWarning(L["Loot results are sent a few seconds after the roll, and your client only lets an addon send to %s right after you click something. Party, raid, guild, officer and instance chat are delivered every time."]
-				:format(REH.DISPLAY.channel[preset.channel.type] or preset.channel.type))
-		end
+	if announce then
+		self:WarnDelayedChannel(preset)
 	end
 
 	local function deliver()
@@ -555,6 +578,146 @@ function RollWatcher:ScheduleLoot(preset, name, roll)
 	end
 
 	return true
+end
+
+--------------------------------------------------------------------------------
+-- Roll effects
+--------------------------------------------------------------------------------
+
+-- Where the loot table answers "what did that roll catch", effects answer
+-- "what happens on that roll". They differ from loot in three ways that are the
+-- whole reason they exist: they can fire on a result rather than a number,
+-- several can answer the same roll, and each one carries its own chance, delay
+-- and destination.
+
+--- Does this effect answer this roll?
+function RollWatcher:EffectMatches(effect, roll, verdict)
+	if not effect.enabled then
+		return false
+	end
+
+	if effect.trigger == "any" then
+		return true
+	end
+
+	if effect.trigger == "verdict" then
+		return effect.verdict == verdict
+	end
+
+	return roll >= effect.min and roll <= effect.max
+end
+
+--- Every effect that answers a roll, in the host's order.
+---
+--- All of them, not the first: effects are additive by design. "On a natural 1
+--- your line snaps" and "every cast makes a splash" are both true of a 1, and a
+--- host who wanted only one of them would not have written the other.
+function RollWatcher:MatchEffects(preset, roll, verdict)
+	local matched = {}
+
+	for _, effect in ipairs(preset.rollEffects or {}) do
+		if self:EffectMatches(effect, roll, verdict) then
+			matched[#matched + 1] = effect
+		end
+	end
+
+	return matched
+end
+
+function RollWatcher:FormatEffect(preset, effect, name, roll, verdict)
+	local line = effect.message
+	if not line or line == "" then
+		return nil
+	end
+
+	line = line:gsub("{name}", self:DisplayName(name))
+	line = line:gsub("{roll}", tostring(roll))
+	line = line:gsub("{result}", self:VerdictText(preset, verdict or "success"))
+
+	-- {item} lets an effect talk about the loot table's answer for the same
+	-- roll, so "you caught a boot" and "the crowd laughs" can be two lines
+	-- rather than one crowded one.
+	if line:find("{item}", 1, true) then
+		local entry = self:LootFor(preset, roll)
+		line = line:gsub("{item}", (entry and entry.text) or preset.loot.nothingText or "")
+	end
+
+	return REH.StripChatEscapes(line)
+end
+
+--- The chance roll for one effect. Separate so a test can be certain of what it
+--- is testing, and so a host reading the code can see that 100 never asks.
+local function EffectPasses(effect)
+	if (effect.chance or 100) >= 100 then
+		return true
+	end
+	if effect.chance <= 0 then
+		return false
+	end
+	return math.random(100) <= effect.chance
+end
+
+--- Fire every effect a roll sets off. Returns how many were scheduled.
+function RollWatcher:FireEffects(preset, name, roll, verdict)
+	local fired = 0
+
+	for _, effect in ipairs(self:MatchEffects(preset, roll, verdict)) do
+		if EffectPasses(effect) then
+			local line = self:FormatEffect(preset, effect, name, roll, verdict)
+
+			if line then
+				local announce = effect.target == "channel"
+					and preset.channel.type ~= "PREVIEW"
+
+				if announce then
+					self:WarnDelayedChannel(preset)
+				end
+
+				local function deliver()
+					REH:Print("|cffffd100%s|r", line)
+
+					if announce then
+						self:QueueLine(preset, line)
+					end
+				end
+
+				local delay = effect.delaySeconds or 0
+				if delay <= 0 then
+					deliver()
+				else
+					C_Timer.After(delay, deliver)
+				end
+
+				fired = fired + 1
+			end
+		end
+	end
+
+	return fired
+end
+
+--- What a roll would set off, without chance, delay or sending: the answer to
+--- "what happens if someone rolls a 1" asked before the event rather than
+--- during it.
+function RollWatcher:PreviewEffects(preset, roll, name)
+	local lines = {}
+	local verdict = self:Judge(preset, roll, preset.rolls.dieMax)
+
+	for _, effect in ipairs(self:MatchEffects(preset, roll, verdict)) do
+		local line = self:FormatEffect(preset, effect, name or (UnitName and UnitName("player")) or "You",
+			roll, verdict)
+
+		if line then
+			lines[#lines + 1] = {
+				text = line,
+				chance = effect.chance or 100,
+				target = effect.target,
+				delaySeconds = effect.delaySeconds,
+			}
+		end
+	end
+
+	return lines, verdict
 end
 
 --------------------------------------------------------------------------------
@@ -697,7 +860,7 @@ function RollWatcher:ClearLog()
 	hintShown = false
 	rangeHintShown = false
 	capWarned = false
-	self.lootChannelWarned = false
+	self.delayedChannelWarned = false
 
 	if REH.UI and REH.UI.RollLog then
 		REH.UI.RollLog:OnRoundChanged()
@@ -782,10 +945,11 @@ function RollWatcher:HandleSystemMessage(message)
 			self:FormatVerdict(preset, fullName, roll, verdict, false, maxRoll))
 	end
 
-	-- Loot follows its own switch rather than the watcher's mode: a fishing
-	-- night wants the catch in the room without the success/failure verdicts
-	-- going with it.
+	-- Loot and effects follow their own switches rather than the watcher's
+	-- mode: a fishing night wants the catch in the room without the
+	-- success/failure verdicts going with it.
 	self:ScheduleLoot(preset, fullName, roll)
+	self:FireEffects(preset, fullName, roll, verdict)
 
 	return entry
 end

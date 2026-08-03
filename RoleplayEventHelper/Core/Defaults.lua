@@ -9,6 +9,7 @@ REH.MAX_PRESETS = 50
 REH.MAX_RULE_LINE_LENGTH = 200
 REH.MAX_CUSTOM_RULES = 30
 REH.MAX_LOOT_ENTRIES = 60
+REH.MAX_ROLL_EFFECTS = 25
 
 REH.DEFAULT_PRESET_NAME = "Default Event"
 
@@ -25,6 +26,12 @@ REH.INITIATIVE_MODES = { "initiative", "host", "roundrobin", "freeform" }
 REH.ROLL_FILTER_MODES = { "group", "subgroup", "roster", "everyone" }
 REH.RANGE_MODES = { "atMost", "exact", "any" }
 REH.ANNOUNCE_STYLES = { "full", "summary" }
+
+-- Roll effects: what sets one off, what it is judged against, and where the
+-- line it produces goes.
+REH.EFFECT_TRIGGERS = { "band", "verdict", "any" }
+REH.EFFECT_VERDICTS = { "critsuccess", "success", "fail", "critfail" }
+REH.EFFECT_TARGETS = { "channel", "self" }
 REH.CHANNEL_TYPES = {
 	"PREVIEW", "SAY", "YELL", "EMOTE", "PARTY", "RAID", "RAID_WARNING",
 	"INSTANCE_CHAT", "GUILD", "OFFICER", "CHANNEL", "WHISPER",
@@ -85,6 +92,21 @@ REH.DISPLAY = {
 		atMost = "that die or a smaller one",
 		exact = "only that exact die",
 		any = "any die at all",
+	},
+	effectTrigger = {
+		band = "a roll of",
+		verdict = "a result of",
+		any = "any roll",
+	},
+	effectVerdict = {
+		critsuccess = "critical success",
+		success = "success",
+		fail = "failure",
+		critfail = "critical failure",
+	},
+	effectTarget = {
+		channel = "to my channel",
+		self = "to me only",
 	},
 	rollFilter = {
 		group = "party/raid members",
@@ -231,6 +253,16 @@ local PRESET_TEMPLATE = {
 		entries = {},
 	},
 
+	-- Roll effects go further than the loot table: they fire on a result as well
+	-- as on a number, several can answer the same roll, and each one carries its
+	-- own chance, delay and destination. The loot table stays because it is the
+	-- two-minute version of this -- a fishing night should not have to open a
+	-- second window to say what a 3 catches.
+	--
+	-- Empty by default. An event with no effects behaves exactly as it did
+	-- before they existed.
+	rollEffects = {},
+
 	custom = {},
 	etiquette = {},
 
@@ -277,6 +309,23 @@ local PRESET_TEMPLATE = {
 	-- and it is then remembered per preset.
 	channel = { type = "PREVIEW", target = "" },
 }
+
+--- One roll effect, with every field present. Used by the editor's Add button
+--- and by validation, so a hand-written effect and a clicked one are the same
+--- shape.
+function REH.CreateRollEffect()
+	return {
+		enabled = true,
+		trigger = "band",
+		min = 1,
+		max = 1,
+		verdict = "critfail",
+		chance = 100,
+		delaySeconds = 3,
+		target = "channel",
+		message = "{name} rolled {roll}.",
+	}
+end
 
 --- A fresh, independent copy of the default preset.
 function REH.CreateDefaultPreset(eventName)

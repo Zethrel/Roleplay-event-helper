@@ -111,7 +111,11 @@ L["Loot results are off."] = "Loot results are off."
 L["A roll of %d: %s"] = "A roll of %d: %s"
 L["A roll of %d gives nothing."] = "A roll of %d gives nothing."
 L["No results set. Add them on the Loot tab, one per line: '1-3 an anchovy'."] = "No results set. Add them on the Loot tab, one per line: '1-3 an anchovy'."
-L["Loot results are sent a few seconds after the roll, and your client only lets an addon send to %s right after you click something. Party, raid, guild, officer and instance chat are delivered every time."] = "Loot results are sent a few seconds after the roll, and your client only lets an addon send to %s right after you click something. Party, raid, guild, officer and instance chat are delivered every time."
+L["Results are sent a few seconds after the roll, and your client only lets an addon send to %s right after you click something. Party, raid, guild, officer and instance chat are delivered every time."] = "Results are sent a few seconds after the roll, and your client only lets an addon send to %s right after you click something. Party, raid, guild, officer and instance chat are delivered every time."
+
+-- Roll effects
+L["No roll effects set. Open the window with /reh effects."] = "No roll effects set. Open the window with /reh effects."
+L["Roll effects (%d):"] = "Roll effects (%d):"
 
 -- Sections
 L["'%s' announces:"] = "'%s' announces:"

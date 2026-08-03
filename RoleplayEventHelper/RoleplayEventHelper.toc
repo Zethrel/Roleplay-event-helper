@@ -2,7 +2,7 @@
 ## Title: Roleplay Event Helper
 ## Notes: Build your event's house rules, announce them to chat, and adjudicate /roll results.
 ## Author: Zethrel
-## Version: 1.6.0
+## Version: 1.7.0
 ## SavedVariables: RoleplayEventHelperDB
 ## X-Category: Roleplay
 ## IconTexture: Interface\Icons\INV_Misc_Dice_01
@@ -35,6 +35,7 @@ UI\Preview.lua
 UI\PresetList.lua
 UI\RollLog.lua
 UI\TransferFrame.lua
+UI\EffectsFrame.lua
 UI\MinimapButton.lua
 UI\MainFrame.lua
 

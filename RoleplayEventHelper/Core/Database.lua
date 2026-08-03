@@ -124,6 +124,60 @@ local function ValidateLootEntries(list, dieMax, maxEntries)
 	return cleaned
 end
 
+--- Roll effects. Each one is coerced field by field against a fresh default, so
+--- a hand-edited or imported effect missing half its keys becomes a usable
+--- effect rather than something the watcher has to defend against at roll time.
+local function ValidateRollEffects(list, dieMax, maxEntries)
+	if type(list) ~= "table" then
+		return {}
+	end
+
+	local cleaned = {}
+
+	for _, entry in ipairs(list) do
+		if type(entry) == "table" then
+			local effect = REH.CreateRollEffect()
+
+			effect.enabled = REH.ToBoolean(entry.enabled, true)
+			effect.message = REH.CleanString(entry.message, REH.MAX_RULE_LINE_LENGTH)
+			effect.chance = REH.ClampInteger(entry.chance, 0, 100, 100)
+			effect.delaySeconds = REH.ClampNumber(entry.delaySeconds, 0, 30, 3)
+
+			if REH.IsValidEnum(REH.EFFECT_TRIGGERS, entry.trigger) then
+				effect.trigger = entry.trigger
+			end
+
+			if REH.IsValidEnum(REH.EFFECT_VERDICTS, entry.verdict) then
+				effect.verdict = entry.verdict
+			end
+
+			if REH.IsValidEnum(REH.EFFECT_TARGETS, entry.target) then
+				effect.target = entry.target
+			end
+
+			effect.min = REH.ClampInteger(entry.min, 1, dieMax, 1)
+			effect.max = REH.ClampInteger(entry.max, 1, dieMax, effect.min)
+
+			if effect.min > effect.max then
+				effect.min, effect.max = effect.max, effect.min
+			end
+
+			-- An effect with nothing to say is the one thing that cannot be
+			-- repaired into something useful, so it is dropped rather than kept
+			-- as a row that fires silently.
+			if effect.message ~= "" then
+				cleaned[#cleaned + 1] = effect
+			end
+		end
+
+		if maxEntries and #cleaned >= maxEntries then
+			break
+		end
+	end
+
+	return cleaned
+end
+
 --- Coerce account settings into a valid shape in place.
 function Database:ValidateSettings(settings)
 	-- The send delay paces the announcement queue. Too low and the client
@@ -228,6 +282,8 @@ function Database:ValidatePreset(preset)
 	loot.message = REH.CleanString(loot.message, 200, "{name} has caught {item}.")
 	loot.nothingText = REH.CleanString(loot.nothingText, 200)
 	loot.entries = ValidateLootEntries(loot.entries, rolls.dieMax, REH.MAX_LOOT_ENTRIES)
+
+	preset.rollEffects = ValidateRollEffects(preset.rollEffects, rolls.dieMax, REH.MAX_ROLL_EFFECTS)
 
 	-- Free-text rule lists
 	preset.custom = ValidateStringList(preset.custom, REH.MAX_CUSTOM_RULES)

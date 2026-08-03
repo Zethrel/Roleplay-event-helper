@@ -484,6 +484,34 @@ Register("loot", "[on|off|test <roll>]", "the result table read off each roll",
 		end
 	end)
 
+Register("effects", "[test <roll>]", "open the roll effects window", function(argument)
+	local word, rest = argument:match("^(%S*)%s*(.-)$")
+	word = word:lower()
+
+	if word == "test" then
+		REH.UI.EffectsFrame:Test(tonumber(rest))
+		return
+	end
+
+	if word == "list" then
+		local effects = REH.Database:GetActivePreset().rollEffects
+
+		if #effects == 0 then
+			REH:Print(L["No roll effects set. Open the window with /reh effects."])
+			return
+		end
+
+		REH:Print(L["Roll effects (%d):"]:format(#effects))
+		for index, effect in ipairs(effects) do
+			REH:Print("  %d. %s%s", index, REH.UI.EffectsFrame:Describe(effect),
+				effect.enabled and "" or " (off)")
+		end
+		return
+	end
+
+	REH.UI.EffectsFrame:Toggle()
+end)
+
 Register("mute", "<name>", "stop adjudicating one name this session", function(argument)
 	if argument == "" then
 		REH:PrintError(L["Usage: %s"]:format("/reh mute <name>"))

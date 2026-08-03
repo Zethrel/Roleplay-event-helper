@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.7.0 - 2026-08-03
+
+**Roll effects: a window for the complicated version of the loot table.** Same
+host, next request. The table on the Loot tab answers "what did that roll
+catch"; an effect answers "what happens on that roll", and it can do three
+things the table cannot.
+
+- **Fire on a result, not just a number.** An effect triggers on a roll, a
+  range, a success, a failure, a critical either way, or every roll.
+- **Several can answer the same roll.** "On a natural 1 your line snaps" and
+  "every cast makes a splash" are both true of a 1, so both are said. The loot
+  table still stops at its first match, which is what makes it the quick one.
+- **Each carries its own chance, delay and destination.** A 25% chance of the
+  big one getting away; two seconds before the crowd reacts; a line only you
+  see while the rest goes to the room.
+
+`{name}`, `{roll}` and `{result}` are filled in, and `{item}` reaches across to
+whatever the loot table gave that same roll -- so the catch and what happens
+next can be two lines rather than one crowded one.
+
+Open it with **Roll effects...** on the Loot tab or `/reh effects`. **Try it**
+in the window (or `/reh effects test 1`) shows what a roll would set off without
+waiting for someone to roll it and without sending anything. `/reh effects list`
+reads the whole set back in plain English.
+
+Effects are per preset, travel in export strings, and an event with none behaves
+exactly as it did before they existed. The same delayed-message limitation as
+the loot table applies: /say, /yell, /emote, whispers and custom channels cannot
+receive a line sent seconds after a roll, and the addon says so once. An effect
+set to *to me only* is never affected by that, which makes it a way to run the
+whole thing in a `/say` event with the host reading the results out.
+
 ## 1.6.0 - 2026-08-03
 
 **A loot table, read off the roll.** Asked for by a host running a fishing
