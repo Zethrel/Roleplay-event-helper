@@ -189,11 +189,20 @@ function Database:ValidateSettings(settings)
 		and settings.sendMode ~= "auto" then
 		settings.sendMode = "auto"
 	end
-	if type(settings.frameSize) ~= "table" then
-		settings.frameSize = {}
+	-- Remembered window sizes. Clamped on load: a size saved by a future
+	-- version, or edited by hand, must never produce a window that cannot be
+	-- read or reached.
+	local function ValidateSize(key, minWidth, maxWidth, width, minHeight, maxHeight, height)
+		if type(settings[key]) ~= "table" then
+			settings[key] = {}
+		end
+		settings[key].width = REH.ClampNumber(settings[key].width, minWidth, maxWidth, width)
+		settings[key].height = REH.ClampNumber(settings[key].height, minHeight, maxHeight, height)
 	end
-	settings.frameSize.width = REH.ClampNumber(settings.frameSize.width, 820, 1800, 820)
-	settings.frameSize.height = REH.ClampNumber(settings.frameSize.height, 460, 1200, 600)
+
+	ValidateSize("frameSize", 820, 1800, 820, 460, 1200, 600)
+	ValidateSize("logSize", 320, 1000, 420, 260, 1200, 400)
+	ValidateSize("effectsSize", 600, 1400, 640, 260, 1200, 480)
 
 	settings.useSeparators = REH.ToBoolean(settings.useSeparators, false)
 	settings.mergeLines = REH.ToBoolean(settings.mergeLines, true)

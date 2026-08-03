@@ -11,6 +11,12 @@ local BOTTOM_BAR_HEIGHT = 32
 local TAB_HEIGHT = 24
 local TITLE_HEIGHT = 28
 
+-- The strip between the preview and the bottom bar where the status line
+-- lives ("You are not in a party", "Sending 3 of 13..."). It needs reserving:
+-- laid out without it, the preview's bottom edge sits over the text and the
+-- host reads half a sentence.
+local STATUS_HEIGHT = 18
+
 -- The window can be dragged out. The minimum is the size everything was laid
 -- out against, because the bottom bar is a fixed row of buttons and shrinking
 -- below that would slide them into each other; the maximum is generous rather
@@ -275,54 +281,14 @@ local function Build()
 	-- Resizing
 	----------------------------------------------------------------------------
 
-	frame:SetResizable(true)
-
-	-- SetResizeBounds is the current call; the older pair is kept for clients
-	-- that have not got it, since being unable to set bounds must not cost the
-	-- window its resizing altogether.
-	if frame.SetResizeBounds then
-		frame:SetResizeBounds(MIN_WIDTH, MIN_HEIGHT, MAX_WIDTH, MAX_HEIGHT)
-	else
-		if frame.SetMinResize then
-			frame:SetMinResize(MIN_WIDTH, MIN_HEIGHT)
-		end
-		if frame.SetMaxResize then
-			frame:SetMaxResize(MAX_WIDTH, MAX_HEIGHT)
-		end
-	end
-
-	local grip = CreateFrame("Button", nil, frame)
-	grip:SetSize(16, 16)
-	grip:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
-	grip:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
-	grip:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
-	grip:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
-	frame.grip = grip
-
-	grip:SetScript("OnMouseDown", function()
-		frame:StartSizing("BOTTOMRIGHT")
-	end)
-
-	grip:SetScript("OnMouseUp", function()
-		frame:StopMovingOrSizing()
-		MainFrame:SaveSize()
-	end)
-
-	UI.SetTooltip(grip, "Resize",
-		"Drag to make the window bigger. Most of the extra height goes to the preview.\n\nDouble-click to go back to the default size.")
-
-	-- A window dragged somewhere unusable is a window the host has to fix by
-	-- hand, so there is always a way back.
-	grip:RegisterForClicks("AnyUp")
-	grip:SetScript("OnDoubleClick", function()
-		MainFrame:ResetSize()
-	end)
-
-	-- One layout pass, driven by the frame's actual size, so a drag and a
-	-- restored size go through exactly the same code.
-	frame:SetScript("OnSizeChanged", function()
-		MainFrame:Layout()
-	end)
+	UI.MakeResizable(frame, {
+		minWidth = MIN_WIDTH, minHeight = MIN_HEIGHT,
+		maxWidth = MAX_WIDTH, maxHeight = MAX_HEIGHT,
+		defaultWidth = WIDTH, defaultHeight = HEIGHT,
+		tooltip = "Drag to make the window bigger. Most of the extra height goes to the preview.\n\nDouble-click to go back to the default size.",
+		onResize = function() MainFrame:Layout() end,
+		onSaved = function() MainFrame:SaveSize() end,
+	})
 
 	-- Escape closes the window, the way every other panel behaves.
 	if UISpecialFrames then
@@ -345,7 +311,7 @@ end
 --- How the interior is divided at a given window size. Pure arithmetic, kept
 --- apart from the frames so the sizing rules can be tested directly.
 function MainFrame:Measure(width, height)
-	local interior = height - TITLE_HEIGHT - BOTTOM_BAR_HEIGHT - 24
+	local interior = height - TITLE_HEIGHT - BOTTOM_BAR_HEIGHT - STATUS_HEIGHT - 24
 
 	local extra = math.max(height - HEIGHT, 0)
 	local previewHeight = PREVIEW_HEIGHT + math.floor(extra * PREVIEW_SHARE_OF_EXTRA)

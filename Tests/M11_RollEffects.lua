@@ -359,6 +359,36 @@ H.check("it closes", Effects:IsShown() == false)
 
 Effects:Toggle()
 H.check("and toggles back open", Effects:IsShown())
+
+--------------------------------------------------------------------------------
+H.section("The effects window can be dragged out")
+--------------------------------------------------------------------------------
+
+local effectsFrame = Effects:GetFrame()
+Effects:Refresh()
+
+local beforeWidth = effectsFrame:GetWidth()
+
+effectsFrame:SetSize(1200, 800)
+H.checkEqual("the window takes a dragged size", effectsFrame:GetWidth(), 1200)
+H.check("which is wider than it was", effectsFrame:GetWidth() > beforeWidth)
+
+Effects:SaveSize()
+local savedEffects = DB:GetSettings().effectsSize
+H.checkEqual("and remembers it", savedEffects.width, 1200)
+H.checkEqual("in both directions", savedEffects.height, 800)
+
+-- Adding an effect after a resize must build the new row at the window's
+-- current width, not the width it was created at.
+local list = DB:GetActivePreset().rollEffects
+list[#list + 1] = REH.CreateRollEffect()
+Effects:Refresh()
+H.check("a row added after the drag is as wide as the window",
+	effectsFrame:GetWidth() >= 1200)
+
+effectsFrame:SetSize(640, 480)
+H.check("and it goes back down again", effectsFrame:GetWidth() == 640)
+
 Effects:Hide()
 
 --------------------------------------------------------------------------------

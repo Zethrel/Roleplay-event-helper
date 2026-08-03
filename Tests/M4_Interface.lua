@@ -544,9 +544,19 @@ H.checkEqual("300 more pixels of height, 180 of them to the preview",
 
 -- Left unchecked, the share rule would eventually leave no editor at all.
 local veryTall = MainFrame:Measure(820, 1200)
-H.check("the preview never takes more than half the interior",
-	veryTall.previewHeight <= (1200 - 28 - 32 - 24) * 0.55 + 1, veryTall.previewHeight)
+H.check("the preview never grows past the editor above it",
+	veryTall.previewHeight <= veryTall.topHeight, veryTall.previewHeight)
 H.check("so the editor always has room to work in", veryTall.topHeight > 200)
+
+-- The status line lives between the preview and the bottom bar. Laid out
+-- without a strip of its own it ends up under the preview, and the host reads
+-- half of "You are not in a party."
+for _, height in ipairs({ 460, 600, 900, 1200 }) do
+	local size = MainFrame:Measure(820, height)
+	local previewBottom = height - (44 + size.topHeight + size.previewHeight)
+	H.check(("the status line is clear of the preview at %dpx"):format(height),
+		previewBottom >= 52, previewBottom)
+end
 
 local wide = MainFrame:Measure(1400, 600)
 H.checkEqual("extra width goes to the editor, not the preset list",

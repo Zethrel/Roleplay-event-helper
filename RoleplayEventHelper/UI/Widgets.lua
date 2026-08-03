@@ -334,6 +334,80 @@ function UI.ResizeScrollArea(scroll, width, height)
 end
 
 --------------------------------------------------------------------------------
+-- Resizing
+--------------------------------------------------------------------------------
+
+--- Give a window a resize grip in its bottom-right corner.
+---
+--- `spec` carries the bounds, the default size to return to, and three
+--- callbacks: `onResize` to lay the window out, `onSaved` to remember the new
+--- size, and `onReset` for the double-click. Shared by every window that can be
+--- dragged out, so they behave identically -- a host who learns the grip on one
+--- has learnt it everywhere.
+function UI.MakeResizable(frame, spec)
+	frame:SetResizable(true)
+
+	-- SetResizeBounds is the current call; the older pair is kept for clients
+	-- that have not got it, since being unable to set bounds must not cost the
+	-- window its resizing altogether.
+	if frame.SetResizeBounds then
+		frame:SetResizeBounds(spec.minWidth, spec.minHeight, spec.maxWidth, spec.maxHeight)
+	else
+		if frame.SetMinResize then
+			frame:SetMinResize(spec.minWidth, spec.minHeight)
+		end
+		if frame.SetMaxResize then
+			frame:SetMaxResize(spec.maxWidth, spec.maxHeight)
+		end
+	end
+
+	local grip = CreateFrame("Button", nil, frame)
+	grip:SetSize(16, 16)
+	grip:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
+	grip:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+	grip:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+	grip:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
+
+	grip:SetScript("OnMouseDown", function()
+		frame:StartSizing("BOTTOMRIGHT")
+	end)
+
+	grip:SetScript("OnMouseUp", function()
+		frame:StopMovingOrSizing()
+		if spec.onSaved then
+			spec.onSaved()
+		end
+	end)
+
+	-- A window dragged to an awkward size is a window the host would otherwise
+	-- have to fix by hand, so there is always a way back.
+	grip:RegisterForClicks("AnyUp")
+	grip:SetScript("OnDoubleClick", function()
+		frame:SetSize(spec.defaultWidth, spec.defaultHeight)
+		if spec.onSaved then
+			spec.onSaved()
+		end
+		if spec.onResize then
+			spec.onResize()
+		end
+	end)
+
+	UI.SetTooltip(grip, "Resize",
+		spec.tooltip or "Drag to resize this window.\n\nDouble-click to go back to the default size.")
+
+	-- One layout pass driven by the frame's actual size, so a drag and a
+	-- restored size go through exactly the same code.
+	if spec.onResize then
+		frame:SetScript("OnSizeChanged", function()
+			spec.onResize()
+		end)
+	end
+
+	frame.resizeGrip = grip
+	return grip
+end
+
+--------------------------------------------------------------------------------
 -- Tooltips
 --------------------------------------------------------------------------------
 

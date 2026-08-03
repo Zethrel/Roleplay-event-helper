@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.10.0 - 2026-08-03
+
+**The roll log and the roll effects window resize too.** Same grip in the
+bottom-right corner, same double-click to go back to the default, and each
+window remembers its own size.
+
+- The **roll log** gives all the extra room to the text, which is what a host
+  reading back through a busy round wants.
+- The **roll effects** window gives the extra width to the message boxes, the
+  one field on a row that can run out of space.
+
+**Fixed: the status line was hidden behind the preview.** Sentences like
+`You are not in a party.` were printed under the preview pane's bottom edge, so
+only the lower half of the text was visible — which is why the announce button
+could be greyed out with no readable reason next to it. The status line now has
+a strip of its own.
+
+**Fixed: on a roll effect row, the remove button sat on top of the delay box.**
+The right-hand controls are now chained leftwards from the corner instead of
+each being placed at a measured offset, so they stay together at any width.
+
 ## 1.9.0 - 2026-08-03
 
 **The window can be dragged out.** Grab the grip in the bottom-right corner and

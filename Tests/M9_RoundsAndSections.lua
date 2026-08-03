@@ -285,6 +285,41 @@ H.checkEqual("the log's own button starts a round too", Watcher:GetCurrentRound(
 	roundBefore + 1)
 H.checkEqual("and announces it", #H.sent, 1)
 
+--------------------------------------------------------------------------------
+H.section("The log can be dragged out")
+--------------------------------------------------------------------------------
+
+-- A busy round is exactly what a host wants more room for, so the log resizes
+-- the same way the main window does.
+Log:Show()
+local logFrame = Log:GetFrame()
+
+logFrame:SetSize(800, 900)
+H.checkEqual("the log takes a dragged size", logFrame:GetWidth(), 800)
+H.check("and the text is rewrapped to match",
+	logFrame.bodyText:GetWidth() == 800 - 40, logFrame.bodyText:GetWidth())
+
+Log:Refresh()
+H.check("it still renders at that size",
+	Log:BuildText(0):find("Bob", 1, true) ~= nil)
+
+Log:SaveSize()
+local savedLog = DB:GetSettings().logSize
+H.checkEqual("the size is remembered", savedLog.width, 800)
+H.checkEqual("in both directions", savedLog.height, 900)
+
+logFrame:SetSize(420, 400)
+H.checkEqual("and goes back down again", logFrame:GetWidth(), 420)
+
+-- A hand-edited size must not produce a log that cannot be read.
+local settings = DB:GetSettings()
+settings.logSize = { width = 10, height = 99999 }
+DB:ValidateSettings(settings)
+H.check("a saved width below the minimum is clamped up", settings.logSize.width >= 320,
+	settings.logSize.width)
+H.check("and an absurd height down", settings.logSize.height <= 1200,
+	settings.logSize.height)
+
 REH.UI.RollLog:Hide()
 
 H.checkNoLeakedGlobals(H.ALLOWED_GLOBALS)

@@ -142,6 +142,8 @@ REH.DEFAULT_SETTINGS = {
 	-- version, or edited by hand, must not produce a window that cannot be
 	-- reached or read.
 	frameSize = { width = 820, height = 600 },
+	logSize = { width = 420, height = 400 },
+	effectsSize = { width = 640, height = 480 },
 	sendDelay = 0.7,
 
 	-- "auto" picks per channel: burst where the client needs a hardware event

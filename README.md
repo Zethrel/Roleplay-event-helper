@@ -16,7 +16,7 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**v1.9.0**, in use and being fixed as the game finds things. Covered by 1125
+**v1.10.0**, in use and being fixed as the game finds things. Covered by 1143
 checks across twelve suites, which run against a stub of the WoW API rather than
 the client -- see the [changelog](CHANGELOG.md) for what that does and does not
 catch.
@@ -116,8 +116,8 @@ Tagging is the release. Pushing a `v*` tag runs the test suites and then builds
 and uploads the addon zip from [`.pkgmeta`](.pkgmeta):
 
 ```sh
-git tag -a v1.9.0 -m "Roleplay Event Helper v1.9.0"
-git push origin v1.9.0
+git tag -a v1.10.0 -m "Roleplay Event Helper v1.10.0"
+git push origin v1.10.0
 ```
 
 The CurseForge project id is already set in the TOC. One thing is still needed
@@ -161,10 +161,15 @@ Damage, Turns, Loot, Rules, Etiquette. Along the bottom is the **live preview**:
 exact messages that will be sent, with byte counts and an estimate of how long
 the announcement takes. Editing any rule updates it immediately.
 
-**The window resizes.** Drag the grip in the bottom-right corner to make it
-bigger; most of the extra height goes to the preview, so a long rule set can be
-read in one go rather than scrolled through. The size is remembered between
-sessions, and double-clicking the grip puts it back to the default.
+**The windows resize.** Drag the grip in the bottom-right corner to make one
+bigger; double-click the grip to go back to the default. Each window remembers
+its own size between sessions.
+
+| Window | Where the extra room goes |
+|---|---|
+| Main | Most of the height to the preview, so a long rule set reads in one go; width to the editor |
+| Roll log | All of it to the text |
+| Roll effects | Width to the message boxes, the one field that runs out of room |
 
 Health rows and rule lists are edited as plain text, one entry per line
 (`Cloth 10`, `Shield equipped +1`), so a whole rule set can be pasted in or out.

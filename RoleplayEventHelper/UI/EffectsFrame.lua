@@ -17,6 +17,8 @@ UI.EffectsFrame = EffectsFrame
 -- shows what it needs and hides the rest.
 
 local WIDTH, HEIGHT = 640, 480
+local MIN_WIDTH, MIN_HEIGHT = 600, 260
+local MAX_WIDTH, MAX_HEIGHT = 1400, 1200
 local ROW_HEIGHT = 56
 local ROW_SPACING = 4
 
@@ -88,9 +90,15 @@ end
 -- Rows
 --------------------------------------------------------------------------------
 
+--- How wide a row is at the window's current size.
+local function RowWidth()
+	local width = (frame and frame:GetWidth()) or WIDTH
+	return math.max(width - 60, MIN_WIDTH - 60)
+end
+
 local function BuildRow(parent, index)
 	local row = CreateFrame("Frame", nil, parent)
-	row:SetSize(WIDTH - 60, ROW_HEIGHT)
+	row:SetSize(RowWidth(), ROW_HEIGHT)
 
 	UI.AddBackground(row, 0.1, 0.1, 0.13, 0.5)
 
@@ -170,7 +178,6 @@ local function BuildRow(parent, index)
 			Commit()
 		end
 	end)
-	target:SetPoint("TOPRIGHT", row, "TOPRIGHT", -110, -4)
 	UI.SetTooltip(target, "Where it goes",
 		"To my channel: sent to the room, subject to your client's rules about delayed messages. To me only: shown in your own chat frame.")
 	row.target = target
@@ -182,12 +189,10 @@ local function BuildRow(parent, index)
 			Commit()
 		end
 	end)
-	chance:SetPoint("LEFT", target, "RIGHT", 24, 0)
 	UI.SetTooltip(chance, "Chance", "Percent chance the effect fires when it matches. 100 always fires.")
 	row.chance = chance
 
 	local chanceLabel = UI.CreateLabel(row, "%", "GameFontNormalSmall")
-	chanceLabel:SetPoint("LEFT", chance, "RIGHT", 2, 0)
 
 	local delay = UI.CreateEditBox(row, 38, 4, function(text)
 		local record = effect()
@@ -196,12 +201,10 @@ local function BuildRow(parent, index)
 			Commit()
 		end
 	end)
-	delay:SetPoint("LEFT", chanceLabel, "RIGHT", 8, 0)
 	UI.SetTooltip(delay, "Delay", "Seconds to wait after the roll before saying it.")
 	row.delay = delay
 
 	local delayLabel = UI.CreateLabel(row, "s", "GameFontNormalSmall")
-	delayLabel:SetPoint("LEFT", delay, "RIGHT", 2, 0)
 
 	local random = UI.CreateCheckbox(row, "", function(checked)
 		local record = effect()
@@ -215,7 +218,7 @@ local function BuildRow(parent, index)
 		"Tick this on two or more effects with the same trigger and only one of them fires, chosen at random. Three fish written against 4-7 become one fish.")
 	row.random = random
 
-	local message = UI.CreateEditBox(row, WIDTH - 190, REH.MAX_RULE_LINE_LENGTH, function(text)
+	local message = UI.CreateEditBox(row, RowWidth() - 130, REH.MAX_RULE_LINE_LENGTH, function(text)
 		local record = effect()
 		if record then
 			record.message = text
@@ -237,6 +240,16 @@ local function BuildRow(parent, index)
 	remove:SetPoint("TOPRIGHT", row, "TOPRIGHT", -4, -4)
 	UI.SetTooltip(remove, "Remove", "Deletes this effect.")
 	row.remove = remove
+
+	-- The right-hand controls are chained leftwards from the remove button
+	-- rather than each placed at a measured offset. That way they stay together
+	-- when the window is dragged wider, and none of them can end up underneath
+	-- the button at the corner.
+	delayLabel:SetPoint("RIGHT", remove, "LEFT", -6, 0)
+	delay:SetPoint("RIGHT", delayLabel, "LEFT", -2, 0)
+	chanceLabel:SetPoint("RIGHT", delay, "LEFT", -8, 0)
+	chance:SetPoint("RIGHT", chanceLabel, "LEFT", -2, 0)
+	target:SetPoint("RIGHT", chance, "LEFT", -10, 0)
 
 	return row
 end
@@ -367,12 +380,66 @@ local function Build()
 	UI.SetTooltip(testButton, "Try it",
 		"Shows what this roll would set off, in your own chat frame. Nothing is sent, and chance and delay are ignored so you see every effect that matches.")
 
+	UI.MakeResizable(frame, {
+		minWidth = MIN_WIDTH, minHeight = MIN_HEIGHT,
+		maxWidth = MAX_WIDTH, maxHeight = MAX_HEIGHT,
+		defaultWidth = WIDTH, defaultHeight = HEIGHT,
+		tooltip = "Drag to make the window bigger. The extra width goes to the message boxes, which is where a long line runs out of room.\n\nDouble-click to go back to the default size.",
+		onResize = function() EffectsFrame:Layout() end,
+		onSaved = function() EffectsFrame:SaveSize() end,
+	})
+
 	if UISpecialFrames then
 		table.insert(UISpecialFrames, "RoleplayEventHelperEffectsFrame")
 	end
 
 	EffectsFrame.frame = frame
+	EffectsFrame:RestoreSize()
 	return frame
+end
+
+--------------------------------------------------------------------------------
+-- Sizing
+--------------------------------------------------------------------------------
+
+--- Fit the rows to the window's current size. Extra width goes to the message
+--- boxes: everything else on a row is a number or a choice with a natural size,
+--- and the message is the one field a host can run out of room in.
+function EffectsFrame:Layout()
+	if not frame then
+		return
+	end
+
+	UI.ResizeScrollArea(frame.scrollFrame, frame:GetWidth() - 34, frame:GetHeight() - 130)
+
+	local rowWidth = RowWidth()
+
+	for _, row in ipairs(rows) do
+		row:SetWidth(rowWidth)
+		row.message:SetWidth(math.max(rowWidth - 130, 100))
+	end
+end
+
+function EffectsFrame:SaveSize()
+	if not frame then
+		return
+	end
+
+	REH.Database:GetSettings().effectsSize = {
+		width = math.floor(frame:GetWidth() + 0.5),
+		height = math.floor(frame:GetHeight() + 0.5),
+	}
+end
+
+function EffectsFrame:RestoreSize()
+	if not frame then
+		return
+	end
+
+	local saved = REH.Database:GetSettings().effectsSize or {}
+	frame:SetSize(
+		REH.ClampNumber(saved.width, MIN_WIDTH, MAX_WIDTH, WIDTH),
+		REH.ClampNumber(saved.height, MIN_HEIGHT, MAX_HEIGHT, HEIGHT))
 end
 
 --------------------------------------------------------------------------------
@@ -451,6 +518,10 @@ function EffectsFrame:Refresh()
 	else
 		frame.emptyText:Hide()
 	end
+
+	-- Rows added since the last resize are built at whatever width the window
+	-- was, so every refresh ends by fitting them all to what it is now.
+	self:Layout()
 
 	-- The scroll child has to grow with the rows or the ones past the first
 	-- screenful can never be reached.

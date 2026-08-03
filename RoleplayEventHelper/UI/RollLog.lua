@@ -5,6 +5,8 @@ local RollLog = {}
 UI.RollLog = RollLog
 
 local WIDTH, HEIGHT = 420, 400
+local MIN_WIDTH, MIN_HEIGHT = 320, 260
+local MAX_WIDTH, MAX_HEIGHT = 1000, 1200
 
 local frame
 
@@ -165,7 +167,7 @@ local function Build()
 		REH.RollWatcher:BeginRound()
 		RollLog:OnRoundChanged()
 	end)
-	newRoundButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 10)
+	newRoundButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -22, 10)
 	frame.newRoundButton = newRoundButton
 	UI.SetTooltip(newRoundButton, "New round", function()
 		local preset = REH.Database:GetActivePreset()
@@ -208,12 +210,72 @@ local function Build()
 	copyButton:SetPoint("LEFT", clearButton, "RIGHT", 6, 0)
 	frame.copyButton = copyButton
 
+	UI.MakeResizable(frame, {
+		minWidth = MIN_WIDTH, minHeight = MIN_HEIGHT,
+		maxWidth = MAX_WIDTH, maxHeight = MAX_HEIGHT,
+		defaultWidth = WIDTH, defaultHeight = HEIGHT,
+		tooltip = "Drag to make the log bigger, for reading back through a busy round.\n\nDouble-click to go back to the default size.",
+		onResize = function() RollLog:Layout() end,
+		onSaved = function() RollLog:SaveSize() end,
+	})
+
 	if UISpecialFrames then
 		table.insert(UISpecialFrames, "RoleplayEventHelperLogFrame")
 	end
 
 	RollLog.frame = frame
+	RollLog:RestoreSize()
+	RollLog:Layout()
 	return frame
+end
+
+--------------------------------------------------------------------------------
+-- Sizing
+--------------------------------------------------------------------------------
+
+--- Fit the log to the window's current size. A long round is exactly what a
+--- host wants to drag out, so the text area takes all of it.
+function RollLog:Layout()
+	if not frame then
+		return
+	end
+
+	local width, height = frame:GetWidth(), frame:GetHeight()
+
+	UI.ResizeScrollArea(frame.scrollFrame, width - 34, height - 96)
+	frame.bodyText:SetWidth(width - 40)
+
+	if frame.copyBox and frame.copyBox.SetBoxWidth then
+		frame.copyBox:SetBoxWidth(width - 20)
+	end
+
+	-- Rewrapping changes how tall the text is, so the scroll child has to be
+	-- measured again or the last lines become unreachable.
+	if frame.content and frame.bodyText.GetStringHeight then
+		frame.content:SetHeight(math.max(frame.bodyText:GetStringHeight() or 0, 1))
+	end
+end
+
+function RollLog:SaveSize()
+	if not frame then
+		return
+	end
+
+	REH.Database:GetSettings().logSize = {
+		width = math.floor(frame:GetWidth() + 0.5),
+		height = math.floor(frame:GetHeight() + 0.5),
+	}
+end
+
+function RollLog:RestoreSize()
+	if not frame then
+		return
+	end
+
+	local saved = REH.Database:GetSettings().logSize or {}
+	frame:SetSize(
+		REH.ClampNumber(saved.width, MIN_WIDTH, MAX_WIDTH, WIDTH),
+		REH.ClampNumber(saved.height, MIN_HEIGHT, MAX_HEIGHT, HEIGHT))
 end
 
 function RollLog:GetFrame()
