@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.12.0 - 2026-08-03
+
+**Starter presets.** The **New** button now offers four worked events instead of
+going straight to a blank one:
+
+| Starter | What it shows |
+|---|---|
+| **Duel Ring** | Initiative, armor-based health, a turn timer, first to zero loses |
+| **Fishing Night** | A full results table with several fish per band picked at random, plus roll effects for the room's reaction |
+| **Tavern Night** | No combat at all: house rules, etiquette, and a drinks table you read out yourself |
+| **Arena Brawl** | A raid-sized free-for-all where only the fighting subgroups are adjudicated |
+
+Each one arrives complete — rules, etiquette, the numbers, and the sections it
+does not need already switched off — and every one announces to **preview only**
+until you pick a channel. `/reh templates` lists them, `/reh template fishing`
+creates one, and `/reh template duel Friday Duels` names it while creating it.
+
+Making the same starter twice is fine: the second is `Fishing Night 2`.
+
+They exist because a blank preset is a form to fill in, while a worked event is
+something to read and change — and because the loot table and roll effects were
+otherwise invisible until someone went looking for them.
+
+**Fixed: alternatives were announced as separate bands.** A table with three
+fish written against `4-7` announced `4-7 = a salmon. 4-7 = a trout. 4-7 = a
+carp.`, which reads to the room like the host made a mistake and never says that
+a 5 can give any of them. It now reads `4-7 = a salmon, a trout or a carp.`
+
 ## 1.11.0 - 2026-08-03
 
 Four changes aimed at the same thing: the window telling you what it is about

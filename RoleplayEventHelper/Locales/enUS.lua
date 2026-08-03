@@ -38,6 +38,11 @@ L["Renamed '%s' to '%s'."] = "Renamed '%s' to '%s'."
 L["Deleted preset '%s'."] = "Deleted preset '%s'."
 L["Reset preset '%s' to defaults."] = "Reset preset '%s' to defaults."
 
+L["Starter presets:"] = "Starter presets:"
+L["Create one with /reh template <name>, or with the New button."] = "Create one with /reh template <name>, or with the New button."
+L["Created '%s' from the %s starter."] = "Created '%s' from the %s starter."
+L["It announces to preview only. Pick a channel with /reh channel."] = "It announces to preview only. Pick a channel with /reh channel."
+
 -- Confirmation of destructive actions
 L["%s Type /reh confirm within %d seconds to proceed."] = "%s Type /reh confirm within %d seconds to proceed."
 L["This will delete the preset '%s'."] = "This will delete the preset '%s'."

@@ -518,6 +518,49 @@ function Database:CreatePreset(name)
 	return preset, cleaned
 end
 
+--- Create a preset from one of the starter templates.
+---
+--- Goes through the same validation as everything else: a template is written
+--- by hand like a preset, and hand-written data is data that can be wrong.
+function Database:CreateFromTemplate(templateKey, name)
+	local preset, template = REH.Templates:Build(templateKey, nil)
+	if not preset then
+		return nil, template
+	end
+
+	-- The template's own name is the default, with a number after it when that
+	-- is taken, so making three fishing nights never fails on a name clash.
+	local wanted = name
+	if not wanted or wanted == "" then
+		wanted = template.name
+
+		local suffix = 2
+		while self:FindName(wanted) do
+			wanted = ("%s %d"):format(template.name, suffix)
+			suffix = suffix + 1
+		end
+	end
+
+	local cleaned, reason = self:ValidateName(wanted)
+	if not cleaned then
+		return nil, reason
+	end
+
+	if self:FindName(cleaned) then
+		return nil, L["A preset named '%s' already exists."]:format(cleaned)
+	end
+
+	if self:CountPresets() >= REH.MAX_PRESETS then
+		return nil, L["You already have the maximum of %d presets."]:format(REH.MAX_PRESETS)
+	end
+
+	preset = REH.Templates:Build(templateKey, cleaned)
+	self:ValidatePreset(preset)
+	RoleplayEventHelperDB.presets[cleaned] = preset
+
+	return preset, cleaned, template
+end
+
 function Database:CopyPreset(sourceName, newName)
 	local source, resolvedSource = self:GetPreset(sourceName)
 	if not source then

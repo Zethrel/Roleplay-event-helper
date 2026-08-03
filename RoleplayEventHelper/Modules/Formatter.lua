@@ -210,6 +210,19 @@ builders.turns = function(preset, emit, options)
 	end
 end
 
+--- "a boot", "a boot or a tin", "a boot, a tin or a carp".
+local function JoinAlternatives(texts)
+	if #texts == 1 then
+		return texts[1]
+	end
+
+	if #texts == 2 then
+		return texts[1] .. " or " .. texts[2]
+	end
+
+	return table.concat(texts, ", ", 1, #texts - 1) .. " or " .. texts[#texts]
+end
+
 builders.loot = function(preset, emit, options)
 	local loot = preset.loot
 
@@ -217,12 +230,30 @@ builders.loot = function(preset, emit, options)
 		return
 	end
 
-	local bands = {}
-	for _, entry in ipairs(loot.entries) do
-		if entry.min == entry.max then
-			bands[#bands + 1] = ("%d = %s"):format(entry.min, entry.text)
-		else
-			bands[#bands + 1] = ("%d-%d = %s"):format(entry.min, entry.max, entry.text)
+	-- Entries sharing a band are alternatives, one picked at random, so they
+	-- are announced as one band with a choice in it. Listing them separately --
+	-- "4-7 = a salmon. 4-7 = a trout." -- reads to the room like the host made
+	-- a mistake, and hides the fact that a roll of 5 can give either.
+	local bands, seen = {}, {}
+
+	for index, entry in ipairs(loot.entries) do
+		local band = ("%d-%d"):format(entry.min, entry.max)
+
+		if not seen[band] then
+			seen[band] = true
+
+			local texts = { entry.text }
+			for later = index + 1, #loot.entries do
+				local other = loot.entries[later]
+				if other.min == entry.min and other.max == entry.max then
+					texts[#texts + 1] = other.text
+				end
+			end
+
+			local label = (entry.min == entry.max) and tostring(entry.min)
+				or ("%d-%d"):format(entry.min, entry.max)
+
+			bands[#bands + 1] = ("%s = %s"):format(label, JoinAlternatives(texts))
 		end
 	end
 

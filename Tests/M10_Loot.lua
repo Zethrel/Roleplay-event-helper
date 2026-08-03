@@ -164,6 +164,34 @@ H.checkEqual("with its own text", Watcher:LootFor(preset, 7).text, "the one that
 H.checkEqual("while the wide band keeps its pair",
 	#Watcher:LootAlternatives(preset, 5), 2)
 
+-- Alternatives are announced as one band with a choice in it. Listed
+-- separately -- "4-7 = a salmon. 4-7 = a trout." -- the room reads it as a
+-- mistake, and never learns that a 5 can give either.
+preset.loot.entries = Fields.ParseLootLines(
+	"1 your line breaks\n4-7 a salmon\n4-7 a trout\n4-7 a carp")
+local lootLine
+for _, message in ipairs(REH.Formatter:BuildMessages(preset)) do
+	if message:find("Results:", 1, true) then
+		lootLine = message
+	end
+end
+H.check("the announcement groups alternatives into one band",
+	(lootLine or ""):find("4-7 = a salmon, a trout or a carp", 1, true) ~= nil, lootLine)
+H.check("and does not repeat the band",
+	select(2, (lootLine or ""):gsub("4%-7 =", "")) == 1, lootLine)
+
+preset.loot.entries = Fields.ParseLootLines("4-7 a salmon\n4-7 a trout")
+for _, message in ipairs(REH.Formatter:BuildMessages(preset)) do
+	if message:find("Results:", 1, true) then
+		lootLine = message
+	end
+end
+H.check("two alternatives read as a pair",
+	lootLine:find("a salmon or a trout", 1, true) ~= nil, lootLine)
+
+preset.loot.entries = Fields.ParseLootLines(
+	"7 the one that got away\n4-7 a salmon\n4-7 a trout")
+
 H.clearOutput()
 REH.Commands:Handle("loot test 5")
 H.check("/reh loot test says a roll has alternatives",

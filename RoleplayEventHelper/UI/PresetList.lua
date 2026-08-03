@@ -171,17 +171,55 @@ function PresetList:Create(parent, width, height, onChanged)
 
 	local buttonWidth = (width - 22) / 2
 
-	local newButton = UI.CreateButton(frame, "New", buttonWidth, UI.ROW_HEIGHT, function()
-		PromptForName("Name for the new preset:", "", "/reh new <name>", function(name)
-			local preset, result = REH.Database:CreatePreset(name)
+	-- New offers the starter presets rather than going straight to a blank one.
+	-- A blank preset is a form to fill in; a worked event is something to read
+	-- and change, and it is the only place the loot table and roll effects
+	-- introduce themselves without the host going looking.
+	local newPopup = UI.CreatePopupSelector(frame, 220)
+
+	local function TemplateOptions()
+		local options = {
+			{ value = "", label = "Blank preset" },
+		}
+
+		for _, template in ipairs(REH.Templates.LIST) do
+			options[#options + 1] = { value = template.key, label = template.name }
+		end
+
+		return options
+	end
+
+	local newButton = UI.CreateButton(frame, "New", buttonWidth, UI.ROW_HEIGHT)
+	newButton:SetScript("OnClick", function(self)
+		newPopup:Toggle(TemplateOptions(), function(key)
+			if key == "" then
+				PromptForName("Name for the new preset:", "", "/reh new <name>", function(name)
+					local preset, result = REH.Database:CreatePreset(name)
+					if not preset then
+						REH:PrintError(result)
+						return
+					end
+					REH.Database:SetActivePreset(result)
+					notify()
+				end)
+				return
+			end
+
+			local preset, result, template = REH.Database:CreateFromTemplate(key)
 			if not preset then
 				REH:PrintError(result)
 				return
 			end
+
 			REH.Database:SetActivePreset(result)
+			REH:Print("Created '%s' from the %s starter. %s",
+				result, template.name, template.summary)
 			notify()
-		end)
+		end, self)
 	end)
+
+	UI.SetTooltip(newButton, "New preset",
+		"Start from a worked event -- a duel ring, a fishing night, a tavern night, an arena brawl -- or from a blank one. Every starter announces to preview only until you pick a channel.")
 	newButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 8, 8 + 2 * (UI.ROW_HEIGHT + 4))
 
 	local copyButton = UI.CreateButton(frame, "Copy", buttonWidth, UI.ROW_HEIGHT, function()

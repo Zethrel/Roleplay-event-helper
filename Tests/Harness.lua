@@ -45,6 +45,64 @@ function Harness.checkEqual(label, actual, expected)
 		("expected %s, got %s"):format(tostring(expected), tostring(actual)))
 end
 
+--- Structural equality, for checking that something survived a round trip --
+--- validation, an export, a reload -- without being quietly altered.
+function Harness.deepEqual(a, b)
+	if type(a) ~= type(b) then
+		return false
+	end
+
+	if type(a) ~= "table" then
+		return a == b
+	end
+
+	for key, value in pairs(a) do
+		if not Harness.deepEqual(value, b[key]) then
+			return false
+		end
+	end
+
+	for key in pairs(b) do
+		if a[key] == nil then
+			return false
+		end
+	end
+
+	return true
+end
+
+--- The path to the first difference between two tables, for a failure message
+--- that says which field changed rather than that something did.
+function Harness.firstDifference(a, b, path)
+	path = path or ""
+
+	if type(a) ~= type(b) then
+		return ("%s: %s vs %s"):format(path, type(a), type(b))
+	end
+
+	if type(a) ~= "table" then
+		if a == b then
+			return nil
+		end
+		return ("%s: %s vs %s"):format(path, tostring(a), tostring(b))
+	end
+
+	for key, value in pairs(a) do
+		local found = Harness.firstDifference(value, b[key], path .. "." .. tostring(key))
+		if found then
+			return found
+		end
+	end
+
+	for key in pairs(b) do
+		if a[key] == nil then
+			return ("%s.%s: missing, gained %s"):format(path, tostring(key), tostring(b[key]))
+		end
+	end
+
+	return nil
+end
+
 function Harness.finish()
 	print("")
 	if Harness.failures == 0 then

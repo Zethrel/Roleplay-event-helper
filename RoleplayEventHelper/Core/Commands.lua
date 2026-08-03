@@ -777,6 +777,42 @@ Register("new", "<name>", "create a preset from the defaults", function(argument
 	REH:Print(L["Created preset '%s' and made it active."]:format(result))
 end)
 
+Register("templates", nil, "list the starter presets", function()
+	REH:Print(L["Starter presets:"])
+
+	for _, template in ipairs(REH.Templates.LIST) do
+		REH:Print("  |cff8fd3ff%s|r - %s", template.key, template.name)
+		REH:Print("      %s", template.summary)
+	end
+
+	REH:Print(L["Create one with /reh template <name>, or with the New button."])
+end)
+
+Register("template", "<template> [name]", "create a preset from a starter",
+	function(argument)
+		local key, name = argument:match("^(%S*)%s*(.-)$")
+
+		if key == "" then
+			REH.Commands:Handle("templates")
+			return
+		end
+
+		local preset, result, template = REH.Database:CreateFromTemplate(key, name)
+		if not preset then
+			REH:PrintError(result)
+			return
+		end
+
+		REH.Database:SetActivePreset(result)
+		REH:Print(L["Created '%s' from the %s starter."]:format(result, template.name))
+		REH:Print("  %s", template.summary)
+		REH:Print(L["It announces to preview only. Pick a channel with /reh channel."])
+
+		if REH.UI and REH.UI.MainFrame then
+			REH.UI.MainFrame:RefreshAll()
+		end
+	end)
+
 Register("copy", "<new name>", "copy the active preset", function(argument)
 	if argument == "" then
 		REH:PrintError(L["Usage: %s"]:format("/reh copy <new name>"))

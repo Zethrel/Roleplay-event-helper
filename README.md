@@ -16,8 +16,8 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**v1.11.0**, in use and being fixed as the game finds things. Covered by 1159
-checks across twelve suites, which run against a stub of the WoW API rather than
+**v1.12.0**, in use and being fixed as the game finds things. Covered by 1251
+checks across thirteen suites, which run against a stub of the WoW API rather than
 the client -- see the [changelog](CHANGELOG.md) for what that does and does not
 catch.
 
@@ -64,6 +64,8 @@ then restart the client or `/reload`.
 | `/reh cancel` | Stop an announcement in progress |
 | `/reh use <name>` | Switch the active preset |
 | `/reh new <name>` | Create a preset from the defaults |
+| `/reh templates` | List the starter presets |
+| `/reh template <starter> [name]` | Create a preset from a starter |
 | `/reh copy <new name>` | Copy the active preset |
 | `/reh rename <new name>` | Rename the active preset |
 | `/reh delete <name>` | Delete a preset (asks to confirm) |
@@ -116,8 +118,8 @@ Tagging is the release. Pushing a `v*` tag runs the test suites and then builds
 and uploads the addon zip from [`.pkgmeta`](.pkgmeta):
 
 ```sh
-git tag -a v1.11.0 -m "Roleplay Event Helper v1.11.0"
-git push origin v1.11.0
+git tag -a v1.12.0 -m "Roleplay Event Helper v1.12.0"
+git push origin v1.12.0
 ```
 
 The CurseForge project id is already set in the TOC. One thing is still needed
@@ -142,11 +144,29 @@ event bootstrap, saved variables persisting across a reload, no stray globals,
 preset create/copy/rename/delete/reset, and the validation layer's handling of
 corrupt or hand-edited saved data.
 
+## Starter presets
+
+Press **New** and pick one of four worked events rather than starting from a
+blank form:
+
+| Starter | What it is |
+|---|---|
+| **Duel Ring** | One-on-one duels: initiative, armor-based health, a turn timer |
+| **Fishing Night** | A results table with several fish per band, picked at random, and roll effects for the room's reaction |
+| **Tavern Night** | No combat: house rules, etiquette, and a drinks table you read out yourself |
+| **Arena Brawl** | A raid-sized free-for-all where only the fighting subgroups are adjudicated |
+
+Each arrives complete — rules, etiquette, numbers, and the sections it does not
+need already switched off — and announces to **preview only** until you choose a
+channel. `/reh templates` lists them; `/reh template duel Friday Duels` creates
+one under a name of your own.
+
 ## Your first event in four steps
 
-1. `/reh` opens the window. On the **Rolls** and **Health** tabs, set the numbers
-   your event runs on — the defaults are `/roll 100`, 10 or higher succeeds, and
-   Cloth 10 / Leather 11 / Mail 12 / Plate 13 with `+1` for a shield.
+1. `/reh` opens the window. Press **New** and take a starter, or set the numbers
+   yourself on the **Rolls** and **Health** tabs — the defaults are `/roll 100`,
+   10 or higher succeeds, and Cloth 10 / Leather 11 / Mail 12 / Plate 13 with
+   `+1` for a shield.
 2. Add anything else on the **Rules** tab, one rule per line.
 3. Pick where it goes with the channel button at the bottom left, then press
    **Announce Rules**. The preview pane above shows exactly what will be sent.
