@@ -54,6 +54,47 @@ local function SerializeValueLines(entries, valueKey, signed)
 	return table.concat(lines, "\n")
 end
 
+--- "1-3 an anchovy", "4 a boot", "95-100 = a golden carp"
+--- -> { min = 1, max = 3, text = "an anchovy" }
+---
+--- The number comes first because that is how a host reads the table out loud,
+--- and a bare number is a band of one so a single memorable result does not need
+--- writing twice.
+local function ParseLootLines(text)
+	local entries = {}
+
+	for line in tostring(text or ""):gmatch("[^\r\n]+") do
+		local low, high, body = line:match("^%s*(%d+)%s*%-%s*(%d+)%s*=?%s*(.-)%s*$")
+
+		if not low then
+			low, body = line:match("^%s*(%d+)%s*=?%s*(.-)%s*$")
+			high = low
+		end
+
+		if low and body and body ~= "" then
+			entries[#entries + 1] = {
+				min = tonumber(low), max = tonumber(high), text = body,
+			}
+		end
+	end
+
+	return entries
+end
+
+local function SerializeLootLines(entries)
+	local lines = {}
+
+	for _, entry in ipairs(entries or {}) do
+		if entry.min == entry.max then
+			lines[#lines + 1] = ("%d %s"):format(entry.min, entry.text)
+		else
+			lines[#lines + 1] = ("%d-%d %s"):format(entry.min, entry.max, entry.text)
+		end
+	end
+
+	return table.concat(lines, "\n")
+end
+
 local function ParseStringLines(text)
 	local lines = {}
 
@@ -73,6 +114,8 @@ end
 
 Fields.ParseValueLines = ParseValueLines
 Fields.SerializeValueLines = SerializeValueLines
+Fields.ParseLootLines = ParseLootLines
+Fields.SerializeLootLines = SerializeLootLines
 Fields.ParseStringLines = ParseStringLines
 Fields.SerializeStringLines = SerializeStringLines
 
@@ -274,6 +317,50 @@ Fields.TABS = {
 				key = "note", label = "Note", type = "text", maxLength = 200,
 				get = function(p) return p.turns.note end,
 				set = function(p, v) p.turns.note = v end,
+			},
+		},
+	},
+
+	{
+		module = "loot",
+		title = "Loot",
+		fields = {
+			{
+				key = "enabled", label = "Announce a result for each roll", type = "toggle",
+				tooltip = "Reads the roll off the table below. A fishing night rolls, and the addon says what they caught.",
+				get = function(p) return p.loot.enabled end,
+				set = function(p, v) p.loot.enabled = v end,
+			},
+			{
+				key = "entries", label = "Results by roll", type = "lines", height = 160,
+				tooltip = "One per line: '1-3 an anchovy', or '100 a golden carp' for a single number. The first line that covers the roll wins, so put narrow bands above wide ones.",
+				get = function(p) return SerializeLootLines(p.loot.entries) end,
+				set = function(p, v) p.loot.entries = ParseLootLines(v) end,
+			},
+			{
+				key = "message", label = "Result line", type = "text", maxLength = 200,
+				tooltip = "{name}, {item} and {roll} are replaced. e.g. '{name} has caught {item}.'",
+				get = function(p) return p.loot.message end,
+				set = function(p, v) p.loot.message = v end,
+			},
+			{
+				key = "nothingText", label = "When nothing matches", type = "text", maxLength = 200,
+				tooltip = "Used as {item} for a roll no band covers. Leave empty to say nothing at all.",
+				get = function(p) return p.loot.nothingText end,
+				set = function(p, v) p.loot.nothingText = v end,
+			},
+			{
+				key = "delaySeconds", label = "Seconds before the result", type = "decimal",
+				min = 0, max = 30,
+				tooltip = "A pause lets the roll land first, so the result reads as its outcome.",
+				get = function(p) return p.loot.delaySeconds end,
+				set = function(p, v) p.loot.delaySeconds = v end,
+			},
+			{
+				key = "announce", label = "Send results to my channel", type = "toggle",
+				tooltip = "Off keeps them in your own chat frame. Your client only lets an addon send to /say, /yell, /emote, whispers and custom channels right after a click, so party, raid, guild and instance chat are the reliable ones for this.",
+				get = function(p) return p.loot.announce end,
+				set = function(p, v) p.loot.announce = v end,
 			},
 		},
 	},

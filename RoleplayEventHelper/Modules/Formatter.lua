@@ -210,6 +210,25 @@ builders.turns = function(preset, emit, options)
 	end
 end
 
+builders.loot = function(preset, emit, options)
+	local loot = preset.loot
+
+	if not loot.enabled or #loot.entries == 0 then
+		return
+	end
+
+	local bands = {}
+	for _, entry in ipairs(loot.entries) do
+		if entry.min == entry.max then
+			bands[#bands + 1] = ("%d = %s"):format(entry.min, entry.text)
+		else
+			bands[#bands + 1] = ("%d-%d = %s"):format(entry.min, entry.max, entry.text)
+		end
+	end
+
+	emit(Labelled("Results", table.concat(bands, ". ") .. ".", options.useColors))
+end
+
 -- Rules and etiquette lines are sent one per message rather than packed
 -- together. The host wrote them as separate rules, and two of them run into one
 -- message read as a single run-on instruction. It also means the host decides:

@@ -105,6 +105,14 @@ L["Roll log cleared."] = "Roll log cleared."
 L["No rolls recorded yet."] = "No rolls recorded yet."
 L["Totals:"] = "Totals:"
 
+-- Loot results
+L["Loot results are on."] = "Loot results are on."
+L["Loot results are off."] = "Loot results are off."
+L["A roll of %d: %s"] = "A roll of %d: %s"
+L["A roll of %d gives nothing."] = "A roll of %d gives nothing."
+L["No results set. Add them on the Loot tab, one per line: '1-3 an anchovy'."] = "No results set. Add them on the Loot tab, one per line: '1-3 an anchovy'."
+L["Loot results are sent a few seconds after the roll, and your client only lets an addon send to %s right after you click something. Party, raid, guild, officer and instance chat are delivered every time."] = "Loot results are sent a few seconds after the roll, and your client only lets an addon send to %s right after you click something. Party, raid, guild, officer and instance chat are delivered every time."
+
 -- Sections
 L["'%s' announces:"] = "'%s' announces:"
 L["Change with /reh include <section> on|off."] = "Change with /reh include <section> on|off."

@@ -112,9 +112,38 @@ local function Build()
 	editorPanel:SetPoint("TOPLEFT", presetList, "TOPRIGHT", 8, 0)
 	frame.editorPanel = editorPanel
 
+	-- Tab strip. Plain buttons rather than Blizzard's tab templates, which have
+	-- changed shape more than once.
+	--
+	-- Built before the scroll area because it wraps: the strip is as many rows
+	-- as the tabs need, and the editor below starts under whatever that comes to
+	-- rather than under an assumed single row.
+	frame.tabButtons = {}
+
+	local tabX, tabY = 8, 4
+	local tabRight = editorWidth - 8
+
+	for index, tab in ipairs(REH.Fields:GetTabs()) do
+		local width = 8 + math.max(50, #tab.title * 8)
+
+		if tabX > 8 and tabX + width > tabRight then
+			tabX = 8
+			tabY = tabY + TAB_HEIGHT
+		end
+
+		local button = UI.CreateButton(editorPanel, tab.title, width, TAB_HEIGHT - 2, function()
+			MainFrame:SelectTab(index)
+		end)
+		button:SetPoint("TOPLEFT", editorPanel, "TOPLEFT", tabX, -tabY)
+		frame.tabButtons[index] = button
+		tabX = tabX + width + 2
+	end
+
+	local tabStripHeight = tabY + TAB_HEIGHT
+
 	local scroll, content = UI.CreateScrollArea(editorPanel,
-		editorWidth - 30, listHeight - TAB_HEIGHT - 16)
-	scroll:SetPoint("TOPLEFT", editorPanel, "TOPLEFT", 8, -(TAB_HEIGHT + 8))
+		editorWidth - 30, listHeight - tabStripHeight - 16)
+	scroll:SetPoint("TOPLEFT", editorPanel, "TOPLEFT", 8, -(tabStripHeight + 8))
 	frame.editorScroll = scroll
 
 	local editors = UI.Editors:Create(content, editorWidth - 40, function()
@@ -131,21 +160,6 @@ local function Build()
 		if scrollContent then
 			scrollContent:SetHeight(math.max(editors:GetActiveHeight(), 1))
 		end
-	end
-
-	-- Tab strip. Plain buttons rather than Blizzard's tab templates, which have
-	-- changed shape more than once.
-	frame.tabButtons = {}
-	local tabX = 8
-
-	for index, tab in ipairs(REH.Fields:GetTabs()) do
-		local width = 8 + math.max(50, #tab.title * 8)
-		local button = UI.CreateButton(editorPanel, tab.title, width, TAB_HEIGHT - 2, function()
-			MainFrame:SelectTab(index)
-		end)
-		button:SetPoint("TOPLEFT", editorPanel, "TOPLEFT", tabX, -4)
-		frame.tabButtons[index] = button
-		tabX = tabX + width + 2
 	end
 
 	----------------------------------------------------------------------------

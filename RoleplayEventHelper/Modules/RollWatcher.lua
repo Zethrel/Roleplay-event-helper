@@ -413,9 +413,13 @@ local function PumpVerdictQueue()
 	C_Timer.After(VERDICT_SEND_DELAY, PumpVerdictQueue)
 end
 
---- Queue a verdict for the channel, unless the rate cap says otherwise.
+--- Queue one line for the channel, unless the rate cap says otherwise.
 --- Returns true if it was queued.
-function RollWatcher:QueueVerdict(preset, text)
+---
+--- Verdicts and loot results share the queue and the cap deliberately: they go
+--- to the same channel through the same send delay, and what a busy room needs
+--- capping is the total the addon says, not each kind separately.
+function RollWatcher:QueueLine(preset, text)
 	local channel = preset.channel
 
 	if channel.type == "PREVIEW" then
@@ -451,6 +455,103 @@ function RollWatcher:QueueVerdict(preset, text)
 
 	if not verdictSending then
 		PumpVerdictQueue()
+	end
+
+	return true
+end
+
+function RollWatcher:QueueVerdict(preset, text)
+	return self:QueueLine(preset, text)
+end
+
+--------------------------------------------------------------------------------
+-- Loot
+--------------------------------------------------------------------------------
+
+-- A result table keyed off the roll: at a fishing night, rolling a 3 catches an
+-- anchovy. The bands are the host's, the roll is the ordinary /roll everyone
+-- already uses, and the line arrives a few seconds later so it reads as the
+-- outcome of the roll rather than as part of it.
+
+--- The band a roll falls into, or nil. First match wins, so a host can put a
+--- narrow band above a wide one and have it take precedence.
+function RollWatcher:LootFor(preset, roll)
+	local loot = preset.loot
+
+	if not loot or not loot.enabled then
+		return nil
+	end
+
+	for _, entry in ipairs(loot.entries) do
+		if roll >= entry.min and roll <= entry.max then
+			return entry
+		end
+	end
+
+	return nil
+end
+
+--- The line for a roll, or nil when the table says nothing about it.
+function RollWatcher:FormatLoot(preset, name, roll)
+	local loot = preset.loot
+	local entry = self:LootFor(preset, roll)
+
+	local text = entry and entry.text or loot.nothingText
+	if not text or text == "" then
+		return nil
+	end
+
+	local line = loot.message
+	if not line or line == "" then
+		return nil
+	end
+
+	-- gsub rather than format: every one of these strings is host-editable, and
+	-- a stray % in a format string errors instead of printing.
+	line = line:gsub("{name}", self:DisplayName(name))
+	line = line:gsub("{item}", text)
+	line = line:gsub("{roll}", tostring(roll))
+
+	return REH.StripChatEscapes(line), entry
+end
+
+--- Show the loot for a roll, after the preset's delay.
+---
+--- The delay is what makes this readable at an event, and it is also what makes
+--- the channel matter: a message sent from a timer has no click behind it, and
+--- the client only lets an addon reach /say, /yell, /emote, whispers and custom
+--- channels on the back of one. Party, raid, guild, officer and instance chat
+--- have no such rule, so those are the ones a loot table can be announced in
+--- reliably. The host is told once rather than left wondering.
+function RollWatcher:ScheduleLoot(preset, name, roll)
+	local line = self:FormatLoot(preset, name, roll)
+	if not line then
+		return false
+	end
+
+	local announce = preset.loot.announce and preset.channel.type ~= "PREVIEW"
+
+	if announce and REH.Announcer.NEEDS_HARDWARE_EVENT[preset.channel.type] then
+		if not self.lootChannelWarned then
+			self.lootChannelWarned = true
+			REH:PrintWarning(L["Loot results are sent a few seconds after the roll, and your client only lets an addon send to %s right after you click something. Party, raid, guild, officer and instance chat are delivered every time."]
+				:format(REH.DISPLAY.channel[preset.channel.type] or preset.channel.type))
+		end
+	end
+
+	local function deliver()
+		REH:Print("|cffffd100%s|r", line)
+
+		if announce then
+			self:QueueLine(preset, line)
+		end
+	end
+
+	local delay = preset.loot.delaySeconds or 0
+	if delay <= 0 then
+		deliver()
+	else
+		C_Timer.After(delay, deliver)
 	end
 
 	return true
@@ -596,6 +697,7 @@ function RollWatcher:ClearLog()
 	hintShown = false
 	rangeHintShown = false
 	capWarned = false
+	self.lootChannelWarned = false
 
 	if REH.UI and REH.UI.RollLog then
 		REH.UI.RollLog:OnRoundChanged()
@@ -676,9 +778,14 @@ function RollWatcher:HandleSystemMessage(message)
 	REH:Print(self:FormatVerdict(preset, fullName, roll, verdict, true, maxRoll))
 
 	if self.mode == "announce" then
-		self:QueueVerdict(preset,
+		self:QueueLine(preset,
 			self:FormatVerdict(preset, fullName, roll, verdict, false, maxRoll))
 	end
+
+	-- Loot follows its own switch rather than the watcher's mode: a fishing
+	-- night wants the catch in the room without the success/failure verdicts
+	-- going with it.
+	self:ScheduleLoot(preset, fullName, roll)
 
 	return entry
 end

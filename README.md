@@ -16,8 +16,8 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**v1.5.1**, in use and being fixed as the game finds things. Covered by 935
-checks across ten suites, which run against a stub of the WoW API rather than
+**v1.6.0**, in use and being fixed as the game finds things. Covered by 1010
+checks across eleven suites, which run against a stub of the WoW API rather than
 the client -- see the [changelog](CHANGELOG.md) for what that does and does not
 catch.
 
@@ -72,6 +72,7 @@ then restart the client or `/reload`.
 | `/reh watch [on\|off\|announce]` | Arm or disarm the roll watcher |
 | `/reh log [clear]` | Show this session's rolls and per-name totals |
 | `/reh round [new]` | Start a new round, or show the current one |
+| `/reh loot [on\|off\|test <roll>]` | The result table read off each roll |
 | `/reh filter [mode]` | Whose rolls are tracked |
 | `/reh subgroups <numbers>` | Raid subgroups counted as combatants |
 | `/reh range [atmost\|exact\|any]` | Which dice sizes count |
@@ -155,7 +156,7 @@ corrupt or hand-edited saved data.
 
 `/reh` opens the main window. On the left is your preset list with New, Copy,
 Rename and Delete. On the right are tabbed editors — Event, Rolls, Health,
-Damage, Turns, Rules, Etiquette. Along the bottom is the **live preview**: the
+Damage, Turns, Loot, Rules, Etiquette. Along the bottom is the **live preview**: the
 exact messages that will be sent, with byte counts and an estimate of how long
 the announcement takes. Editing any rule updates it immediately.
 
@@ -224,6 +225,40 @@ strict matching.
 
 Cross-realm names are normalized on both sides, so `Faraway-Moon Guard` matches
 whether the roster or the system message spells it with a space.
+
+## Loot tables
+
+Not every roll is a fight. On the **Loot** tab you can give the event a result
+table, and the addon reads each roll off it:
+
+```
+1-3    an anchovy
+4-10   an old boot
+11-89  a river trout
+90-99  a gleaming salmon
+100    the legendary whale
+```
+
+Someone rolls a 3 and, a few seconds later, `Rennek has caught an anchovy.`
+One entry per line — a range or a single number — and the first line covering
+the roll wins, so a narrow band can sit above a wide one. The line itself is
+yours: `{name}`, `{item}` and `{roll}` are filled in.
+
+It is **off by default**, has its own send switch separate from the watcher's
+verdicts, and obeys the same filter as everything else — whoever the watcher
+ignores is not handed a fish. A roll no band covers says nothing unless you give
+it something to say. `/reh loot test 3` shows what a roll would give without
+waiting for one.
+
+The table can be announced with your rules like any other section, or left out
+of the announcement to keep the catches a surprise.
+
+**One limitation, worth knowing before the event.** The result is sent a few
+seconds after the roll rather than from a button press, and the client will not
+let an addon reach `/say`, `/yell`, `/emote`, whispers or custom channels that
+way. Party, raid, guild, officer and instance chat are delivered every time. The
+addon says so once when you set it up against a restricted channel; if your
+event runs in `/say`, turn *Send results to my channel* off and read them out.
 
 ## Sharing presets
 

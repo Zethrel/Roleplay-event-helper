@@ -1,5 +1,39 @@
 # Changelog
 
+## 1.6.0 - 2026-08-03
+
+**A loot table, read off the roll.** Asked for by a host running a fishing
+night: someone rolls a 3, and a few seconds later the room hears that they
+caught an anchovy.
+
+- A new **Loot** tab holds the table, written the same way as the rest of the
+  addon's lists -- one per line, `1-3 an anchovy`, `4-10 an old boot`,
+  `100 the legendary whale`. A bare number is a band of one, and the first line
+  covering the roll wins, so a narrow band can sit above a wide one.
+- The result line is yours: `{name}`, `{item}` and `{roll}` are filled in.
+  Rolls no band covers say nothing at all unless you give them something to say.
+- It waits a few seconds by default, so the roll lands first and the catch reads
+  as its outcome rather than as part of the same breath.
+- It has its own switch, separate from the watcher's verdicts. A fishing night
+  can put the catch in the room without `Rennek rolled 3 -> FAILURE` going with
+  it -- set the watcher to *verdicts to me* and leave the loot on.
+- Off by default, and it follows the same filter as everything else: whoever the
+  watcher ignores is not handed a fish either.
+- The table can be announced with your rules like any other section, or left off
+  the announcement to keep the catches a surprise.
+- `/reh loot` lists it, `/reh loot on|off` switches it, and `/reh loot test 3`
+  shows what a roll would give without waiting for one or sending anything.
+
+One limitation worth knowing before the event: because the result is sent a few
+seconds after the roll rather than from a click, the client will not let it
+reach **/say, /yell, /emote, whispers or custom channels** -- the same
+restriction the rule announcement runs into. Party, raid, guild, officer and
+instance chat are delivered every time. The addon says so once when you set it
+up that way rather than leaving you watching an empty channel.
+
+The editor tab strip now wraps onto a second row, since ten tabs no longer fit
+across one.
+
 ## 1.5.1 - 2026-08-02
 
 Fixes the minimap button sitting inside the minimap's border, on top of the map.

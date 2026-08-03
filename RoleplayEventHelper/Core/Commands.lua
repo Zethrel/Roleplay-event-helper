@@ -431,6 +431,59 @@ Register("log", "[clear]", "show the roll log for this session", function(argume
 	end
 end)
 
+Register("loot", "[on|off|test <roll>]", "the result table read off each roll",
+	function(argument)
+		local preset = REH.Database:GetActivePreset()
+		local loot = preset.loot
+		local word, rest = argument:match("^(%S*)%s*(.-)$")
+		word = word:lower()
+
+		if word == "on" or word == "off" then
+			loot.enabled = (word == "on")
+			REH:Print(loot.enabled and L["Loot results are on."] or L["Loot results are off."])
+			return
+		end
+
+		-- Trying a number without waiting for someone to roll it is how a host
+		-- checks the table before the event, so it sends nothing and skips the
+		-- delay.
+		if word == "test" then
+			local roll = tonumber(rest)
+			if not roll then
+				REH:PrintError(L["Usage: %s"]:format("/reh loot test <roll>"))
+				return
+			end
+
+			local line = REH.RollWatcher:FormatLoot(preset, UnitName("player") or "You", roll)
+			if line then
+				REH:Print(L["A roll of %d: %s"]:format(roll, line))
+			else
+				REH:Print(L["A roll of %d gives nothing."]:format(roll))
+			end
+			return
+		end
+
+		if word ~= "" then
+			REH:PrintError(L["Usage: %s"]:format("/reh loot [on|off|test <roll>]"))
+			return
+		end
+
+		REH:Print(loot.enabled and L["Loot results are on."] or L["Loot results are off."])
+
+		if #loot.entries == 0 then
+			REH:Print(L["No results set. Add them on the Loot tab, one per line: '1-3 an anchovy'."])
+			return
+		end
+
+		for _, entry in ipairs(loot.entries) do
+			if entry.min == entry.max then
+				REH:Print("  %d: %s", entry.min, entry.text)
+			else
+				REH:Print("  %d-%d: %s", entry.min, entry.max, entry.text)
+			end
+		end
+	end)
+
 Register("mute", "<name>", "stop adjudicating one name this session", function(argument)
 	if argument == "" then
 		REH:PrintError(L["Usage: %s"]:format("/reh mute <name>"))

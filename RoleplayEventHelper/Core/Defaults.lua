@@ -8,6 +8,7 @@ REH.MAX_PRESET_NAME_LENGTH = 32
 REH.MAX_PRESETS = 50
 REH.MAX_RULE_LINE_LENGTH = 200
 REH.MAX_CUSTOM_RULES = 30
+REH.MAX_LOOT_ENTRIES = 60
 
 REH.DEFAULT_PRESET_NAME = "Default Event"
 
@@ -29,7 +30,7 @@ REH.CHANNEL_TYPES = {
 	"INSTANCE_CHAT", "GUILD", "OFFICER", "CHANNEL", "WHISPER",
 }
 
-REH.MODULE_KEYS = { "header", "rolls", "health", "damage", "turns", "custom", "etiquette" }
+REH.MODULE_KEYS = { "header", "rolls", "health", "damage", "turns", "loot", "custom", "etiquette" }
 
 -- Human-readable text for the stored enumeration keys. Kept here so the
 -- announcement, the /reh show summary and the UI all describe a rule the same
@@ -198,6 +199,38 @@ local PRESET_TEMPLATE = {
 		note = "",
 	},
 
+	-- A result table read off the roll itself: roll a 3 at a fishing night and
+	-- the addon says what you caught. Off by default, because most events do not
+	-- want an extra line in chat after every roll.
+	loot = {
+		enabled = false,
+
+		-- Announced to the channel as well as printed locally. Separate from the
+		-- watcher's own verdicts on purpose: a fishing night wants "Rennek has
+		-- caught an anchovy" in the room without "Rennek rolled 3 -> FAILURE"
+		-- going with it.
+		announce = true,
+
+		-- A pause before the result, so the roll lands first and the catch reads
+		-- as a consequence of it rather than as part of the same line.
+		delaySeconds = 3,
+
+		-- {name}, {item} and {roll} are replaced. Placeholders rather than
+		-- printf tokens because this text is host-editable and a stray % in a
+		-- format string errors instead of printing.
+		message = "{name} has caught {item}.",
+
+		-- Empty means silence when nothing matches, which is the right default:
+		-- a table covering 1-20 at an event on /roll 100 should not announce
+		-- eighty non-events.
+		nothingText = "",
+
+		-- Bands, in order. The first band containing the roll wins, so a host can
+		-- put "100 the legendary whale" above "90-100 a big fish" and have it
+		-- take precedence.
+		entries = {},
+	},
+
 	custom = {},
 	etiquette = {},
 
@@ -220,13 +253,14 @@ local PRESET_TEMPLATE = {
 		rangeMode = "atMost",
 	},
 
-	moduleOrder = { "header", "rolls", "health", "damage", "turns", "custom", "etiquette" },
+	moduleOrder = { "header", "rolls", "health", "damage", "turns", "loot", "custom", "etiquette" },
 	moduleEnabled = {
 		header = true,
 		rolls = true,
 		health = true,
 		damage = true,
 		turns = true,
+		loot = true,
 		custom = true,
 		etiquette = true,
 	},

@@ -90,6 +90,40 @@ local function ValidateStringList(list, maxEntries)
 	return cleaned
 end
 
+--- Loot bands: { min, max, text }, clamped into the die and sorted by where they
+--- start. An entry whose numbers are the wrong way round is repaired rather than
+--- dropped, since "10-3 a boot" is a typo with an obvious reading.
+local function ValidateLootEntries(list, dieMax, maxEntries)
+	if type(list) ~= "table" then
+		return {}
+	end
+
+	local cleaned = {}
+
+	for _, entry in ipairs(list) do
+		if type(entry) == "table" then
+			local text = REH.CleanString(entry.text, REH.MAX_RULE_LINE_LENGTH)
+
+			if text ~= "" then
+				local low = REH.ClampInteger(entry.min, 1, dieMax, 1)
+				local high = REH.ClampInteger(entry.max, 1, dieMax, low)
+
+				if low > high then
+					low, high = high, low
+				end
+
+				cleaned[#cleaned + 1] = { min = low, max = high, text = text }
+			end
+		end
+
+		if maxEntries and #cleaned >= maxEntries then
+			break
+		end
+	end
+
+	return cleaned
+end
+
 --- Coerce account settings into a valid shape in place.
 function Database:ValidateSettings(settings)
 	-- The send delay paces the announcement queue. Too low and the client
@@ -184,6 +218,16 @@ function Database:ValidatePreset(preset)
 	if not REH.IsValidEnum(REH.INITIATIVE_MODES, turns.mode) then
 		turns.mode = "initiative"
 	end
+
+	-- Loot. The bands are clamped to the die, so lowering "roll up to" cannot
+	-- leave a band nobody can ever roll into.
+	local loot = preset.loot
+	loot.enabled = REH.ToBoolean(loot.enabled, false)
+	loot.announce = REH.ToBoolean(loot.announce, true)
+	loot.delaySeconds = REH.ClampNumber(loot.delaySeconds, 0, 30, 3)
+	loot.message = REH.CleanString(loot.message, 200, "{name} has caught {item}.")
+	loot.nothingText = REH.CleanString(loot.nothingText, 200)
+	loot.entries = ValidateLootEntries(loot.entries, rolls.dieMax, REH.MAX_LOOT_ENTRIES)
 
 	-- Free-text rule lists
 	preset.custom = ValidateStringList(preset.custom, REH.MAX_CUSTOM_RULES)

@@ -234,6 +234,18 @@ local function findRow(moduleKey, fieldKey)
 	return nil
 end
 
+-- Tabs are found by module rather than by position. A new editor tab moves
+-- every index after it, and a hardcoded number then silently tests the wrong
+-- page instead of failing outright.
+local function tabIndex(moduleKey)
+	for index, page in ipairs(frame.editors.pages) do
+		if page.tab.module == moduleKey then
+			return index
+		end
+	end
+	return nil
+end
+
 local active = DB:GetActivePreset()
 
 MainFrame:SelectTab(1)
@@ -247,7 +259,7 @@ H.fireScript(nameRow.control, "OnEditFocusLost")
 H.checkEqual("typing into it updates the preset",
 	active.header.eventName, "Tavern Brawl Night")
 
-local rollsPage = 2
+local rollsPage = tabIndex("rolls")
 MainFrame:SelectTab(rollsPage)
 local dieRow = findRow("rolls", "dieMax")
 dieRow.control:SetText("20")
@@ -267,7 +279,7 @@ H.check("a choice button advances to the next option",
 H.check("and the stored value is a legal one",
 	REH.IsValidEnum(REH.TIE_BREAKS, active.rolls.tieBreak))
 
-MainFrame:SelectTab(3)
+MainFrame:SelectTab(tabIndex("health"))
 local rowsRow = findRow("health", "rows")
 rowsRow.control.editBox:SetText("Cloth 5\nPlate 9")
 H.fireScript(rowsRow.control.editBox, "OnEditFocusLost")
@@ -275,7 +287,7 @@ H.checkEqual("a list field writes through", #active.health.rows, 2)
 H.checkEqual("with the typed value", active.health.rows[2].hp, 9)
 
 -- A rejected edit must not leave the bad text sitting in the box.
-MainFrame:SelectTab(2)
+MainFrame:SelectTab(rollsPage)
 local thresholdRow = findRow("rolls", "successThreshold")
 local goodValue = active.rolls.successThreshold
 thresholdRow.control:SetText("nonsense")
@@ -319,7 +331,7 @@ for _, page in ipairs(frame.editors.pages) do
 end
 H.check("no multi-line box nests a scroll frame inside the page's own", nested == false)
 
-MainFrame:SelectTab(6)
+MainFrame:SelectTab(tabIndex("custom"))
 local rulesRow = findRow("custom", "custom")
 H.check("the custom rules row exists", rulesRow ~= nil)
 
