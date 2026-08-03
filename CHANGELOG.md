@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.13.0 - 2026-08-03
+
+**A rejected edit now complains on the field, not in your chat frame.** Typing
+`ten` into a number box used to put a red line in the same frame you are running
+the evening from — next to the rolls, the verdicts and the room's roleplay,
+where it either scrolled past unread or pushed something that mattered off the
+top. The box goes red and says why instead, and clears itself after a few
+seconds. The roll effects window does the same for its number boxes, which
+previously just swallowed bad input without a word.
+
+**Every field has a tooltip.** Twenty had none — including the ones most worth
+explaining: what a critical band actually covers, what `0` means in *Heals per
+event* and *Seconds per turn*, and what each turn-order mode does. A test now
+enforces it, so a field added later cannot arrive undocumented.
+
 ## 1.12.0 - 2026-08-03
 
 **Starter presets.** The **New** button now offers four worked events instead of

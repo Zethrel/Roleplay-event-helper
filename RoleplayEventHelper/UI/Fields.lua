@@ -162,6 +162,7 @@ Fields.TABS = {
 			},
 			{
 				key = "showTimestamp", label = "Include the time posted", type = "toggle",
+				tooltip = "Adds the time the rules were posted, so latecomers can see how long ago the event started.",
 				get = function(p) return p.header.showTimestamp end,
 				set = function(p, v) p.header.showTimestamp = v end,
 			},
@@ -187,39 +188,46 @@ Fields.TABS = {
 			},
 			{
 				key = "successText", label = "Success word", type = "text", maxLength = 24,
+				tooltip = "The word announced for a roll that hits the threshold. SUCCESS, HIT, CAUGHT -- whatever your event calls it.",
 				get = function(p) return p.rolls.successText end,
 				set = function(p, v) p.rolls.successText = v end,
 			},
 			{
 				key = "failText", label = "Failure word", type = "text", maxLength = 24,
+				tooltip = "The word announced for a roll below the threshold.",
 				get = function(p) return p.rolls.failText end,
 				set = function(p, v) p.rolls.failText = v end,
 			},
 			{
 				key = "useCritical", label = "Use critical rolls", type = "toggle",
+				tooltip = "Off means every roll is simply a success or a failure. On adds a top and bottom band that count for more.",
 				get = function(p) return p.rolls.useCritical end,
 				set = function(p, v) p.rolls.useCritical = v end,
 			},
 			{
 				key = "critSuccessAt", label = "Critical success at", type = "number",
 				min = 1, max = 1000000,
+				tooltip = "This roll and anything above it is a critical success. Set it to the maximum roll for 'only a natural 100'.",
 				get = function(p) return p.rolls.critSuccessAt end,
 				set = function(p, v) p.rolls.critSuccessAt = v end,
 			},
 			{
 				key = "critFailAt", label = "Critical failure at or below", type = "number",
 				min = 1, max = 1000000,
+				tooltip = "This roll and anything below it is a critical failure. Set it to 1 for 'only a natural 1'.",
 				get = function(p) return p.rolls.critFailAt end,
 				set = function(p, v) p.rolls.critFailAt = v end,
 			},
 			{
 				key = "rollsPerTurn", label = "Rolls per turn", type = "number", min = 1, max = 20,
+				tooltip = "How many rolls each person gets on their turn. Announced with the rules; the addon does not enforce it.",
 				get = function(p) return p.rolls.rollsPerTurn end,
 				set = function(p, v) p.rolls.rollsPerTurn = v end,
 			},
 			{
 				key = "tieBreak", label = "Ties", type = "select",
 				options = function() return OptionsFrom(REH.TIE_BREAKS, REH.DISPLAY.tieBreakShort) end,
+				tooltip = "What happens when two people roll the same number. Worth settling before the event rather than during it.",
 				get = function(p) return p.rolls.tieBreak end,
 				set = function(p, v) p.rolls.tieBreak = v end,
 			},
@@ -244,6 +252,7 @@ Fields.TABS = {
 			},
 			{
 				key = "note", label = "Note", type = "text", maxLength = 200,
+				tooltip = "A free line announced after the health table, for anything the numbers do not cover.",
 				get = function(p) return p.health.note end,
 				set = function(p, v) p.health.note = v end,
 			},
@@ -263,34 +272,40 @@ Fields.TABS = {
 		fields = {
 			{
 				key = "perHit", label = "Damage per hit", type = "number", min = 0, max = 10000,
+				tooltip = "Health lost on a successful hit. With the default health table, 1 makes a duel last about ten exchanges.",
 				get = function(p) return p.damage.perHit end,
 				set = function(p, v) p.damage.perHit = v end,
 			},
 			{
 				key = "onCrit", label = "Damage on a critical", type = "number", min = 0, max = 10000,
+				tooltip = "Health lost on a critical success. Usually double an ordinary hit.",
 				get = function(p) return p.damage.onCrit end,
 				set = function(p, v) p.damage.onCrit = v end,
 			},
 			{
 				key = "deathRule", label = "At 0 HP", type = "select",
 				options = function() return OptionsFrom(REH.DEATH_RULES, REH.DISPLAY.deathRule) end,
+				tooltip = "What reaching zero health means at your event: out of the fight, downed but revivable, or your call at the time.",
 				get = function(p) return p.damage.deathRule end,
 				set = function(p, v) p.damage.deathRule = v end,
 			},
 			{
 				key = "healingAllowed", label = "Allow healing", type = "toggle",
+				tooltip = "On adds healing to the announced rules. Off leaves it out entirely.",
 				get = function(p) return p.damage.healingAllowed end,
 				set = function(p, v) p.damage.healingAllowed = v end,
 			},
 			{
 				key = "healPerSuccess", label = "Healing per success", type = "number",
 				min = 0, max = 10000,
+				tooltip = "Health restored by a successful heal.",
 				get = function(p) return p.damage.healPerSuccess end,
 				set = function(p, v) p.damage.healPerSuccess = v end,
 			},
 			{
 				key = "healsPerEvent", label = "Heals per event (0 = unlimited)", type = "number",
 				min = 0, max = 1000,
+				tooltip = "How many heals each person gets for the whole event. 0 means as many as they like.",
 				get = function(p) return p.damage.healsPerEvent end,
 				set = function(p, v) p.damage.healsPerEvent = v end,
 			},
@@ -304,17 +319,20 @@ Fields.TABS = {
 			{
 				key = "mode", label = "Turn order", type = "select",
 				options = function() return OptionsFrom(REH.INITIATIVE_MODES, REH.DISPLAY.initiativeShort) end,
+				tooltip = "How the order is decided: roll for initiative, the host calls each turn, round-robin in join order, or no fixed order at all.",
 				get = function(p) return p.turns.mode end,
 				set = function(p, v) p.turns.mode = v end,
 			},
 			{
 				key = "turnTimeSeconds", label = "Seconds per turn (0 = no limit)",
 				type = "number", min = 0, max = 3600,
+				tooltip = "A time limit per turn, announced with the rules. 0 means no limit, which is kinder to slower typists.",
 				get = function(p) return p.turns.turnTimeSeconds end,
 				set = function(p, v) p.turns.turnTimeSeconds = v end,
 			},
 			{
 				key = "note", label = "Note", type = "text", maxLength = 200,
+				tooltip = "A free line announced after the turn order, for anything the settings do not cover.",
 				get = function(p) return p.turns.note end,
 				set = function(p, v) p.turns.note = v end,
 			},
@@ -394,6 +412,7 @@ Fields.TABS = {
 			},
 			{
 				key = "numberCustomRules", label = "Number them when announcing", type = "toggle",
+				tooltip = "Announces your rules as a numbered list, so people can refer to 'rule 3' during the event.",
 				get = function(p) return p.formatting.numberCustomRules end,
 				set = function(p, v) p.formatting.numberCustomRules = v end,
 			},
@@ -509,6 +528,7 @@ Fields.TABS[#Fields.TABS + 1] = {
 		},
 		{
 			key = "minimapHide", label = "Hide the minimap button", type = "toggle",
+			tooltip = "Hides the minimap button. The window is still reachable with /reh.",
 			get = function(s) return s.minimapButton and s.minimapButton.hide end,
 			set = function(s, v)
 				s.minimapButton = s.minimapButton or {}

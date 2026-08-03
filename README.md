@@ -16,7 +16,7 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**v1.12.0**, in use and being fixed as the game finds things. Covered by 1251
+**v1.13.0**, in use and being fixed as the game finds things. Covered by 1261
 checks across thirteen suites, which run against a stub of the WoW API rather than
 the client -- see the [changelog](CHANGELOG.md) for what that does and does not
 catch.
@@ -118,8 +118,8 @@ Tagging is the release. Pushing a `v*` tag runs the test suites and then builds
 and uploads the addon zip from [`.pkgmeta`](.pkgmeta):
 
 ```sh
-git tag -a v1.12.0 -m "Roleplay Event Helper v1.12.0"
-git push origin v1.12.0
+git tag -a v1.13.0 -m "Roleplay Event Helper v1.13.0"
+git push origin v1.13.0
 ```
 
 The CurseForge project id is already set in the TOC. One thing is still needed
@@ -211,6 +211,10 @@ the one part of the message count you can delete without losing a rule.
 A tab whose section is switched out of the announcement carries a small red dot,
 so a missing section is visible from the strip rather than found by clicking
 through every tab.
+
+Every field has a tooltip, and an entry the addon refuses — a word where a
+number belongs — turns that field red and says why, rather than putting a line
+in the chat frame you are running the event from.
 
 ## Events without combat
 

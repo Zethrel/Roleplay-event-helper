@@ -134,9 +134,13 @@ local function BuildRow(parent, index)
 		"A roll of: a number or a range. A result of: success, failure or a critical. Any roll: every roll that is tracked.")
 	row.trigger = trigger
 
-	local minBox = UI.CreateEditBox(row, 42, 7, function(text)
+	local minBox
+	minBox = UI.CreateEditBox(row, 42, 7, function(text)
 		local target = effect()
 		if target then
+			if not tonumber(text) then
+				UI.FlashError(minBox, "A roll has to be a number.")
+			end
 			target.min = tonumber(text) or target.min
 			Commit()
 		end
@@ -148,9 +152,13 @@ local function BuildRow(parent, index)
 	dash:SetPoint("LEFT", minBox, "RIGHT", 4, 0)
 	row.dash = dash
 
-	local maxBox = UI.CreateEditBox(row, 42, 7, function(text)
+	local maxBox
+	maxBox = UI.CreateEditBox(row, 42, 7, function(text)
 		local target = effect()
 		if target then
+			if not tonumber(text) then
+				UI.FlashError(maxBox, "A roll has to be a number.")
+			end
 			target.max = tonumber(text) or target.max
 			Commit()
 		end
@@ -182,9 +190,13 @@ local function BuildRow(parent, index)
 		"To my channel: sent to the room, subject to your client's rules about delayed messages. To me only: shown in your own chat frame.")
 	row.target = target
 
-	local chance = UI.CreateEditBox(row, 38, 3, function(text)
+	local chance
+	chance = UI.CreateEditBox(row, 38, 3, function(text)
 		local record = effect()
 		if record then
+			if not tonumber(text) then
+				UI.FlashError(chance, "A chance is a number from 0 to 100.")
+			end
 			record.chance = tonumber(text) or record.chance
 			Commit()
 		end
@@ -194,9 +206,13 @@ local function BuildRow(parent, index)
 
 	local chanceLabel = UI.CreateLabel(row, "%", "GameFontNormalSmall")
 
-	local delay = UI.CreateEditBox(row, 38, 4, function(text)
+	local delay
+	delay = UI.CreateEditBox(row, 38, 4, function(text)
 		local record = effect()
 		if record then
+			if not tonumber(text) then
+				UI.FlashError(delay, "A delay is a number of seconds.")
+			end
 			record.delaySeconds = tonumber(text) or record.delaySeconds
 			Commit()
 		end

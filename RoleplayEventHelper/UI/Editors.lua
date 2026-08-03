@@ -18,9 +18,12 @@ local function BuildTextRow(page, field, width, onEdited)
 	local label = UI.CreateLabel(page, field.label)
 	label:SetWidth(UI.LABEL_WIDTH)
 
-	local box = UI.CreateEditBox(page, width - UI.LABEL_WIDTH - 24, field.maxLength,
+	-- Declared before it is built: the commit handler names the box, and in Lua
+	-- a local is not in scope inside its own initialiser.
+	local box
+	box = UI.CreateEditBox(page, width - UI.LABEL_WIDTH - 24, field.maxLength,
 		function(text)
-			onEdited(field, text)
+			onEdited(field, text, box)
 		end)
 
 	if field.tooltip then
@@ -95,8 +98,10 @@ local function BuildLinesRow(page, field, width, onEdited, onResize)
 	local label = UI.CreateLabel(page, field.label)
 
 	local height = field.height or 120
-	local box = UI.CreateMultiLineBox(page, width - 16, height, function(text)
-		onEdited(field, text)
+
+	local box
+	box = UI.CreateMultiLineBox(page, width - 16, height, function(text)
+		onEdited(field, text, box.editBox)
 	end, onResize)
 
 	if field.tooltip then
@@ -159,12 +164,17 @@ function Editors:Create(parent, width, onChanged)
 	local controller = { pages = {}, activeIndex = 1 }
 
 	local function editorFor(tab)
-		return function(field, rawValue)
+		return function(field, rawValue, control)
 			local target = REH.Fields:GetTarget(tab)
 			local ok, reason = REH.Fields:Set(target, field, rawValue, tab.scope)
 
 			if not ok then
-				REH:PrintError(reason)
+				-- On the field, not in the chat frame: see UI.FlashError. The
+				-- chat frame is still the fallback for an edit that arrived
+				-- from somewhere without a widget behind it.
+				if not UI.FlashError(control, reason) then
+					REH:PrintError(reason)
+				end
 			end
 
 			-- Refresh regardless: a rejected edit must put the old value back

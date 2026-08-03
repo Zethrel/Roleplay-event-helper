@@ -571,6 +571,86 @@ H.checkEqual("the dragged position is saved", saved.point, "TOPLEFT")
 H.checkEqual("with its offset", saved.x, 120)
 
 --------------------------------------------------------------------------------
+H.section("A rejected edit complains on the field")
+--------------------------------------------------------------------------------
+
+-- The chat frame is the one the host is running the evening from. A typo in a
+-- number box used to put a red line in it, next to the rolls and the room's
+-- roleplay, where it either scrolled past unread or pushed something that
+-- mattered off the top.
+local rollsIndex
+for index, tab in ipairs(Fields:GetTabs()) do
+	if tab.module == "rolls" then
+		rollsIndex = index
+	end
+end
+
+MainFrame:SelectTab(rollsIndex)
+
+local thresholdRow
+for _, row in ipairs(MainFrame.frame.editors.pages[rollsIndex].rows) do
+	if row.field.key == "successThreshold" then
+		thresholdRow = row
+	end
+end
+H.check("the threshold row is on the page", thresholdRow ~= nil)
+
+local activePreset = DB:GetActivePreset()
+local goodValue = activePreset.rolls.successThreshold
+
+H.clearOutput()
+thresholdRow.control:SetText("ten")
+H.fireScript(thresholdRow.control, "OnEnterPressed")
+
+H.check("a bad number is not reported in the chat frame",
+	H.outputText():find("Success at or above", 1, true) == nil, H.outputText())
+H.check("it is reported on the box instead",
+	(thresholdRow.control.errorMessage or ""):find("Success at or above", 1, true) ~= nil,
+	thresholdRow.control.errorMessage)
+H.checkEqual("and the value is left alone",
+	activePreset.rolls.successThreshold, goodValue)
+
+-- The complaint clears itself; a box left red is a box that looks broken.
+H.advance(6)
+H.check("the complaint goes away on its own",
+	thresholdRow.control.errorMessage == nil)
+
+H.clearOutput()
+thresholdRow.control:SetText("15")
+H.fireScript(thresholdRow.control, "OnEnterPressed")
+H.checkEqual("a good number is written", activePreset.rolls.successThreshold, 15)
+H.check("with nothing complained about",
+	thresholdRow.control.errorMessage == nil)
+H.checkEqual("and nothing said in chat", H.outputText(), "")
+
+--------------------------------------------------------------------------------
+H.section("Every field explains itself")
+--------------------------------------------------------------------------------
+
+-- A tooltip is the only place a field can say what it means. Enforced rather
+-- than encouraged, so a field added later cannot arrive undocumented.
+local untipped = {}
+for _, tab in ipairs(Fields:GetTabs()) do
+	for _, field in ipairs(tab.fields) do
+		if not field.tooltip or field.tooltip == "" then
+			untipped[#untipped + 1] = tab.module .. "." .. field.key
+		end
+	end
+end
+H.check("every field has a tooltip", #untipped == 0, table.concat(untipped, ", "))
+
+local terse = {}
+for _, tab in ipairs(Fields:GetTabs()) do
+	for _, field in ipairs(tab.fields) do
+		if field.tooltip and #field.tooltip < 25 then
+			terse[#terse + 1] = tab.module .. "." .. field.key
+		end
+	end
+end
+H.check("and says something more than the label already did",
+	#terse == 0, table.concat(terse, ", "))
+
+--------------------------------------------------------------------------------
 H.section("The window says what it is about to do")
 --------------------------------------------------------------------------------
 

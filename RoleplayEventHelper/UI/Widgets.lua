@@ -334,6 +334,57 @@ function UI.ResizeScrollArea(scroll, width, height)
 end
 
 --------------------------------------------------------------------------------
+-- Field errors
+--------------------------------------------------------------------------------
+
+-- A rejected edit used to be reported with a red line in the chat frame. That
+-- is the same frame the host is running the evening from -- the one carrying
+-- the rolls, the verdicts and the room's roleplay -- so a typo in a number box
+-- either scrolled past unread or pushed something that mattered off the top.
+--
+-- The complaint belongs on the field that caused it: the box goes red and says
+-- why, right where the host is already looking.
+
+local ERROR_SECONDS = 4
+
+function UI.FlashError(widget, message)
+	if not widget then
+		return false
+	end
+
+	-- Recorded on the widget so the state is observable: a test can ask which
+	-- field complained and what it said, without reading pixels.
+	widget.errorMessage = message
+
+	if widget.SetTextColor then
+		widget:SetTextColor(1, 0.35, 0.35)
+	end
+
+	if GameTooltip and widget.GetName then
+		GameTooltip:SetOwner(widget, "ANCHOR_RIGHT")
+		GameTooltip:ClearLines()
+		GameTooltip:AddLine(message, 1, 0.4, 0.4)
+		GameTooltip:Show()
+	end
+
+	C_Timer.After(ERROR_SECONDS, function()
+		widget.errorMessage = nil
+
+		if widget.SetTextColor then
+			widget:SetTextColor(1, 1, 1)
+		end
+
+		-- Only take the tooltip down if it is still ours: the host may have
+		-- moved on and be hovering something else by now.
+		if GameTooltip and GameTooltip.GetOwner and GameTooltip:GetOwner() == widget then
+			GameTooltip:Hide()
+		end
+	end)
+
+	return true
+end
+
+--------------------------------------------------------------------------------
 -- Resizing
 --------------------------------------------------------------------------------
 

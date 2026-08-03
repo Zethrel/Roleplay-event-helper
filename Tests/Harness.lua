@@ -510,7 +510,8 @@ local WIDGET_METHODS = {
 	-- minimap placement
 	GetCenter = true, GetEffectiveScale = true,
 	-- tooltip
-	SetOwner = true, AddLine = true, AddDoubleLine = true, ClearLines = true,
+	SetOwner = true, GetOwner = true, AddLine = true, AddDoubleLine = true,
+	ClearLines = true,
 }
 
 Harness.WIDGET_METHODS = WIDGET_METHODS
@@ -611,6 +612,10 @@ function Harness.widgetCall(widget, method, a, b, c, d, e)
 		return widget._width or 0
 	elseif method == "GetHeight" then
 		return widget._height or 0
+	elseif method == "SetOwner" then
+		widget._owner = a
+	elseif method == "GetOwner" then
+		return widget._owner
 	elseif method == "SetScrollChild" then
 		widget._scrollChild = a
 	elseif method == "GetVerticalScrollRange" then
