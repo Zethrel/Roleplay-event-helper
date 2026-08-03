@@ -322,6 +322,12 @@ function REH.CreateRollEffect()
 		verdict = "critfail",
 		chance = 100,
 		delaySeconds = 3,
+
+		-- Effects sharing a trigger normally all fire. Ticking this on each of
+		-- them makes that group one choice instead: three fish written against
+		-- 4-7 become one fish, picked at random.
+		random = false,
+
 		target = "channel",
 		message = "{name} rolled {roll}.",
 	}

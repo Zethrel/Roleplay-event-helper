@@ -113,6 +113,11 @@ L["A roll of %d gives nothing."] = "A roll of %d gives nothing."
 L["No results set. Add them on the Loot tab, one per line: '1-3 an anchovy'."] = "No results set. Add them on the Loot tab, one per line: '1-3 an anchovy'."
 L["Results are sent a few seconds after the roll, and your client only lets an addon send to %s right after you click something. Party, raid, guild, officer and instance chat are delivered every time."] = "Results are sent a few seconds after the roll, and your client only lets an addon send to %s right after you click something. Party, raid, guild, officer and instance chat are delivered every time."
 
+L["One of %d, chosen at random:"] = "One of %d, chosen at random:"
+L["The roll watcher is off, so no rolls are being read. Turn it on with /reh watch on, or with the Watcher button at the bottom of the window."] = "The roll watcher is off, so no rolls are being read. Turn it on with /reh watch on, or with the Watcher button at the bottom of the window."
+L["That result stayed in your own chat frame: %s"] = "That result stayed in your own chat frame: %s"
+L["This preset announces to preview only, so results are showing here rather than in chat. Pick a channel at the bottom left of the window, or with /reh channel party."] = "This preset announces to preview only, so results are showing here rather than in chat. Pick a channel at the bottom left of the window, or with /reh channel party."
+
 -- Roll effects
 L["No roll effects set. Open the window with /reh effects."] = "No roll effects set. Open the window with /reh effects."
 L["Roll effects (%d):"] = "Roll effects (%d):"

@@ -16,7 +16,7 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**v1.7.0**, in use and being fixed as the game finds things. Covered by 1082
+**v1.8.0**, in use and being fixed as the game finds things. Covered by 1107
 checks across twelve suites, which run against a stub of the WoW API rather than
 the client -- see the [changelog](CHANGELOG.md) for what that does and does not
 catch.
@@ -116,8 +116,8 @@ Tagging is the release. Pushing a `v*` tag runs the test suites and then builds
 and uploads the addon zip from [`.pkgmeta`](.pkgmeta):
 
 ```sh
-git tag -a v1.7.0 -m "Roleplay Event Helper v1.7.0"
-git push origin v1.7.0
+git tag -a v1.8.0 -m "Roleplay Event Helper v1.8.0"
+git push origin v1.8.0
 ```
 
 The CurseForge project id is already set in the TOC. One thing is still needed
@@ -241,9 +241,21 @@ table, and the addon reads each roll off it:
 ```
 
 Someone rolls a 3 and, a few seconds later, `Rennek has caught an anchovy.`
-One entry per line — a range or a single number — and the first line covering
-the roll wins, so a narrow band can sit above a wide one. The line itself is
-yours: `{name}`, `{item}` and `{roll}` are filled in.
+One entry per line — a range or a single number. The line itself is yours:
+`{name}`, `{item}` and `{roll}` are filled in.
+
+**Write the same range more than once for several possible results**, and one
+is picked at random:
+
+```
+4-7    a salmon
+4-7    a trout
+4-7    a carp
+```
+
+Only an identical range joins the pool, so a narrow band listed above a wide one
+still wins outright — `100 the legendary whale` above `90-100 a big fish` keeps
+working. `/reh loot test 5` lists every alternative a roll could give.
 
 It is **off by default**, has its own send switch separate from the watcher's
 verdicts, and obeys the same filter as everything else — whoever the watcher
@@ -270,7 +282,7 @@ happens on that roll*, and it can do three things the table cannot. Open it with
 | | |
 |---|---|
 | **Fires on** | a number, a range, a success, a failure, a critical either way, or every roll |
-| **How many** | all the effects that match, not just the first |
+| **How many** | all the effects that match, not just the first — or tick **one of these at random** on a group sharing a trigger and only one fires |
 | **Each one has** | its own chance, delay, and destination |
 
 So a fishing night can say `Rennek's line snaps.` on a natural 1, `A monster!`
@@ -292,6 +304,17 @@ exactly as it did before they existed.
 The delayed-message limitation from the loot table applies here too — but an
 effect set to **to me only** is never subject to it, which is how to run this at
 a `/say` event: the addon tells you what happened and you say it in character.
+
+### When nothing arrives in chat
+
+Three things stop a result reaching the room, and each says so once rather than
+leaving you guessing mid-event:
+
+- **the roll watcher is off** — no rolls are being read at all, so nothing can
+  fire. This is the usual one. The window's status line says it while it is
+  true, and switching results on says it too.
+- **the channel is not available** — not in that party, not in that raid.
+- **the preset is still on preview only**, which sends nothing by design.
 
 ## Sharing presets
 

@@ -441,6 +441,10 @@ Register("loot", "[on|off|test <roll>]", "the result table read off each roll",
 		if word == "on" or word == "off" then
 			loot.enabled = (word == "on")
 			REH:Print(loot.enabled and L["Loot results are on."] or L["Loot results are off."])
+
+			if loot.enabled then
+				REH.RollWatcher:WarnIfNotWatching()
+			end
 			return
 		end
 
@@ -454,11 +458,24 @@ Register("loot", "[on|off|test <roll>]", "the result table read off each roll",
 				return
 			end
 
-			local line = REH.RollWatcher:FormatLoot(preset, UnitName("player") or "You", roll)
-			if line then
-				REH:Print(L["A roll of %d: %s"]:format(roll, line))
-			else
+			local pool = REH.RollWatcher:LootAlternatives(preset, roll)
+
+			if #pool == 0 then
 				REH:Print(L["A roll of %d gives nothing."]:format(roll))
+				return
+			end
+
+			local line = REH.RollWatcher:FormatLoot(preset, UnitName("player") or "You", roll)
+			REH:Print(L["A roll of %d: %s"]:format(roll, line))
+
+			-- Several entries written against the same band are alternatives, so
+			-- one number showing one fish would be a misleading answer to "what
+			-- does a 5 give".
+			if #pool > 1 then
+				REH:Print(L["One of %d, chosen at random:"]:format(#pool))
+				for _, entry in ipairs(pool) do
+					REH:Print("  %s", entry.text)
+				end
 			end
 			return
 		end

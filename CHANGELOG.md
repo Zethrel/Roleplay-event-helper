@@ -1,5 +1,38 @@
 # Changelog
 
+## 1.8.0 - 2026-08-03
+
+**Several possible results for the same roll, one picked at random.** Write a
+range more than once and the addon chooses between them:
+
+```
+1      your line breaks
+2-3    a shrimp
+4-7    a salmon
+4-7    a trout
+4-7    a carp
+```
+
+A 5 catches a salmon, a trout or a carp. Three lines reading `4-7` are three
+fish in the same water, not a mistake. Precedence is unchanged: only an
+identical range joins the pool, so a narrow band listed above a wide one still
+wins outright. `/reh loot test 5` lists every alternative a roll could give.
+
+The same thing on the effects side: tick **one of these at random** on two or
+more effects that share a trigger and only one of them fires. Left unticked
+they all fire, exactly as before.
+
+**Results that cannot reach the channel now say so.** Reported from a real
+event: everything set up, nothing arriving in party chat, and no explanation.
+There were three ways for that to happen silently, and all three now speak up
+once:
+
+- the roll watcher is off, so no rolls are being read at all — the most likely
+  one, and it now says so when you switch results on, and on the window's
+  status line while it is true
+- the channel is not available (not in that party, not in that raid)
+- the preset is still announcing to preview only
+
 ## 1.7.0 - 2026-08-03
 
 **Roll effects: a window for the complicated version of the loot table.** Same

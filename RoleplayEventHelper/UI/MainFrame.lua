@@ -351,6 +351,15 @@ function MainFrame:RefreshPreview()
 		frame.statusText:SetText(("Sending %d of %d..."):format(sent, total))
 	elseif not available then
 		frame.statusText:SetText("|cffffd100" .. tostring(reason) .. "|r")
+
+	elseif (preset.loot.enabled or #preset.rollEffects > 0)
+		and not REH.RollWatcher:IsWatching() then
+		-- Results set up with the watcher disarmed is the shape of "it does
+		-- nothing and I cannot tell why": no rolls are being read at all, so
+		-- neither the loot table nor any effect will ever fire.
+		frame.statusText:SetText(
+			"|cffffd100Results are set up, but the roll watcher is off, so no rolls are being read.|r")
+
 	else
 		frame.statusText:SetText("")
 	end

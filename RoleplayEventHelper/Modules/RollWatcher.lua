@@ -491,6 +491,52 @@ function RollWatcher:WarnDelayedChannel(preset)
 	return true
 end
 
+--- Say a line: to the host always, to the channel when asked.
+---
+--- The reason this is one function rather than two copies is what it does when
+--- the send does not happen. A result that quietly stays in the host's own
+--- frame looks exactly like a result that reached the room, and the host finds
+--- out at the event. Every way that can happen is named once, out loud:
+--- announcing to preview, a channel that is not available, and the rate cap.
+function RollWatcher:DeliverLine(preset, line, announce)
+	REH:Print("|cffffd100%s|r", line)
+
+	if not announce then
+		return false, "local"
+	end
+
+	if preset.channel.type == "PREVIEW" then
+		if not self.previewWarned then
+			self.previewWarned = true
+			REH:PrintWarning(L["This preset announces to preview only, so results are showing here rather than in chat. Pick a channel at the bottom left of the window, or with /reh channel party."])
+		end
+		return false, "preview"
+	end
+
+	local available, reason = REH.Announcer:CheckAvailability(preset.channel)
+	if not available then
+		if not self.availabilityWarned then
+			self.availabilityWarned = true
+			REH:PrintWarning(L["That result stayed in your own chat frame: %s"]:format(reason))
+		end
+		return false, "unavailable"
+	end
+
+	return self:QueueLine(preset, line), "sent"
+end
+
+--- Nudge a host who has set up results but left the watcher disarmed, which
+--- reads exactly like the feature being broken: nothing happens, and nothing
+--- says why.
+function RollWatcher:WarnIfNotWatching()
+	if self:IsWatching() then
+		return false
+	end
+
+	REH:PrintWarning(L["The roll watcher is off, so no rolls are being read. Turn it on with /reh watch on, or with the Watcher button at the bottom of the window."])
+	return true
+end
+
 --------------------------------------------------------------------------------
 -- Loot
 --------------------------------------------------------------------------------
@@ -500,22 +546,50 @@ end
 -- already uses, and the line arrives a few seconds later so it reads as the
 -- outcome of the roll rather than as part of it.
 
---- The band a roll falls into, or nil. First match wins, so a host can put a
---- narrow band above a wide one and have it take precedence.
-function RollWatcher:LootFor(preset, roll)
+--- Every entry that could answer a roll: the first band covering it, plus any
+--- later entry written against the same band.
+---
+--- Repeating a band is how a host says "one of these". Three lines all reading
+--- 4-7 are three fish that live in the same water, not a mistake -- and because
+--- only an identical band joins the pool, a narrow band above a wide one still
+--- takes precedence the way it always did.
+function RollWatcher:LootAlternatives(preset, roll)
 	local loot = preset.loot
 
 	if not loot or not loot.enabled then
-		return nil
+		return {}
 	end
+
+	local first, pool = nil, {}
 
 	for _, entry in ipairs(loot.entries) do
 		if roll >= entry.min and roll <= entry.max then
-			return entry
+			if not first then
+				first = entry
+				pool[1] = entry
+			elseif entry.min == first.min and entry.max == first.max then
+				pool[#pool + 1] = entry
+			end
 		end
 	end
 
-	return nil
+	return pool
+end
+
+--- The entry a roll gets. One of the alternatives, chosen at random when there
+--- is more than one.
+function RollWatcher:LootFor(preset, roll)
+	local pool = self:LootAlternatives(preset, roll)
+
+	if #pool == 0 then
+		return nil
+	end
+
+	if #pool == 1 then
+		return pool[1], 1
+	end
+
+	return pool[math.random(#pool)], #pool
 end
 
 --- The line for a roll, or nil when the table says nothing about it.
@@ -556,18 +630,14 @@ function RollWatcher:ScheduleLoot(preset, name, roll)
 		return false
 	end
 
-	local announce = preset.loot.announce and preset.channel.type ~= "PREVIEW"
+	local announce = preset.loot.announce and true or false
 
 	if announce then
 		self:WarnDelayedChannel(preset)
 	end
 
 	local function deliver()
-		REH:Print("|cffffd100%s|r", line)
-
-		if announce then
-			self:QueueLine(preset, line)
-		end
+		self:DeliverLine(preset, line, announce)
 	end
 
 	local delay = preset.loot.delaySeconds or 0
@@ -657,28 +727,66 @@ local function EffectPasses(effect)
 	return math.random(100) <= effect.chance
 end
 
+--- What makes two effects alternatives rather than two separate things: the
+--- same trigger, judged the same way.
+local function TriggerSignature(effect)
+	if effect.trigger == "verdict" then
+		return "verdict:" .. tostring(effect.verdict)
+	end
+	if effect.trigger == "any" then
+		return "any"
+	end
+	return ("band:%d-%d"):format(effect.min, effect.max)
+end
+
+--- Collapse groups of "one of these at random" effects down to one each,
+--- leaving every other matching effect alone.
+---
+--- Grouping by trigger rather than by a group number the host has to maintain:
+--- three fish written against 4-7 are obviously alternatives, and asking a host
+--- to number them as well would be bookkeeping for its own sake.
+function RollWatcher:ResolveEffects(matched)
+	local chosen, pools, order = {}, {}, {}
+
+	for _, effect in ipairs(matched) do
+		if effect.random then
+			local key = TriggerSignature(effect)
+			if not pools[key] then
+				pools[key] = {}
+				order[#order + 1] = { key = key, at = #chosen + 1 }
+				chosen[#chosen + 1] = false -- placeholder, filled in below
+			end
+			pools[key][#pools[key] + 1] = effect
+		else
+			chosen[#chosen + 1] = effect
+		end
+	end
+
+	for _, slot in ipairs(order) do
+		local pool = pools[slot.key]
+		chosen[slot.at] = pool[math.random(#pool)]
+	end
+
+	return chosen
+end
+
 --- Fire every effect a roll sets off. Returns how many were scheduled.
 function RollWatcher:FireEffects(preset, name, roll, verdict)
 	local fired = 0
 
-	for _, effect in ipairs(self:MatchEffects(preset, roll, verdict)) do
+	for _, effect in ipairs(self:ResolveEffects(self:MatchEffects(preset, roll, verdict))) do
 		if EffectPasses(effect) then
 			local line = self:FormatEffect(preset, effect, name, roll, verdict)
 
 			if line then
 				local announce = effect.target == "channel"
-					and preset.channel.type ~= "PREVIEW"
 
 				if announce then
 					self:WarnDelayedChannel(preset)
 				end
 
 				local function deliver()
-					REH:Print("|cffffd100%s|r", line)
-
-					if announce then
-						self:QueueLine(preset, line)
-					end
+					self:DeliverLine(preset, line, announce)
 				end
 
 				local delay = effect.delaySeconds or 0
@@ -861,6 +969,8 @@ function RollWatcher:ClearLog()
 	rangeHintShown = false
 	capWarned = false
 	self.delayedChannelWarned = false
+	self.previewWarned = false
+	self.availabilityWarned = false
 
 	if REH.UI and REH.UI.RollLog then
 		REH.UI.RollLog:OnRoundChanged()

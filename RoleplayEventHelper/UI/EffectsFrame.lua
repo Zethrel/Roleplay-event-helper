@@ -65,6 +65,11 @@ function EffectsFrame:Describe(effect)
 		when = ("On a roll of %d-%d"):format(effect.min, effect.max)
 	end
 
+	local oneOf = ""
+	if effect.random then
+		oneOf = " (one of these)"
+	end
+
 	local chance = ""
 	if (effect.chance or 100) < 100 then
 		chance = (", %d%% of the time"):format(effect.chance)
@@ -75,8 +80,8 @@ function EffectsFrame:Describe(effect)
 		delay = (" after %ss"):format(effect.delaySeconds)
 	end
 
-	return ("%s%s%s, %s: %s"):format(when, chance, delay,
-		REH.DISPLAY.effectTarget[effect.target] or effect.target, effect.message)
+	return ("%s%s%s, %s: %s%s"):format(when, chance, delay,
+		REH.DISPLAY.effectTarget[effect.target] or effect.target, effect.message, oneOf)
 end
 
 --------------------------------------------------------------------------------
@@ -198,14 +203,26 @@ local function BuildRow(parent, index)
 	local delayLabel = UI.CreateLabel(row, "s", "GameFontNormalSmall")
 	delayLabel:SetPoint("LEFT", delay, "RIGHT", 2, 0)
 
-	local message = UI.CreateEditBox(row, WIDTH - 160, REH.MAX_RULE_LINE_LENGTH, function(text)
+	local random = UI.CreateCheckbox(row, "", function(checked)
+		local record = effect()
+		if record then
+			record.random = checked
+			Commit()
+		end
+	end)
+	random:SetPoint("TOPLEFT", row, "TOPLEFT", 4, -28)
+	UI.SetTooltip(random, "One of these at random",
+		"Tick this on two or more effects with the same trigger and only one of them fires, chosen at random. Three fish written against 4-7 become one fish.")
+	row.random = random
+
+	local message = UI.CreateEditBox(row, WIDTH - 190, REH.MAX_RULE_LINE_LENGTH, function(text)
 		local record = effect()
 		if record then
 			record.message = text
 			Commit()
 		end
 	end)
-	message:SetPoint("TOPLEFT", row, "TOPLEFT", 8, -30)
+	message:SetPoint("LEFT", random, "RIGHT", 8, 0)
 	UI.SetTooltip(message, "What it says",
 		"{name} is the roller, {roll} the number, {result} the verdict, {item} whatever the loot table gives that roll.")
 	row.message = message
@@ -229,6 +246,7 @@ local function ApplyRow(row, index, effect)
 	row.index = index
 
 	row.enabled:SetChecked(effect.enabled and true or false)
+	row.random:SetChecked(effect.random and true or false)
 	row.trigger:SetValue(effect.trigger)
 	row.target:SetValue(effect.target)
 	row.verdict:SetValue(effect.verdict)
@@ -326,6 +344,7 @@ local function Build()
 
 		list[#list + 1] = REH.CreateRollEffect()
 		Commit()
+		REH.RollWatcher:WarnIfNotWatching()
 	end)
 	addButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 10, 10)
 	frame.addButton = addButton

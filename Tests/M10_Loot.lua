@@ -117,6 +117,115 @@ H.check("nothing matches while the table is switched off",
 	Watcher:LootFor(preset, 2) == nil)
 
 --------------------------------------------------------------------------------
+H.section("Several results for the same band")
+--------------------------------------------------------------------------------
+
+-- Repeating a band is how a host says "one of these": three lines all reading
+-- 4-7 are three fish that live in the same water. Asked for by the host running
+-- the fishing night, whose table had one fish per number and wanted a few.
+reset()
+preset = fishingPreset()
+preset.loot.entries = Fields.ParseLootLines(table.concat({
+	"1 your line breaks",
+	"2-3 a shrimp",
+	"4-7 a salmon",
+	"4-7 a trout",
+	"4-7 a carp",
+}, "\n"))
+
+local pool = Watcher:LootAlternatives(preset, 5)
+H.checkEqual("all three entries for the band are alternatives", #pool, 3)
+H.checkEqual("in the order they were written", pool[1].text, "a salmon")
+H.checkEqual("and the last one is there too", pool[3].text, "a carp")
+
+H.checkEqual("a band written once has one alternative",
+	#Watcher:LootAlternatives(preset, 2), 1)
+H.checkEqual("and a roll outside every band has none",
+	#Watcher:LootAlternatives(preset, 50), 0)
+
+-- Which one comes back is the random part, so the check is that every one of
+-- them can, and that nothing else ever does.
+local seen = {}
+for _ = 1, 200 do
+	local entry = Watcher:LootFor(preset, 5)
+	seen[entry.text] = true
+end
+H.check("every alternative can be chosen",
+	seen["a salmon"] and seen["a trout"] and seen["a carp"])
+H.checkEqual("and only those three ever are", REH.CountKeys(seen), 3)
+
+-- Precedence still belongs to the first band that covers the roll, so a narrow
+-- band above a wide one is not swallowed into its pool.
+preset.loot.entries = Fields.ParseLootLines(
+	"7 the one that got away\n4-7 a salmon\n4-7 a trout")
+H.checkEqual("a narrower band listed first still wins outright",
+	#Watcher:LootAlternatives(preset, 7), 1)
+H.checkEqual("with its own text", Watcher:LootFor(preset, 7).text, "the one that got away")
+H.checkEqual("while the wide band keeps its pair",
+	#Watcher:LootAlternatives(preset, 5), 2)
+
+H.clearOutput()
+REH.Commands:Handle("loot test 5")
+H.check("/reh loot test says a roll has alternatives",
+	H.outputText():find("chosen at random", 1, true) ~= nil, H.outputText())
+H.check("and lists them all",
+	H.outputText():find("a salmon", 1, true) ~= nil
+		and H.outputText():find("a trout", 1, true) ~= nil)
+
+--------------------------------------------------------------------------------
+H.section("When a result cannot reach the channel")
+--------------------------------------------------------------------------------
+
+-- The failure this covers was reported from a real event: results set up, and
+-- nothing arriving in party chat. Every way that can happen now says so, once,
+-- because a result that quietly stays in the host's own frame looks exactly
+-- like one that reached the room.
+reset()
+preset = fishingPreset()
+preset.channel.type = "PARTY"
+H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Rennek", subgroup = 1 } })
+Watcher:SetMode("local")
+
+-- The group goes away between the roll and the delivery, which is exactly what
+-- an unavailable channel looks like from inside the timer.
+roll("Rennek", 2)
+H.resetGroup()
+H.advance(5)
+
+H.checkEqual("nothing is sent when the channel is unavailable", #H.sentMessages(), 0)
+H.check("and the host is told why",
+	H.outputText():find("stayed in your own chat frame", 1, true) ~= nil, H.outputText())
+H.check("naming the actual condition",
+	H.outputText():find("not in a party", 1, true) ~= nil)
+
+reset()
+preset = fishingPreset()
+preset.channel.type = "PREVIEW"
+H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Rennek", subgroup = 1 } })
+Watcher:SetMode("local")
+
+roll("Rennek", 2)
+H.advance(5)
+H.check("a preview channel explains itself as well",
+	H.outputText():find("preview only", 1, true) ~= nil, H.outputText())
+H.check("and says how to fix it",
+	H.outputText():find("/reh channel party", 1, true) ~= nil)
+
+-- The most likely reason of all: results switched on, watcher left off. No
+-- rolls are read at all, so nothing fires and nothing explains it.
+reset()
+H.clearOutput()
+REH.Commands:Handle("loot on")
+H.check("switching results on while disarmed says so",
+	H.outputText():find("roll watcher is off", 1, true) ~= nil, H.outputText())
+
+H.clearOutput()
+Watcher:SetMode("local")
+REH.Commands:Handle("loot on")
+H.check("but not once the watcher is running",
+	H.outputText():find("roll watcher is off", 1, true) == nil)
+
+--------------------------------------------------------------------------------
 H.section("The line itself")
 --------------------------------------------------------------------------------
 

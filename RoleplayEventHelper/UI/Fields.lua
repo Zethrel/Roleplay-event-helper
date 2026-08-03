@@ -329,11 +329,19 @@ Fields.TABS = {
 				key = "enabled", label = "Announce a result for each roll", type = "toggle",
 				tooltip = "Reads the roll off the table below. A fishing night rolls, and the addon says what they caught.",
 				get = function(p) return p.loot.enabled end,
-				set = function(p, v) p.loot.enabled = v end,
+				set = function(p, v)
+					p.loot.enabled = v
+					-- Switching results on while the watcher is disarmed reads
+					-- exactly like the feature being broken: no rolls are read,
+					-- so nothing ever happens and nothing says why.
+					if v then
+						REH.RollWatcher:WarnIfNotWatching()
+					end
+				end,
 			},
 			{
 				key = "entries", label = "Results by roll", type = "lines", height = 160,
-				tooltip = "One per line: '1-3 an anchovy', or '100 a golden carp' for a single number. The first line that covers the roll wins, so put narrow bands above wide ones.",
+				tooltip = "One per line: '1-3 an anchovy', or '100 a golden carp' for a single number.\n\nWrite the same range more than once to get several possible results and have one picked at random -- three lines reading '4-7' are three fish in the same water.\n\nOtherwise the first line covering the roll wins, so put narrow bands above wide ones.",
 				get = function(p) return SerializeLootLines(p.loot.entries) end,
 				set = function(p, v) p.loot.entries = ParseLootLines(v) end,
 			},

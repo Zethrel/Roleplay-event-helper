@@ -141,6 +141,7 @@ local function ValidateRollEffects(list, dieMax, maxEntries)
 			effect.enabled = REH.ToBoolean(entry.enabled, true)
 			effect.message = REH.CleanString(entry.message, REH.MAX_RULE_LINE_LENGTH)
 			effect.chance = REH.ClampInteger(entry.chance, 0, 100, 100)
+			effect.random = REH.ToBoolean(entry.random, false)
 			effect.delaySeconds = REH.ClampNumber(entry.delaySeconds, 0, 30, 3)
 
 			if REH.IsValidEnum(REH.EFFECT_TRIGGERS, entry.trigger) then

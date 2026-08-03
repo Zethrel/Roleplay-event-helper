@@ -100,6 +100,52 @@ H.checkEqual("a roll matching one effect returns one",
 	#Watcher:MatchEffects(preset, 50, "success"), 1)
 
 --------------------------------------------------------------------------------
+H.section("One of these at random")
+--------------------------------------------------------------------------------
+
+-- The same idea as repeating a band in the loot table, on the effects side:
+-- effects sharing a trigger normally all fire, and ticking "one of these" on a
+-- group makes them alternatives instead.
+reset()
+preset = withEffects({
+	effect({ trigger = "band", min = 4, max = 7, random = true, message = "A salmon." }),
+	effect({ trigger = "band", min = 4, max = 7, random = true, message = "A trout." }),
+	effect({ trigger = "band", min = 4, max = 7, random = true, message = "A carp." }),
+	effect({ trigger = "any", message = "A splash." }),
+})
+
+local resolved = Watcher:ResolveEffects(Watcher:MatchEffects(preset, 5, "fail"))
+H.checkEqual("a random group collapses to one, and the others stay", #resolved, 2)
+H.checkEqual("with the non-random effect kept as it was",
+	resolved[2].message, "A splash.")
+
+local picked = {}
+for _ = 1, 200 do
+	local one = Watcher:ResolveEffects(Watcher:MatchEffects(preset, 5, "fail"))
+	picked[one[1].message] = true
+end
+H.check("every alternative can be the one chosen",
+	picked["A salmon."] and picked["A trout."] and picked["A carp."])
+H.checkEqual("and nothing else ever is", REH.CountKeys(picked), 3)
+
+-- Grouping is by trigger, so two random effects that fire on different things
+-- are not alternatives to each other.
+preset = withEffects({
+	effect({ trigger = "band", min = 1, max = 1, random = true, message = "Snap." }),
+	effect({ trigger = "verdict", verdict = "critfail", random = true, message = "Ouch." }),
+})
+H.checkEqual("different triggers are not alternatives",
+	#Watcher:ResolveEffects(Watcher:MatchEffects(preset, 1, "critfail")), 2)
+
+-- Without the flag, nothing changes: this is what 1.7.0 already did.
+preset = withEffects({
+	effect({ trigger = "band", min = 4, max = 7, message = "A salmon." }),
+	effect({ trigger = "band", min = 4, max = 7, message = "A trout." }),
+})
+H.checkEqual("effects that are not marked random all still fire",
+	#Watcher:ResolveEffects(Watcher:MatchEffects(preset, 5, "fail")), 2)
+
+--------------------------------------------------------------------------------
 H.section("The line it produces")
 --------------------------------------------------------------------------------
 
