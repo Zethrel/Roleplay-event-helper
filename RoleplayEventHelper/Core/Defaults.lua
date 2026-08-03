@@ -136,6 +136,12 @@ end
 REH.DEFAULT_SETTINGS = {
 	minimapButton = { hide = false, minimapPos = 220 },
 	framePoint = { point = "CENTER", relativePoint = "CENTER", x = 0, y = 0 },
+
+	-- The window is resizable, and the size it was left at is remembered the
+	-- same way its position is. Clamped on load: a size saved by a future
+	-- version, or edited by hand, must not produce a window that cannot be
+	-- reached or read.
+	frameSize = { width = 820, height = 600 },
 	sendDelay = 0.7,
 
 	-- "auto" picks per channel: burst where the client needs a hardware event

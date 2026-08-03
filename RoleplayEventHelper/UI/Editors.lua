@@ -32,6 +32,9 @@ local function BuildTextRow(page, field, width, onEdited)
 		label = label,
 		control = box,
 		height = UI.ROW_HEIGHT,
+		resize = function(newWidth)
+			box:SetWidth(math.max(newWidth - UI.LABEL_WIDTH - 24, 60))
+		end,
 		apply = function(preset)
 			box:SetText(tostring(field.get(preset) or ""))
 			box:SetCursorPosition(0)
@@ -42,6 +45,7 @@ end
 local function BuildNumberRow(page, field, width, onEdited)
 	local row = BuildTextRow(page, field, width, onEdited)
 	row.control:SetWidth(90)
+	row.resize = nil -- a number field is 90 wide whatever the window is doing
 	row.control:SetNumeric(false) -- negative and signed values must be typeable
 	return row
 end
@@ -106,6 +110,9 @@ local function BuildLinesRow(page, field, width, onEdited, onResize)
 		height = height,
 		labelAbove = true,
 		growable = true,
+		resize = function(newWidth)
+			box:SetBoxWidth(math.max(newWidth - 16, 60))
+		end,
 		apply = function(preset)
 			box.editBox:SetText(tostring(field.get(preset) or ""))
 			box.editBox:SetCursorPosition(0)
@@ -264,6 +271,28 @@ function Editors:Create(parent, width, onChanged)
 
 		self.activeIndex = index
 		self:Refresh()
+	end
+
+	--- Re-width every page for a window the host has dragged wider or narrower.
+	--- Only the fields that should follow the window do: a number box stays 90
+	--- wide, because a five-digit field stretched across a wide window is not
+	--- easier to read, it is just further from its label.
+	function controller:SetWidth(newWidth)
+		newWidth = math.max(newWidth, 200)
+
+		for _, page in ipairs(self.pages) do
+			page.frame:SetWidth(newWidth)
+
+			for _, row in ipairs(page.rows) do
+				if row.resize then
+					row.resize(newWidth)
+				end
+			end
+
+			if page.layout then
+				page.layout()
+			end
+		end
 	end
 
 	function controller:GetActiveHeight()

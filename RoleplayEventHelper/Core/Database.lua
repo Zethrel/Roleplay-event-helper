@@ -189,6 +189,12 @@ function Database:ValidateSettings(settings)
 		and settings.sendMode ~= "auto" then
 		settings.sendMode = "auto"
 	end
+	if type(settings.frameSize) ~= "table" then
+		settings.frameSize = {}
+	end
+	settings.frameSize.width = REH.ClampNumber(settings.frameSize.width, 820, 1800, 820)
+	settings.frameSize.height = REH.ClampNumber(settings.frameSize.height, 460, 1200, 600)
+
 	settings.useSeparators = REH.ToBoolean(settings.useSeparators, false)
 	settings.mergeLines = REH.ToBoolean(settings.mergeLines, true)
 	settings.debug = REH.ToBoolean(settings.debug, false)

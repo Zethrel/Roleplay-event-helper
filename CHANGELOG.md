@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.9.0 - 2026-08-03
+
+**The window can be dragged out.** Grab the grip in the bottom-right corner and
+pull. Asked for so the whole preview can be read at once instead of scrolled
+through.
+
+- Most of the extra height goes to the **preview** — that being the reason to
+  make the window bigger — and the rest to the editor, which also runs long.
+  The preview never takes more than half the interior, so the tab you are
+  editing always has room.
+- Extra width goes to the editor and the preview. The preset list stays as wide
+  as it was: a preset name does not need more room, and the rules beside it do.
+- The size is remembered between sessions, the same way the position already
+  was. **Double-click the grip** to go back to the default.
+- The tab strip re-wraps as the window widens, so ten tabs fold onto one row
+  instead of staying on two.
+
+At its default size the window is laid out exactly as before, so nothing moves
+for anyone who does not drag it.
+
 ## 1.8.0 - 2026-08-03
 
 **Several possible results for the same roll, one picked at random.** Write a

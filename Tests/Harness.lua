@@ -395,6 +395,20 @@ end
 -- Widget mock
 --------------------------------------------------------------------------------
 
+--- The client calls OnSizeChanged whenever a frame's dimensions change, which
+--- is how a window lays itself out after a drag. Guarded against re-entry: a
+--- layout pass resizes its own children, and a handler that resized the frame
+--- it is handling would otherwise recurse forever.
+function Harness.fireSizeChanged(widget)
+	local handler = widget._scripts and widget._scripts["OnSizeChanged"]
+
+	if handler and not widget._sizing then
+		widget._sizing = true
+		handler(widget, widget._width or 0, widget._height or 0)
+		widget._sizing = false
+	end
+end
+
 -- Methods the addon is allowed to call. Anything outside this set raises,
 -- rather than silently doing nothing: a no-op stub would let a misspelled or
 -- imaginary API method pass the tests and then break in the game. Adding an
@@ -415,6 +429,7 @@ local WIDGET_METHODS = {
 	RegisterEvent = true, UnregisterEvent = true, IsEventRegistered = true,
 	RegisterForDrag = true, RegisterForClicks = true,
 	EnableMouse = true, SetMovable = true, StartMoving = true, StopMovingOrSizing = true,
+	SetResizable = true, SetResizeBounds = true, StartSizing = true,
 	SetPropagateKeyboardInput = true,
 	-- children
 	CreateFontString = true, CreateTexture = true,
@@ -430,6 +445,7 @@ local WIDGET_METHODS = {
 	SetChecked = true, GetChecked = true,
 	-- textures
 	SetColorTexture = true, SetTexture = true, SetVertexColor = true,
+	SetNormalTexture = true, SetHighlightTexture = true, SetPushedTexture = true,
 	-- scrolling
 	SetScrollChild = true, GetScrollChild = true, SetVerticalScroll = true,
 	GetVerticalScrollRange = true, UpdateScrollChildRect = true,
@@ -526,10 +542,13 @@ function Harness.widgetCall(widget, method, a, b, c, d, e)
 		return Harness.newWidget("Texture")
 	elseif method == "SetSize" then
 		widget._width, widget._height = a, b
+		Harness.fireSizeChanged(widget)
 	elseif method == "SetWidth" then
 		widget._width = a
+		Harness.fireSizeChanged(widget)
 	elseif method == "SetHeight" then
 		widget._height = a
+		Harness.fireSizeChanged(widget)
 	elseif method == "GetWidth" then
 		return widget._width or 0
 	elseif method == "GetHeight" then

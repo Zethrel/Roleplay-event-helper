@@ -286,6 +286,15 @@ function UI.CreateMultiLineBox(parent, width, height, onCommit, onResize)
 
 	container.editBox = box
 	container.minHeight = height
+
+	--- Widen the box in place, for a window the host has dragged wider. The
+	--- height is left to fitToText, which owns it.
+	function container:SetBoxWidth(newWidth)
+		newWidth = math.max(newWidth, 1)
+		self:SetWidth(newWidth)
+		self.editBox:SetWidth(math.max(newWidth - PADDING * 2, 1))
+	end
+
 	return container
 end
 
@@ -304,6 +313,24 @@ function UI.CreateScrollArea(parent, width, height)
 
 	scroll.content = content
 	return scroll, content
+end
+
+--- Resize a scroll area in place. The content keeps whatever height it has
+--- grown to; only the visible window onto it changes.
+function UI.ResizeScrollArea(scroll, width, height)
+	if not scroll then
+		return
+	end
+
+	scroll:SetSize(math.max(width, 1), math.max(height, 1))
+
+	if scroll.content then
+		scroll.content:SetWidth(math.max(width - 24, 1))
+	end
+
+	if scroll.UpdateScrollChildRect then
+		scroll:UpdateScrollChildRect()
+	end
 end
 
 --------------------------------------------------------------------------------

@@ -9,6 +9,19 @@ local LIST_WIDTH = 190
 local PREVIEW_HEIGHT = 150
 local BOTTOM_BAR_HEIGHT = 32
 local TAB_HEIGHT = 24
+local TITLE_HEIGHT = 28
+
+-- The window can be dragged out. The minimum is the size everything was laid
+-- out against, because the bottom bar is a fixed row of buttons and shrinking
+-- below that would slide them into each other; the maximum is generous rather
+-- than a judgement about what a host needs.
+local MIN_WIDTH, MIN_HEIGHT = WIDTH, 460
+local MAX_WIDTH, MAX_HEIGHT = 1800, 1200
+
+-- Where the extra height goes. Most of it to the preview, since reading the
+-- whole announcement without scrolling is the reason to make the window bigger
+-- in the first place; the rest to the editor, which also runs long.
+local PREVIEW_SHARE_OF_EXTRA = 0.6
 
 local frame
 
@@ -135,6 +148,7 @@ local function Build()
 			MainFrame:SelectTab(index)
 		end)
 		button:SetPoint("TOPLEFT", editorPanel, "TOPLEFT", tabX, -tabY)
+		button.stripWidth = width
 		frame.tabButtons[index] = button
 		tabX = tabX + width + 2
 	end
@@ -197,7 +211,7 @@ local function Build()
 		REH.Announcer:Announce(preset, name)
 		MainFrame:RefreshAll()
 	end)
-	announceButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -8, 8)
+	announceButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -22, 8)
 	frame.announceButton = announceButton
 
 	local cancelButton = UI.CreateButton(frame, "Cancel", 90, 24, function()
@@ -213,7 +227,7 @@ local function Build()
 		{ value = "announce", label = "Watcher: verdicts to channel" },
 	}
 
-	local watchButton = UI.CreateCycleButton(frame, WATCH_OPTIONS, 210, function(value)
+	local watchButton = UI.CreateCycleButton(frame, WATCH_OPTIONS, 190, function(value)
 		REH.RollWatcher:SetMode(value)
 		MainFrame:RefreshPreview()
 	end)
@@ -226,7 +240,7 @@ local function Build()
 	-- One press does what a host actually does at that moment: call the round,
 	-- tell the room, and put the roll log where they can see it. Right-click
 	-- still just opens the log, for checking back without starting anything.
-	local logButton = UI.CreateButton(frame, "Start Round", 110, 24)
+	local logButton = UI.CreateButton(frame, "Start Round", 100, 24)
 	logButton:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	logButton:SetScript("OnClick", function(_, mouseButton)
 		if mouseButton == "RightButton" then
@@ -257,16 +271,188 @@ local function Build()
 	statusText:SetWidth(WIDTH - 200)
 	frame.statusText = statusText
 
+	----------------------------------------------------------------------------
+	-- Resizing
+	----------------------------------------------------------------------------
+
+	frame:SetResizable(true)
+
+	-- SetResizeBounds is the current call; the older pair is kept for clients
+	-- that have not got it, since being unable to set bounds must not cost the
+	-- window its resizing altogether.
+	if frame.SetResizeBounds then
+		frame:SetResizeBounds(MIN_WIDTH, MIN_HEIGHT, MAX_WIDTH, MAX_HEIGHT)
+	else
+		if frame.SetMinResize then
+			frame:SetMinResize(MIN_WIDTH, MIN_HEIGHT)
+		end
+		if frame.SetMaxResize then
+			frame:SetMaxResize(MAX_WIDTH, MAX_HEIGHT)
+		end
+	end
+
+	local grip = CreateFrame("Button", nil, frame)
+	grip:SetSize(16, 16)
+	grip:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -2, 2)
+	grip:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up")
+	grip:SetHighlightTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight")
+	grip:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down")
+	frame.grip = grip
+
+	grip:SetScript("OnMouseDown", function()
+		frame:StartSizing("BOTTOMRIGHT")
+	end)
+
+	grip:SetScript("OnMouseUp", function()
+		frame:StopMovingOrSizing()
+		MainFrame:SaveSize()
+	end)
+
+	UI.SetTooltip(grip, "Resize",
+		"Drag to make the window bigger. Most of the extra height goes to the preview.\n\nDouble-click to go back to the default size.")
+
+	-- A window dragged somewhere unusable is a window the host has to fix by
+	-- hand, so there is always a way back.
+	grip:RegisterForClicks("AnyUp")
+	grip:SetScript("OnDoubleClick", function()
+		MainFrame:ResetSize()
+	end)
+
+	-- One layout pass, driven by the frame's actual size, so a drag and a
+	-- restored size go through exactly the same code.
+	frame:SetScript("OnSizeChanged", function()
+		MainFrame:Layout()
+	end)
+
 	-- Escape closes the window, the way every other panel behaves.
 	if UISpecialFrames then
 		table.insert(UISpecialFrames, "RoleplayEventHelperFrame")
 	end
 
 	MainFrame.frame = frame
+	MainFrame:RestoreSize()
+	MainFrame:Layout()
 	MainFrame:SelectTab(1)
 	MainFrame:RefreshAll()
 
 	return frame
+end
+
+--------------------------------------------------------------------------------
+-- Layout
+--------------------------------------------------------------------------------
+
+--- How the interior is divided at a given window size. Pure arithmetic, kept
+--- apart from the frames so the sizing rules can be tested directly.
+function MainFrame:Measure(width, height)
+	local interior = height - TITLE_HEIGHT - BOTTOM_BAR_HEIGHT - 24
+
+	local extra = math.max(height - HEIGHT, 0)
+	local previewHeight = PREVIEW_HEIGHT + math.floor(extra * PREVIEW_SHARE_OF_EXTRA)
+
+	-- Never let the preview eat the editor: past this point a taller window is
+	-- worth more to the tab you are editing than to the pane below it.
+	previewHeight = math.min(previewHeight, math.floor(interior * 0.55))
+	previewHeight = math.max(previewHeight, 100)
+
+	local topHeight = math.max(interior - previewHeight, 120)
+
+	return {
+		topHeight = topHeight,
+		previewHeight = previewHeight,
+		editorWidth = width - LIST_WIDTH - 30,
+		previewWidth = width - 16,
+	}
+end
+
+--- Re-wrap the tab strip for the current editor width and return its height.
+function MainFrame:LayoutTabs(editorWidth)
+	local tabX, tabY = 8, 4
+	local tabRight = editorWidth - 8
+
+	for _, button in ipairs(frame.tabButtons) do
+		local width = button.stripWidth or button:GetWidth()
+
+		if tabX > 8 and tabX + width > tabRight then
+			tabX = 8
+			tabY = tabY + TAB_HEIGHT
+		end
+
+		button:ClearAllPoints()
+		button:SetPoint("TOPLEFT", frame.editorPanel, "TOPLEFT", tabX, -tabY)
+		tabX = tabX + width + 2
+	end
+
+	return tabY + TAB_HEIGHT
+end
+
+--- Fit every piece to the window's current size.
+function MainFrame:Layout()
+	if not frame then
+		return
+	end
+
+	local size = self:Measure(frame:GetWidth(), frame:GetHeight())
+
+	frame.presetList:Resize(size.topHeight)
+	frame.editorPanel:SetSize(size.editorWidth, size.topHeight)
+
+	local tabStripHeight = self:LayoutTabs(size.editorWidth)
+
+	UI.ResizeScrollArea(frame.editorScroll, size.editorWidth - 30,
+		size.topHeight - tabStripHeight - 16)
+	frame.editorScroll:ClearAllPoints()
+	frame.editorScroll:SetPoint("TOPLEFT", frame.editorPanel, "TOPLEFT", 8,
+		-(tabStripHeight + 8))
+
+	frame.editors:SetWidth(size.editorWidth - 40)
+
+	frame.preview:Resize(size.previewWidth, size.previewHeight)
+	frame.statusText:SetWidth(math.max(frame:GetWidth() - 200, 100))
+
+	-- The scroll child follows the page that is actually visible, the same as
+	-- it does when a tab is chosen.
+	local content = frame.editorScroll.content
+	if content and frame.editors.GetActiveHeight then
+		content:SetHeight(math.max(frame.editors:GetActiveHeight(), 1))
+	end
+end
+
+--------------------------------------------------------------------------------
+-- Remembering the size
+--------------------------------------------------------------------------------
+
+function MainFrame:SaveSize()
+	if not frame then
+		return
+	end
+
+	local settings = REH.Database:GetSettings()
+	settings.frameSize = {
+		width = math.floor(frame:GetWidth() + 0.5),
+		height = math.floor(frame:GetHeight() + 0.5),
+	}
+end
+
+function MainFrame:RestoreSize()
+	if not frame then
+		return
+	end
+
+	local saved = REH.Database:GetSettings().frameSize or {}
+	frame:SetSize(
+		REH.ClampNumber(saved.width, MIN_WIDTH, MAX_WIDTH, WIDTH),
+		REH.ClampNumber(saved.height, MIN_HEIGHT, MAX_HEIGHT, HEIGHT))
+end
+
+function MainFrame:ResetSize()
+	if not frame then
+		return
+	end
+
+	frame:SetSize(WIDTH, HEIGHT)
+	self:SaveSize()
+	self:Layout()
 end
 
 --------------------------------------------------------------------------------

@@ -102,6 +102,15 @@ function PresetList:Create(parent, width, height, onChanged)
 
 	frame.rows = {}
 	frame.content = content
+	frame.scrollFrame = scroll
+
+	--- Follow the window's height. The width is fixed: a preset name does not
+	--- need more room, and the editor beside it does.
+	function frame:Resize(newHeight)
+		self:SetHeight(newHeight)
+		UI.ResizeScrollArea(self.scrollFrame, width - 30,
+			newHeight - 30 - buttonAreaHeight)
+	end
 
 	local function notify()
 		if onChanged then

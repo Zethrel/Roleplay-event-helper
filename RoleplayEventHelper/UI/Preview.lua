@@ -67,6 +67,20 @@ function Preview:Create(parent, width, height)
 	frame.content = content
 	frame.scrollFrame = scroll
 
+	--- Grow or shrink with the window. The whole point of a resizable window is
+	--- that this pane gets bigger, so it is the piece that has to follow.
+	function frame:Resize(newWidth, newHeight)
+		self:SetSize(newWidth, newHeight)
+		UI.ResizeScrollArea(self.scrollFrame, newWidth - 34, newHeight - 30)
+		self.bodyText:SetWidth(newWidth - 40)
+
+		-- Rewrapping the text changes how tall it is, so the scroll child has to
+		-- be measured again or the last lines become unreachable.
+		if self.content and self.bodyText.GetStringHeight then
+			self.content:SetHeight(math.max(self.bodyText:GetStringHeight() or 0, 1))
+		end
+	end
+
 	function frame:Refresh(preset)
 		if not preset then
 			return

@@ -525,6 +525,73 @@ local saved = DB:GetSettings().framePoint
 H.checkEqual("the dragged position is saved", saved.point, "TOPLEFT")
 H.checkEqual("with its offset", saved.x, 120)
 
+--------------------------------------------------------------------------------
+H.section("The window can be dragged out")
+--------------------------------------------------------------------------------
+
+-- The sizing rules are arithmetic, so they are checked directly rather than by
+-- reading pixels off a mock.
+local base = MainFrame:Measure(820, 600)
+H.checkEqual("at the default size the preview is what it always was",
+	base.previewHeight, 150)
+
+local tall = MainFrame:Measure(820, 900)
+H.check("a taller window gives the preview most of the extra",
+	tall.previewHeight > base.previewHeight + 150, tall.previewHeight)
+H.check("and the editor the rest", tall.topHeight > base.topHeight, tall.topHeight)
+H.checkEqual("300 more pixels of height, 180 of them to the preview",
+	tall.previewHeight - base.previewHeight, 180)
+
+-- Left unchecked, the share rule would eventually leave no editor at all.
+local veryTall = MainFrame:Measure(820, 1200)
+H.check("the preview never takes more than half the interior",
+	veryTall.previewHeight <= (1200 - 28 - 32 - 24) * 0.55 + 1, veryTall.previewHeight)
+H.check("so the editor always has room to work in", veryTall.topHeight > 200)
+
+local wide = MainFrame:Measure(1400, 600)
+H.checkEqual("extra width goes to the editor, not the preset list",
+	wide.editorWidth, 1400 - 190 - 30)
+H.checkEqual("and the preview spans the window", wide.previewWidth, 1400 - 16)
+
+-- The layout pass has to survive being run at any size, since the client fires
+-- it on every pixel of a drag. The widget mock raises on anything imaginary,
+-- so getting through this is the check.
+frame:SetSize(1200, 900)
+H.check("the window lays out at a dragged size", frame:GetWidth() == 1200)
+
+local editorPage = MainFrame.frame.editors.pages[1]
+H.check("the editor pages widen with it",
+	editorPage.frame:GetWidth() > 500, editorPage.frame:GetWidth())
+
+frame:SetSize(820, 600)
+H.check("and back down again", frame:GetWidth() == 820)
+
+MainFrame:SaveSize()
+local savedSize = DB:GetSettings().frameSize
+H.checkEqual("the size is remembered", savedSize.width, 820)
+H.checkEqual("in both directions", savedSize.height, 600)
+
+frame:SetSize(1000, 700)
+MainFrame:SaveSize()
+MainFrame:ResetSize()
+H.checkEqual("and can be put back to the default width", frame:GetWidth(), 820)
+H.checkEqual("and height", frame:GetHeight(), 600)
+
+-- A hand-edited or future-version size must not produce a window that cannot
+-- be read or reached.
+local settings = DB:GetSettings()
+settings.frameSize = { width = 99999, height = -40 }
+DB:ValidateSettings(settings)
+H.check("an absurd saved width is clamped", settings.frameSize.width <= 1800,
+	settings.frameSize.width)
+H.check("and a negative height", settings.frameSize.height >= 460,
+	settings.frameSize.height)
+
+settings.frameSize = "not a table"
+DB:ValidateSettings(settings)
+H.checkEqual("a size that is not a size falls back to the default",
+	settings.frameSize.width, 820)
+
 H.checkNoLeakedGlobals(H.ALLOWED_GLOBALS)
 
 H.finish()
