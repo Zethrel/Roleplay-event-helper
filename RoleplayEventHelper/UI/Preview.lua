@@ -4,33 +4,64 @@ local UI = REH.UI
 local Preview = {}
 UI.Preview = Preview
 
--- The live preview pane: exactly what will be sent, message by message, with
--- the byte count and an estimate of how long the announcement will take.
+-- The live preview pane: exactly what will be sent, message by message, with an
+-- estimate of how long the announcement will take.
 --
 -- This is the centrepiece of the window. A host should never have to press
 -- Announce to find out what their rules look like in chat.
+--
+-- It is deliberately quiet about byte counts. Every message used to carry one,
+-- which meant half the ink in the pane went on a number that only matters when
+-- it is close to the limit. Now a count appears when it is worth knowing about
+-- and nowhere else, so the pane reads like the chat it is predicting.
+
+-- Where a message stops being comfortable. The hard limit is 255; anything past
+-- this is close enough that a host adding one more clause should be told.
+local WARN_BYTES = 200
 
 --- Build the preview text for a preset. Pure, so it can be tested directly.
---- Returns the body text, the message count, and the estimated seconds.
+--- Returns the body text, the message count, the estimated seconds and how many
+--- of those messages are separators.
 function Preview:BuildText(preset)
-	local messages = REH.Formatter:BuildMessages(preset)
+	local messages, _, _, meta = REH.Formatter:BuildMessages(preset)
 	local settings = REH.Database:GetSettings()
 	local seconds = math.max(0, (#messages - 1)) * settings.sendDelay
 
-	local lines = {}
+	local lines, separators = {}, 0
+
 	for index, message in ipairs(messages) do
-		lines[#lines + 1] = ("|cff808080%2d.|r %s |cff606060(%d)|r"):format(
-			index, message, #message)
+		local info = meta and meta[index] or {}
+
+		if info.module == "separator" then
+			-- A separator carries no rule, so it is dimmed to the point of
+			-- being scenery: it is still counted, still costs a message, and
+			-- the eye can skip it while reading the rules.
+			separators = separators + 1
+			lines[#lines + 1] = ("|cff505050%2d. %s|r"):format(index, message)
+
+		else
+			local tail = ""
+
+			if info.split then
+				-- A rule too long for one message arrives as two, which is
+				-- worth knowing before an event rather than after.
+				tail = (" |cffff8080(%d, split)|r"):format(#message)
+			elseif #message > WARN_BYTES then
+				tail = (" |cffffd100(%d)|r"):format(#message)
+			end
+
+			lines[#lines + 1] = ("|cff808080%2d.|r %s%s"):format(index, message, tail)
+		end
 	end
 
 	if #messages == 0 then
 		lines[1] = "|cffff6060Nothing to announce -- every module is disabled or empty.|r"
 	end
 
-	return table.concat(lines, "\n"), #messages, seconds
+	return table.concat(lines, "\n"), #messages, seconds, separators
 end
 
-function Preview:BuildSummary(messageCount, seconds)
+function Preview:BuildSummary(messageCount, seconds, separators)
 	if messageCount == 0 then
 		return "no messages"
 	end
@@ -39,7 +70,15 @@ function Preview:BuildSummary(messageCount, seconds)
 		return "1 message"
 	end
 
-	return ("%d messages, about %.0f seconds"):format(messageCount, seconds)
+	-- Separators are called out because they are the one part of the count a
+	-- host can delete without losing a rule: five of them is five messages and
+	-- three and a half seconds of held channel spent on dashes.
+	local dashes = ""
+	if separators and separators > 1 then
+		dashes = (" (%d separators)"):format(separators)
+	end
+
+	return ("%d messages%s, about %.0f seconds"):format(messageCount, dashes, seconds)
 end
 
 function Preview:Create(parent, width, height)
@@ -86,9 +125,9 @@ function Preview:Create(parent, width, height)
 			return
 		end
 
-		local text, count, seconds = Preview:BuildText(preset)
+		local text, count, seconds, separators = Preview:BuildText(preset)
 		self.bodyText:SetText(text)
-		self.summaryText:SetText(Preview:BuildSummary(count, seconds))
+		self.summaryText:SetText(Preview:BuildSummary(count, seconds, separators))
 
 		-- Same reason as the roll log: without this the scroll child stays at
 		-- its original height and a long preview cannot be scrolled.

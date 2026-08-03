@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.11.0 - 2026-08-03
+
+Four changes aimed at the same thing: the window telling you what it is about
+to do, without you having to work it out.
+
+- **The preview is quieter.** Every message used to carry a byte count, so half
+  the ink in the pane went on a number that only matters near the 255-byte
+  limit. Now a count appears in amber only when a message is getting long, and
+  in red when a rule was too long and had to be split across two messages --
+  which is worth finding out in the preview rather than in the channel.
+- **Separators are called out.** They are dimmed in the preview, and the
+  summary names them: `13 messages (5 separators), about 8 seconds`. They are
+  the one part of that count you can delete without losing a rule.
+- **Tabs show which sections are left out.** A section switched out of the
+  announcement keeps all its rules, which from the tab strip looked identical
+  to one that is still in it. Those tabs now carry a small red dot, and the
+  tooltip says how to switch it back on.
+- **The announce button names its target.** It reads `Announce to party chat`,
+  or `Preview only` when the preset sends nothing. The target used to be on one
+  button and the action on another, so confirming where an announcement was
+  about to go meant reading the far corner of the window.
+
 ## 1.10.0 - 2026-08-03
 
 **The roll log and the roll effects window resize too.** Same grip in the

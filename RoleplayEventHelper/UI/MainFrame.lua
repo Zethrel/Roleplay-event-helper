@@ -155,6 +155,32 @@ local function Build()
 		end)
 		button:SetPoint("TOPLEFT", editorPanel, "TOPLEFT", tabX, -tabY)
 		button.stripWidth = width
+		button.moduleKey = REH.IsValidEnum(REH.MODULE_KEYS, tab.module) and tab.module or nil
+
+		-- A section can be switched out of the announcement and still hold all
+		-- its rules, which from the strip looks identical to one that is in it.
+		-- The dot is the difference, so a host is not clicking through eight
+		-- tabs to find where the damage rules went.
+		--
+		-- A mark rather than a greyed title: the active tab is already drawn
+		-- disabled, and two greys meaning two different things is worse than
+		-- saying nothing.
+		if button.moduleKey then
+			local dot = button:CreateTexture(nil, "OVERLAY")
+			dot:SetSize(5, 5)
+			dot:SetPoint("TOPRIGHT", button, "TOPRIGHT", -3, -3)
+			dot:SetColorTexture(0.85, 0.4, 0.35, 0.95)
+			dot:Hide()
+			button.offDot = dot
+
+			UI.SetTooltip(button, tab.title, function()
+				if REH.Database:GetActivePreset().moduleEnabled[button.moduleKey] then
+					return "Announced with your rules."
+				end
+				return "Not announced. The rules here are kept, but left out of the announcement -- switch it back on with 'Announce this section' at the top of the tab."
+			end)
+		end
+
 		frame.tabButtons[index] = button
 		tabX = tabX + width + 2
 	end
@@ -194,7 +220,7 @@ local function Build()
 	-- Bottom bar
 	----------------------------------------------------------------------------
 
-	local channelButton = UI.CreateButton(frame, "Channel", 220, 24)
+	local channelButton = UI.CreateButton(frame, "Channel", 200, 24)
 	channelButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 8, 8)
 	frame.channelButton = channelButton
 
@@ -212,7 +238,7 @@ local function Build()
 	UI.SetTooltip(channelButton, "Announce to",
 		"Where the rules are sent. Custom channels and whispers are set with /reh channel channel <name> or /reh channel whisper <name>.")
 
-	local announceButton = UI.CreateButton(frame, "Announce Rules", 160, 24, function()
+	local announceButton = UI.CreateButton(frame, "Announce Rules", 190, 24, function()
 		local preset, name = REH.Database:GetActivePreset()
 		REH.Announcer:Announce(preset, name)
 		MainFrame:RefreshAll()
@@ -233,7 +259,7 @@ local function Build()
 		{ value = "announce", label = "Watcher: verdicts to channel" },
 	}
 
-	local watchButton = UI.CreateCycleButton(frame, WATCH_OPTIONS, 190, function(value)
+	local watchButton = UI.CreateCycleButton(frame, WATCH_OPTIONS, 180, function(value)
 		REH.RollWatcher:SetMode(value)
 		MainFrame:RefreshPreview()
 	end)
@@ -486,6 +512,22 @@ function MainFrame:RefreshPreview()
 	frame.channelButton:SetText(REH.Announcer:DescribeChannel(channel))
 	frame.watchButton:SetValue(REH.RollWatcher:GetMode())
 
+	-- The target was named on one button and the action lived on another, so
+	-- confirming where an announcement was about to go meant looking at the far
+	-- corner of the window. The button says what pressing it does.
+	frame.announceButton:SetText(MainFrame:DescribeAnnounceAction(channel))
+
+	-- Tabs whose section is switched out of the announcement.
+	for _, button in ipairs(frame.tabButtons) do
+		if button.offDot then
+			if preset.moduleEnabled[button.moduleKey] then
+				button.offDot:Hide()
+			else
+				button.offDot:Show()
+			end
+		end
+	end
+
 	local sending = REH.Announcer:IsSending()
 	local available, reason = REH.Announcer:CheckAvailability(channel)
 
@@ -516,7 +558,7 @@ function MainFrame:RefreshPreview()
 		frame.statusText:SetText("")
 	end
 
-	UI.SetTooltip(frame.announceButton, "Announce Rules", function()
+	UI.SetTooltip(frame.announceButton, self:DescribeAnnounceAction(channel), function()
 		if REH.Announcer:IsSending() then
 			return "An announcement is already in progress."
 		end
@@ -527,8 +569,24 @@ function MainFrame:RefreshPreview()
 			return why
 		end
 
+		if REH.Database:GetActivePreset().channel.type == "PREVIEW" then
+			return "This preset is set to preview only, so nothing is sent. Choose a channel with the button at the bottom left."
+		end
+
 		return "Send these rules to the chosen channel."
 	end)
+end
+
+--- What the announce button should say. The channel's own name rather than the
+--- full description: the button beside it already carries the custom channel or
+--- whisper target, and a button that clips its own label is worse than one that
+--- says a little less.
+function MainFrame:DescribeAnnounceAction(channel)
+	if channel.type == "PREVIEW" then
+		return "Preview only"
+	end
+
+	return ("Announce to %s"):format(REH.DISPLAY.channel[channel.type] or channel.type)
 end
 
 function MainFrame:RefreshAll()

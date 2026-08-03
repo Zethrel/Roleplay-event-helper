@@ -402,12 +402,57 @@ local expected = REH.Formatter:BuildMessages(active)
 
 H.checkEqual("the preview counts the real messages", count, #expected)
 H.check("and shows the first one", text:find(expected[1], 1, true) ~= nil)
-H.check("with a byte count", text:find("(" .. #expected[1] .. ")", 1, true) ~= nil)
 H.check("the estimate grows with the message count", seconds >= 0)
+
+-- Byte counts are noise until they are close to the limit, and the preview is
+-- the pane a host reads the most.
+H.check("a comfortable message carries no byte count",
+	text:find("(" .. #expected[1] .. ")", 1, true) == nil, text:sub(1, 120))
+
+local wordy = REH.CreateDefaultPreset("Wordy")
+wordy.custom = { ("A rule that goes on. "):rep(11) }
+DB:ValidatePreset(wordy)
+local wordyText = Preview:BuildText(wordy)
+H.check("but a message near the limit says how big it is",
+	wordyText:find("(1", 1, true) ~= nil or wordyText:find("(2", 1, true) ~= nil,
+	wordyText)
+
+-- A rule too long for one chat message arrives as two, and the preview marks
+-- it. Validation caps a rule at 200 characters against a 255-byte message, so
+-- the split path is reached here by shrinking the budget rather than by writing
+-- an impossibly long rule.
+local huge = REH.CreateDefaultPreset("Huge")
+huge.custom = { "A rule long enough to need two messages once the budget is small." }
+DB:ValidatePreset(huge)
+
+local _, _, _, hugeMeta = REH.Formatter:BuildMessages(huge, { maxBytes = 40 })
+local sawSplit = false
+for _, entry in ipairs(hugeMeta) do
+	if entry.split then
+		sawSplit = true
+	end
+end
+H.check("a message that had to be split is tagged as split", sawSplit)
 
 H.checkEqual("one message reads in the singular", Preview:BuildSummary(1, 0), "1 message")
 H.check("several read in the plural",
 	Preview:BuildSummary(8, 5.6):find("8 messages", 1, true) ~= nil)
+
+-- Separators are the one part of the count a host can delete without losing a
+-- rule, so the summary names them.
+local separated = REH.CreateDefaultPreset("Separated")
+DB:ValidatePreset(separated)
+DB:GetSettings().useSeparators = true
+local _, sepCount, sepSeconds, separators = Preview:BuildText(separated)
+H.check("separators are counted", separators > 1, separators)
+H.check("and called out in the summary",
+	Preview:BuildSummary(sepCount, sepSeconds, separators):find("separators", 1, true) ~= nil,
+	Preview:BuildSummary(sepCount, sepSeconds, separators))
+H.check("with the total still counting them", sepCount > separators)
+
+DB:GetSettings().useSeparators = false
+H.check("and no separator note when there are none",
+	Preview:BuildSummary(8, 5.6, 0):find("separator", 1, true) == nil)
 
 local emptyPreset = REH.CreateDefaultPreset("Empty")
 for _, key in ipairs(REH.MODULE_KEYS) do
@@ -524,6 +569,66 @@ H.fireScript(frame, "OnDragStop")
 local saved = DB:GetSettings().framePoint
 H.checkEqual("the dragged position is saved", saved.point, "TOPLEFT")
 H.checkEqual("with its offset", saved.x, 120)
+
+--------------------------------------------------------------------------------
+H.section("The window says what it is about to do")
+--------------------------------------------------------------------------------
+
+local announcePreset = DB:GetActivePreset()
+
+REH.Announcer:SetChannel(announcePreset, "preview")
+H.checkEqual("a preview preset says so on the button",
+	MainFrame:DescribeAnnounceAction(announcePreset.channel), "Preview only")
+
+REH.Announcer:SetChannel(announcePreset, "party")
+H.checkEqual("and a real channel is named on it",
+	MainFrame:DescribeAnnounceAction(announcePreset.channel), "Announce to party chat")
+
+MainFrame:RefreshPreview()
+H.checkEqual("which is what the button actually shows",
+	frame.announceButton:GetText(), "Announce to party chat")
+
+REH.Announcer:SetChannel(announcePreset, "rw")
+MainFrame:RefreshPreview()
+H.checkEqual("and it follows the channel", frame.announceButton:GetText(),
+	"Announce to raid warning")
+
+-- A section can be switched out of the announcement while keeping its rules,
+-- which from the tab strip looks exactly like one that is still in it.
+local damageTab, damageIndex
+for index, tab in ipairs(Fields:GetTabs()) do
+	if tab.module == "damage" then
+		damageTab, damageIndex = tab, index
+	end
+end
+H.check("the damage tab exists", damageTab ~= nil)
+
+local damageButton = frame.tabButtons[damageIndex]
+H.check("and carries a marker for being left out", damageButton.offDot ~= nil)
+
+announcePreset.moduleEnabled.damage = true
+MainFrame:RefreshPreview()
+H.check("hidden while the section is announced", damageButton.offDot:IsShown() == false)
+
+announcePreset.moduleEnabled.damage = false
+MainFrame:RefreshPreview()
+H.check("and shown once it is not", damageButton.offDot:IsShown())
+
+announcePreset.moduleEnabled.damage = true
+MainFrame:RefreshPreview()
+H.check("and hidden again when it comes back",
+	damageButton.offDot:IsShown() == false)
+
+-- The Watcher and Options tabs edit no announceable section, so they have
+-- nothing to mark.
+local optionsIndex
+for index, tab in ipairs(Fields:GetTabs()) do
+	if tab.module == "settings" then
+		optionsIndex = index
+	end
+end
+H.check("a tab that is not a section has no marker",
+	frame.tabButtons[optionsIndex].offDot == nil)
 
 --------------------------------------------------------------------------------
 H.section("The window can be dragged out")

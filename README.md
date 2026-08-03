@@ -16,7 +16,7 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**v1.10.0**, in use and being fixed as the game finds things. Covered by 1143
+**v1.11.0**, in use and being fixed as the game finds things. Covered by 1159
 checks across twelve suites, which run against a stub of the WoW API rather than
 the client -- see the [changelog](CHANGELOG.md) for what that does and does not
 catch.
@@ -116,8 +116,8 @@ Tagging is the release. Pushing a `v*` tag runs the test suites and then builds
 and uploads the addon zip from [`.pkgmeta`](.pkgmeta):
 
 ```sh
-git tag -a v1.10.0 -m "Roleplay Event Helper v1.10.0"
-git push origin v1.10.0
+git tag -a v1.11.0 -m "Roleplay Event Helper v1.11.0"
+git push origin v1.11.0
 ```
 
 The CurseForge project id is already set in the TOC. One thing is still needed
@@ -178,9 +178,19 @@ Each custom rule and etiquette line is announced as its own chat message, so
 what you typed on separate lines arrives on separate lines. Two thoughts that
 belong together can be typed on one line.
 
-The Announce button disables itself when the target is unavailable and the
-status line says which condition failed, so a greyed-out button never leaves you
-guessing.
+The Announce button names its target — `Announce to party chat`, or
+`Preview only` when the preset sends nothing. It disables itself when that
+target is unavailable and the status line beneath says which condition failed,
+so a greyed-out button never leaves you guessing.
+
+The preview shows a byte count only when a message is getting close to the
+255-byte limit, or in red when a rule was too long and had to be split in two.
+Separator lines are dimmed and counted separately in the summary, since they are
+the one part of the message count you can delete without losing a rule.
+
+A tab whose section is switched out of the announcement carries a small red dot,
+so a missing section is visible from the strip rather than found by clicking
+through every tab.
 
 ## Events without combat
 

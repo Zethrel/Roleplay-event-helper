@@ -346,18 +346,28 @@ function Formatter:BuildMessages(preset, overrides)
 	local budget = options.maxBytes - #prefix
 	local messages = {}
 
+	-- What each message is, alongside what it says. The preview needs to tell a
+	-- separator from a rule and a split fragment from a whole one, and working
+	-- that out again by looking at the text would be guessing.
+	local meta = {}
+
+	local function emit(text, module, split)
+		messages[#messages + 1] = text
+		meta[#messages] = { module = module, split = split or false }
+	end
+
 	local pending, pendingModule = nil, nil
 
 	local function flush()
 		if pending then
-			messages[#messages + 1] = prefix .. pending
+			emit(prefix .. pending, pendingModule)
 			pending, pendingModule = nil, nil
 		end
 	end
 
-	local function emitLong(text)
+	local function emitLong(text, module)
 		for _, piece in ipairs(REH.SplitMessage(text, budget, options.continuationPrefix)) do
-			messages[#messages + 1] = prefix .. piece
+			emit(prefix .. piece, module, true)
 		end
 	end
 
@@ -369,16 +379,16 @@ function Formatter:BuildMessages(preset, overrides)
 		if not options.mergeLines or record.standalone then
 			flush()
 			if #text > budget then
-				emitLong(text)
+				emitLong(text, record.module)
 			else
-				messages[#messages + 1] = prefix .. text
+				emit(prefix .. text, record.module)
 			end
 
 		elseif #text > budget then
 			-- Too long to merge with anything; it becomes its own run of
 			-- messages rather than dragging a neighbour into a split.
 			flush()
-			emitLong(text)
+			emitLong(text, record.module)
 
 		elseif pending and pendingModule == record.module
 			and #pending + 1 + #text <= budget then
@@ -394,7 +404,7 @@ function Formatter:BuildMessages(preset, overrides)
 
 	flush()
 
-	return messages, lines, options
+	return messages, lines, options, meta
 end
 
 --- Print the announcement to the host's own chat frame. Sends nothing.
