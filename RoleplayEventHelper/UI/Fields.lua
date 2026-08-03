@@ -387,7 +387,14 @@ Fields.TABS = {
 				-- more -- firing on a result, several things at once, a chance --
 				-- lives in its own window rather than growing this tab until the
 				-- two-minute setup needs the complicated UI.
-				key = "effects", label = "Roll effects...", type = "action", width = 160,
+				key = "effects", label = "Roll effects...", type = "action", width = 190,
+				labelFor = function(p)
+					local count = #(p.rollEffects or {})
+					if count == 0 then
+						return "Roll effects..."
+					end
+					return ("Roll effects... (%d)"):format(count)
+				end,
 				tooltip = "Effects go further than the table above: they can fire on a success or a critical failure rather than a number, several can answer the same roll, and each has its own chance, delay and destination.",
 				onClick = function() REH.UI.EffectsFrame:Toggle() end,
 			},

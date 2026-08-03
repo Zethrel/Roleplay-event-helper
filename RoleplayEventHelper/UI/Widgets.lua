@@ -334,6 +334,117 @@ function UI.ResizeScrollArea(scroll, width, height)
 end
 
 --------------------------------------------------------------------------------
+-- Floating windows
+--------------------------------------------------------------------------------
+
+-- The roll log, the effects editor and the transfer window are separate windows
+-- rather than panels, and three things follow from that which every one of them
+-- has to get right:
+--
+--   it must open somewhere the host can see it. Opening at the centre of the
+--   screen puts it exactly underneath the main window, which is also centred,
+--   so it looks like the button did nothing.
+--
+--   it must come to the front when it is opened or clicked. Same strata as the
+--   main window means the tie is settled arbitrarily, and arbitrarily is not a
+--   behaviour a host can learn.
+--
+--   it must stay where it was put. A window that has to be dragged out from
+--   behind the main window every session is a window that gets dragged out
+--   every session.
+
+local function WindowPoints()
+	local settings = REH.Database:GetSettings()
+	settings.windowPoints = settings.windowPoints or {}
+	return settings.windowPoints
+end
+
+function UI.SaveWindowPoint(frame, key)
+	local point, _, relativePoint, x, y = frame:GetPoint()
+	if not point then
+		return false
+	end
+
+	WindowPoints()[key] = {
+		point = point, relativePoint = relativePoint, x = x, y = y,
+	}
+	return true
+end
+
+--- Put a window back where the host left it. False when it has never been
+--- dragged, which is the caller's cue to place it somewhere sensible.
+function UI.RestoreWindowPoint(frame, key)
+	local saved = WindowPoints()[key]
+	if type(saved) ~= "table" or not saved.point then
+		return false
+	end
+
+	frame:ClearAllPoints()
+	frame:SetPoint(saved.point, UIParent, saved.relativePoint or saved.point,
+		saved.x or 0, saved.y or 0)
+	return true
+end
+
+--- Open beside another window rather than on top of it.
+---
+--- Anchored to that window rather than placed at its coordinates, so it keeps
+--- station while the main window is moved or resized. The first drag replaces
+--- the anchor and the window is on its own from then on, which is what a host
+--- who drags it somewhere clearly wants.
+---
+--- Off the right of the screen is handled by the frame's own clamping rather
+--- than by measuring: the client already knows where the edge is.
+function UI.PlaceBeside(frame, other, gap, drop)
+	frame:ClearAllPoints()
+
+	if other and other:IsShown() then
+		frame:SetPoint("TOPLEFT", other, "TOPRIGHT", gap or 8, drop or 0)
+	else
+		frame:SetPoint("CENTER", UIParent, "CENTER", 0, drop or 0)
+	end
+end
+
+--- Movable, raised when touched, and remembered where it is dropped.
+function UI.MakeFloating(frame, key)
+	frame:SetMovable(true)
+	frame:EnableMouse(true)
+	frame:SetClampedToScreen(true)
+	frame:RegisterForDrag("LeftButton")
+
+	-- SetToplevel makes the client raise the window on a click; Raise on drag
+	-- covers the click that starts a drag, which is the one that matters when
+	-- two windows are overlapping.
+	frame:SetToplevel(true)
+
+	frame:SetScript("OnDragStart", function(self)
+		self:Raise()
+		self:StartMoving()
+	end)
+
+	frame:SetScript("OnDragStop", function(self)
+		self:StopMovingOrSizing()
+		UI.SaveWindowPoint(self, key)
+	end)
+
+	frame:SetScript("OnMouseDown", function(self)
+		self:Raise()
+	end)
+end
+
+--- Show a floating window: where the host left it, or beside the main window
+--- the first time, and in front either way.
+--- `drop` staggers a second window down from the first, so two of them opened
+--- at once are visibly two windows rather than one hiding the other.
+function UI.ShowFloating(frame, key, drop)
+	if not UI.RestoreWindowPoint(frame, key) then
+		UI.PlaceBeside(frame, UI.MainFrame and UI.MainFrame.frame, 8, drop)
+	end
+
+	frame:Show()
+	frame:Raise()
+end
+
+--------------------------------------------------------------------------------
 -- Field errors
 --------------------------------------------------------------------------------
 

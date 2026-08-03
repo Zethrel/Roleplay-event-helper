@@ -481,6 +481,7 @@ local WIDGET_METHODS = {
 	-- hierarchy and identity
 	GetParent = true, SetParent = true, GetName = true, SetID = true, GetID = true,
 	SetFrameStrata = true, SetFrameLevel = true, SetToplevel = true,
+	Raise = true, Lower = true,
 	SetClampedToScreen = true,
 	-- scripts and events
 	SetScript = true, GetScript = true, HookScript = true,
@@ -612,6 +613,10 @@ function Harness.widgetCall(widget, method, a, b, c, d, e)
 		return widget._width or 0
 	elseif method == "GetHeight" then
 		return widget._height or 0
+	elseif method == "Raise" then
+		-- The client puts the frame above its siblings; the count is enough for
+		-- a test to know a window came to the front when it was opened.
+		widget._raises = (widget._raises or 0) + 1
 	elseif method == "SetOwner" then
 		widget._owner = a
 	elseif method == "GetOwner" then

@@ -200,6 +200,23 @@ function Database:ValidateSettings(settings)
 		settings[key].height = REH.ClampNumber(settings[key].height, minHeight, maxHeight, height)
 	end
 
+	-- Where each floating window was last dropped. Only the shape is checked:
+	-- an off-screen point is not a corruption, and the client's own clamping
+	-- brings a window back onto the screen anyway.
+	if type(settings.windowPoints) ~= "table" then
+		settings.windowPoints = {}
+	end
+	for key, saved in pairs(settings.windowPoints) do
+		if type(saved) ~= "table" or type(saved.point) ~= "string" then
+			settings.windowPoints[key] = nil
+		else
+			saved.relativePoint = type(saved.relativePoint) == "string"
+				and saved.relativePoint or saved.point
+			saved.x = tonumber(saved.x) or 0
+			saved.y = tonumber(saved.y) or 0
+		end
+	end
+
 	ValidateSize("frameSize", 820, 1800, 820, 460, 1200, 600)
 	ValidateSize("logSize", 320, 1000, 420, 260, 1200, 400)
 	ValidateSize("effectsSize", 600, 1400, 640, 260, 1200, 480)

@@ -319,15 +319,10 @@ end
 local function Build()
 	frame = CreateFrame("Frame", "RoleplayEventHelperEffectsFrame", UIParent)
 	frame:SetSize(WIDTH, HEIGHT)
-	frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 	frame:SetFrameStrata("HIGH")
-	frame:SetClampedToScreen(true)
-	frame:EnableMouse(true)
-	frame:SetMovable(true)
-	frame:RegisterForDrag("LeftButton")
-	frame:SetScript("OnDragStart", frame.StartMoving)
-	frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
 	frame:Hide()
+
+	UI.MakeFloating(frame, "effects")
 
 	UI.AddBackground(frame, 0.03, 0.03, 0.05, 0.94)
 	UI.AddBorder(frame, 0.3, 0.3, 0.35, 1)
@@ -555,7 +550,7 @@ end
 function EffectsFrame:Show()
 	local window = self:GetFrame()
 	self:Refresh()
-	window:Show()
+	UI.ShowFloating(window, "effects")
 end
 
 function EffectsFrame:Hide()

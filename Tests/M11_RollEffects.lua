@@ -361,6 +361,61 @@ Effects:Toggle()
 H.check("and toggles back open", Effects:IsShown())
 
 --------------------------------------------------------------------------------
+H.section("It opens where it can be seen")
+--------------------------------------------------------------------------------
+
+-- Reported from use: the window opened at the centre of the screen, which is
+-- exactly where the main window is, so it arrived underneath it and the host
+-- had to drag the main window aside to find it.
+local Main = REH.UI.MainFrame
+Main:Show()
+Effects:Hide()
+Effects:Show()
+
+local window = Effects:GetFrame()
+local point, relativeTo = window:GetPoint()
+
+H.checkEqual("it opens beside the main window, not on top of it", point, "TOPLEFT")
+H.checkEqual("anchored to the main window itself", relativeTo, Main:GetFrame())
+H.check("and comes to the front", (window._raises or 0) > 0, window._raises)
+
+-- Where the host drags it is where it belongs from then on.
+window:ClearAllPoints()
+window:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 40, -120)
+H.fireScript(window, "OnDragStop")
+
+local saved = DB:GetSettings().windowPoints.effects
+H.check("dropping it remembers the position", saved ~= nil)
+H.checkEqual("with the corner it was dropped by", saved.point, "TOPLEFT")
+H.checkEqual("and the offset", saved.x, 40)
+
+Effects:Hide()
+Effects:Show()
+local reopened, reopenedTo = window:GetPoint()
+H.checkEqual("reopening puts it back there", reopened, "TOPLEFT")
+H.check("free of the main window", reopenedTo ~= Main:GetFrame())
+
+-- A point that survived a hand edit must not crash the restore.
+DB:GetSettings().windowPoints.effects = { point = 42 }
+DB:ValidateSettings(DB:GetSettings())
+H.check("a nonsense saved point is dropped",
+	DB:GetSettings().windowPoints.effects == nil)
+
+Effects:Hide()
+Effects:Show()
+H.checkEqual("and it falls back to opening beside the main window",
+	window:GetPoint(), "TOPLEFT")
+
+-- With the main window closed there is nothing to sit beside.
+Main:Hide()
+DB:GetSettings().windowPoints.effects = nil
+Effects:Hide()
+Effects:Show()
+H.checkEqual("with the main window closed it opens centred",
+	window:GetPoint(), "CENTER")
+Main:Show()
+
+--------------------------------------------------------------------------------
 H.section("The effects window can be dragged out")
 --------------------------------------------------------------------------------
 

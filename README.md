@@ -16,7 +16,7 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**v1.13.0**, in use and being fixed as the game finds things. Covered by 1261
+**v1.14.0**, in use and being fixed as the game finds things. Covered by 1275
 checks across thirteen suites, which run against a stub of the WoW API rather than
 the client -- see the [changelog](CHANGELOG.md) for what that does and does not
 catch.
@@ -118,8 +118,8 @@ Tagging is the release. Pushing a `v*` tag runs the test suites and then builds
 and uploads the addon zip from [`.pkgmeta`](.pkgmeta):
 
 ```sh
-git tag -a v1.13.0 -m "Roleplay Event Helper v1.13.0"
-git push origin v1.13.0
+git tag -a v1.14.0 -m "Roleplay Event Helper v1.14.0"
+git push origin v1.14.0
 ```
 
 The CurseForge project id is already set in the TOC. One thing is still needed
@@ -184,6 +184,9 @@ the announcement takes. Editing any rule updates it immediately.
 **The windows resize.** Drag the grip in the bottom-right corner to make one
 bigger; double-click the grip to go back to the default. Each window remembers
 its own size between sessions.
+
+The roll log and the roll effects editor open beside the main window rather than
+on top of it, come to the front when clicked, and stay wherever you drag them.
 
 | Window | Where the extra room goes |
 |---|---|

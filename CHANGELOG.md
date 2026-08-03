@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.14.0 - 2026-08-03
+
+**The roll effects window opened underneath the main window.** It opened at the
+centre of the screen, which is exactly where the main window sits, in the same
+drawing layer — so it arrived behind it and the button looked like it had done
+nothing. Fixed, along with everything around it:
+
+- It now opens **beside** the main window, anchored to its right edge, so it
+  keeps station if you move or resize the main window.
+- **Where you drag it is where it stays**, this session and the next. Both it
+  and the roll log now remember their positions the way the main window already
+  did.
+- **Clicking any window brings it to the front**, and opening one raises it. Two
+  windows in the same layer were previously settled arbitrarily, which is not a
+  behaviour anyone can learn.
+- The roll log opens beside the main window too, staggered down from the effects
+  window so two open at once are visibly two windows.
+
+**The Loot tab's button now says how many effects you have** — `Roll effects...
+(3)` — so you can tell there are some without opening the window to look.
+
 ## 1.13.0 - 2026-08-03
 
 **A rejected edit now complains on the field, not in your chat frame.** Typing

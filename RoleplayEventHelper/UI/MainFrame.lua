@@ -91,6 +91,13 @@ local function Build()
 	frame:SetScript("OnDragStart", frame.StartMoving)
 	frame:Hide()
 
+	-- The log and the effects editor raise themselves when touched, so the main
+	-- window has to as well or it can only ever be buried by them.
+	frame:SetToplevel(true)
+	frame:SetScript("OnMouseDown", function(self)
+		self:Raise()
+	end)
+
 	UI.AddBackground(frame, 0.03, 0.03, 0.05, 0.94)
 	UI.AddBorder(frame, 0.3, 0.3, 0.35, 1)
 

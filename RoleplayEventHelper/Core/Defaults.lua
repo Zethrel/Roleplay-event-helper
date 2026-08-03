@@ -143,6 +143,10 @@ REH.DEFAULT_SETTINGS = {
 	-- reached or read.
 	frameSize = { width = 820, height = 600 },
 	logSize = { width = 420, height = 400 },
+
+	-- Where the roll log and the effects editor were last dropped, keyed by
+	-- window. Empty until the host drags one.
+	windowPoints = {},
 	effectsSize = { width = 640, height = 480 },
 	sendDelay = 0.7,
 

@@ -141,7 +141,13 @@ local function BuildActionRow(page, field, width, onEdited)
 		field = field,
 		control = button,
 		height = UI.ROW_HEIGHT,
-		apply = function() end,
+		apply = function(target)
+			-- A button through to another window can say what is behind it, so
+			-- a host knows there are effects without opening the window to look.
+			if field.labelFor and button.SetText then
+				button:SetText(field.labelFor(target))
+			end
+		end,
 	}
 end
 

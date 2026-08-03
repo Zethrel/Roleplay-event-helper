@@ -711,6 +711,44 @@ H.check("a tab that is not a section has no marker",
 	frame.tabButtons[optionsIndex].offDot == nil)
 
 --------------------------------------------------------------------------------
+H.section("The way through to the effects window")
+--------------------------------------------------------------------------------
+
+local lootIndex
+for index, tab in ipairs(Fields:GetTabs()) do
+	if tab.module == "loot" then
+		lootIndex = index
+	end
+end
+
+MainFrame:SelectTab(lootIndex)
+
+local effectsRow
+for _, row in ipairs(MainFrame.frame.editors.pages[lootIndex].rows) do
+	if row.field.key == "effects" then
+		effectsRow = row
+	end
+end
+H.check("the loot tab has a button through to the effects window", effectsRow ~= nil)
+
+-- The button says how many effects are behind it, so a host does not have to
+-- open the window to find out whether there are any.
+local lootPreset = DB:GetActivePreset()
+lootPreset.rollEffects = {}
+MainFrame:RefreshAll()
+H.checkEqual("with no effects it just names the window",
+	effectsRow.control:GetText(), "Roll effects...")
+
+lootPreset.rollEffects = { REH.CreateRollEffect(), REH.CreateRollEffect() }
+DB:ValidatePreset(lootPreset)
+MainFrame:RefreshAll()
+H.checkEqual("and counts them when there are some",
+	effectsRow.control:GetText(), "Roll effects... (2)")
+
+lootPreset.rollEffects = {}
+MainFrame:RefreshAll()
+
+--------------------------------------------------------------------------------
 H.section("The window can be dragged out")
 --------------------------------------------------------------------------------
 
