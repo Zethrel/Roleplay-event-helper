@@ -16,7 +16,7 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**v1.17.0**, in use and being fixed as the game finds things. Covered by 1342
+**v1.17.1**, in use and being fixed as the game finds things. Covered by 1353
 checks across thirteen suites, which run against a stub of the WoW API rather than
 the client -- see the [changelog](CHANGELOG.md) for what that does and does not
 catch.
@@ -118,8 +118,8 @@ Tagging is the release. Pushing a `v*` tag runs the test suites and then builds
 and uploads the addon zip from [`.pkgmeta`](.pkgmeta):
 
 ```sh
-git tag -a v1.17.0 -m "Roleplay Event Helper v1.17.0"
-git push origin v1.17.0
+git tag -a v1.17.1 -m "Roleplay Event Helper v1.17.1"
+git push origin v1.17.1
 ```
 
 The CurseForge project id is already set in the TOC. One thing is still needed

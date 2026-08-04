@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.17.1 - 2026-08-04
 
 **Two settings were both called "Announce", and meant different things.**
 Reported from an event: a host switched *Announce this section* off on the Loot
