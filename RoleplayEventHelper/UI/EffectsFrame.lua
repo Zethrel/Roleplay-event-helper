@@ -187,7 +187,7 @@ local function BuildRow(parent, index)
 		end
 	end)
 	UI.SetTooltip(target, "Where it goes",
-		"To my channel: sent to the room, subject to your client's rules about delayed messages. To me only: shown in your own chat frame.")
+		"To my channel: sent to the room.\n\nTo me only: shown in your own chat frame, for something you want to read out yourself.\n\nTo the roller: whispered to whoever rolled, for something only they should know. Your client may refuse a whisper an addon sends after a roll, since there is no click behind it -- the line always reaches your own frame too, so you will see whether it went.")
 	row.target = target
 
 	local chance

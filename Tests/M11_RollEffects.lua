@@ -261,6 +261,90 @@ H.check("a restricted channel is explained",
 	H.outputText():find("right after you click something", 1, true) ~= nil)
 
 --------------------------------------------------------------------------------
+H.section("Whispering the roller")
+--------------------------------------------------------------------------------
+
+-- Asked for because not everything an effect says belongs in front of the whole
+-- room: what one person notices on their own cast is theirs.
+reset()
+preset = withEffects({
+	effect({ trigger = "any", delaySeconds = 0, target = "whisper",
+		message = "You feel something tug the line." }),
+})
+preset.channel.type = "PARTY"
+
+-- An earlier section left a roster filter behind, and a filtered roll never
+-- reaches an effect at all.
+preset.rollFilter.mode = "group"
+
+H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Rennek", subgroup = 1 } })
+Watcher:SetMode("local")
+
+roll("Rennek", 50)
+
+local sent = H.sent[1]
+H.check("the effect is sent", sent ~= nil)
+H.checkEqual("as a whisper", sent and sent.chatType, "WHISPER")
+H.checkEqual("to the person who rolled", sent and sent.target, "Rennek-ArgentDawn")
+H.checkEqual("with the effect's own text", sent and sent.message,
+	"You feel something tug the line.")
+
+-- The host is running the event and needs to know what each person was told.
+H.check("and the host sees it too",
+	H.outputText():find("tug the line", 1, true) ~= nil, H.outputText())
+H.check("with who it went to",
+	H.outputText():find("(to Rennek)", 1, true) ~= nil, H.outputText())
+
+-- Nobody can whisper themselves, so a host testing their own effects gets it
+-- in their frame rather than an error.
+reset()
+H.setGroup({ { name = "Testchar", subgroup = 1 } })
+Watcher:SetMode("local")
+roll("Testchar", 50)
+H.checkEqual("whispering yourself sends nothing", #H.sentMessages(), 0)
+H.check("but still shows you the line",
+	H.outputText():find("tug the line", 1, true) ~= nil, H.outputText())
+
+-- A preset that announces to preview sends nothing anywhere, whispers included.
+reset()
+preset.channel.type = "PREVIEW"
+H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Rennek", subgroup = 1 } })
+Watcher:SetMode("local")
+roll("Rennek", 50)
+H.checkEqual("a preview preset whispers nothing", #H.sentMessages(), 0)
+H.check("and says who it would have gone to",
+	H.outputText():find("would whisper Rennek", 1, true) ~= nil, H.outputText())
+
+-- The one the client may refuse. A whisper an addon sends after a roll has no
+-- click behind it, so it can be blocked -- and a blocked whisper that says
+-- nothing is a host wondering why one person is quiet.
+reset()
+preset.channel.type = "PARTY"
+H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Rennek", subgroup = 1 } })
+Watcher:SetMode("local")
+H.sendError = "blocked by the client"
+
+roll("Rennek", 50)
+H.sendError = nil
+
+H.checkEqual("a refused whisper sends nothing", #H.sentMessages(), 0)
+H.check("the line still reaches the host",
+	H.outputText():find("tug the line", 1, true) ~= nil, H.outputText())
+H.check("and the refusal is explained once",
+	H.outputText():find("refused a whispered effect", 1, true) ~= nil, H.outputText())
+H.check("pointing at where the details are",
+	H.outputText():find("/reh blocked", 1, true) ~= nil)
+
+H.clearOutput()
+H.sendError = "blocked by the client"
+roll("Rennek", 50)
+H.sendError = nil
+H.check("and not repeated on every roll after it",
+	H.outputText():find("refused a whispered effect", 1, true) == nil, H.outputText())
+
+reset()
+
+--------------------------------------------------------------------------------
 H.section("Trying a roll before the event")
 --------------------------------------------------------------------------------
 

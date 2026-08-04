@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased
+
+**A roll effect can now be whispered to whoever rolled.** A third destination
+on each effect row, alongside *to my channel* and *to me only*: **to the
+roller**. For the things one person notices on their own cast, which do not
+belong in front of the whole room.
+
+One caveat worth knowing before you build an event around it. Your client wants
+a click behind any whisper an addon sends, and a roll arrives without one, so it
+may refuse them. Rather than leave you guessing, the addon:
+
+- always shows you the line in your own frame, marked with who it went to, so
+  nothing is lost even when the whisper does not arrive
+- says so once if your client refuses, and points at `/reh blocked` for the
+  detail
+- shows `(would whisper Rennek)` while the preset is still on preview
+- prints to your own frame instead of erroring when the roller is you, since
+  nobody can whisper themselves
+
+Test it with one roll from someone else in your group before the event: either
+the whisper lands, or the addon tells you it was refused.
+
 ## 1.15.1 - 2026-08-03
 
 **The Fishing Night starter's effects now fire on the result rather than on the

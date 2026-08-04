@@ -126,6 +126,7 @@ L["This preset announces to preview only, so results are showing here rather tha
 -- Roll effects
 L["No roll effects set. Open the window with /reh effects."] = "No roll effects set. Open the window with /reh effects."
 L["Roll effects (%d):"] = "Roll effects (%d):"
+L["Your client refused a whispered effect. Whispers from an addon need a click behind them, and a roll has none, so these are showing here instead. /reh blocked has the details."] = "Your client refused a whispered effect. Whispers from an addon need a click behind them, and a roll has none, so these are showing here instead. /reh blocked has the details."
 
 -- Sections
 L["'%s' announces:"] = "'%s' announces:"

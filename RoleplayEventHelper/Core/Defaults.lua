@@ -31,7 +31,7 @@ REH.ANNOUNCE_STYLES = { "full", "summary" }
 -- line it produces goes.
 REH.EFFECT_TRIGGERS = { "band", "verdict", "any" }
 REH.EFFECT_VERDICTS = { "critsuccess", "success", "fail", "critfail" }
-REH.EFFECT_TARGETS = { "channel", "self" }
+REH.EFFECT_TARGETS = { "channel", "self", "whisper" }
 REH.CHANNEL_TYPES = {
 	"PREVIEW", "SAY", "YELL", "EMOTE", "PARTY", "RAID", "RAID_WARNING",
 	"INSTANCE_CHAT", "GUILD", "OFFICER", "CHANNEL", "WHISPER",
@@ -107,6 +107,7 @@ REH.DISPLAY = {
 	effectTarget = {
 		channel = "to my channel",
 		self = "to me only",
+		whisper = "to the roller",
 	},
 	rollFilter = {
 		group = "party/raid members",

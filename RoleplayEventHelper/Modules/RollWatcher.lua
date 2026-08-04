@@ -533,6 +533,51 @@ function RollWatcher:DeliverLine(preset, line, announce)
 	return self:QueueLine(preset, line), "sent"
 end
 
+--- Whisper a line to the person who rolled.
+---
+--- Its own path rather than the send queue, because the queue sends everything
+--- to one channel and this goes to a different player each time.
+---
+--- Whispers are the one destination the addon cannot promise. The client wants
+--- a hardware event behind an addon's whisper, and a roll arrives as a system
+--- message with no click anywhere near it, so this may be refused. Rather than
+--- refuse to offer it, the attempt is made and the truth is reported: the line
+--- always reaches the host's own frame, so nothing is lost either way, and a
+--- refusal is named once with `/reh blocked` for the details.
+function RollWatcher:WhisperLine(preset, fullName, line)
+	local shown = self:DisplayName(fullName)
+
+	-- The client will not let anyone whisper themselves, so a host testing
+	-- their own effects gets it in their frame instead of an error.
+	if fullName == self:NormalizeName(UnitName and UnitName("player")) then
+		REH:Print("|cffffd100%s|r |cff808080(to you)|r", line)
+		return false, "self"
+	end
+
+	if preset.channel.type == "PREVIEW" then
+		REH:Print("|cffffd100%s|r |cff808080(would whisper %s)|r", line, shown)
+		return false, "preview"
+	end
+
+	REH.Diagnostics:SetContext(("whisper to %s"):format(shown))
+	local ok = pcall(SendChatMessage, line, "WHISPER", nil, fullName)
+	REH.Diagnostics:ClearContext()
+
+	-- Shown to the host either way: they are running the event and need to know
+	-- what each person was told, whether or not it arrived.
+	REH:Print("|cffffd100%s|r |cff808080(to %s)|r", line, shown)
+
+	if not ok then
+		if not self.whisperWarned then
+			self.whisperWarned = true
+			REH:PrintWarning(L["Your client refused a whispered effect. Whispers from an addon need a click behind them, and a roll has none, so these are showing here instead. /reh blocked has the details."])
+		end
+		return false, "blocked"
+	end
+
+	return true, "sent"
+end
+
 --- Nudge a host who has set up results but left the watcher disarmed, which
 --- reads exactly like the feature being broken: nothing happens, and nothing
 --- says why.
@@ -794,7 +839,11 @@ function RollWatcher:FireEffects(preset, name, roll, verdict)
 				end
 
 				local function deliver()
-					self:DeliverLine(preset, line, announce)
+					if effect.target == "whisper" then
+						self:WhisperLine(preset, name, line)
+					else
+						self:DeliverLine(preset, line, announce)
+					end
 				end
 
 				local delay = effect.delaySeconds or 0
@@ -979,6 +1028,7 @@ function RollWatcher:ClearLog()
 	self.delayedChannelWarned = false
 	self.previewWarned = false
 	self.availabilityWarned = false
+	self.whisperWarned = false
 
 	if REH.UI and REH.UI.RollLog then
 		REH.UI.RollLog:OnRoundChanged()
