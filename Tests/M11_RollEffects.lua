@@ -531,6 +531,87 @@ Effects:Toggle()
 H.check("and toggles back open", Effects:IsShown())
 
 --------------------------------------------------------------------------------
+H.section("Pointing every effect at one place")
+--------------------------------------------------------------------------------
+
+-- Making a whole evening private is one decision, and without this it is that
+-- decision typed out once per row. Deliberately a bulk edit rather than an
+-- inherited setting: the rows still say where they go afterwards.
+reset()
+-- One row already points where the rest are going, so the count has to be of
+-- rows actually changed rather than rows walked.
+preset = withEffects({
+	effect({ trigger = "any", target = "channel", message = "One." }),
+	effect({ trigger = "band", min = 1, max = 1, target = "whisper", message = "Two." }),
+	effect({ trigger = "verdict", verdict = "critfail", target = "self", message = "Three." }),
+})
+
+H.clearOutput()
+H.checkEqual("the two rows that differ change", Effects:SetAllTargets("whisper"), 2)
+
+local allWhisper = true
+for _, record in ipairs(DB:GetActivePreset().rollEffects) do
+	if record.target ~= "whisper" then
+		allWhisper = false
+	end
+end
+H.check("and every row now points at the roller", allWhisper)
+H.check("with the count said out loud",
+	H.outputText():find("All 3 effects now go to the roller", 1, true) ~= nil,
+	H.outputText())
+
+H.clearOutput()
+H.checkEqual("running it again changes nothing", Effects:SetAllTargets("whisper"), 0)
+H.check("and says so rather than claiming work",
+	H.outputText():find("already go", 1, true) ~= nil, H.outputText())
+
+-- The point of a bulk edit over an inherited setting: one row can still be put
+-- back on its own, because each row owns its destination.
+DB:GetActivePreset().rollEffects[2].target = "channel"
+DB:ValidatePreset(DB:GetActivePreset())
+H.checkEqual("a single row can still be set back",
+	DB:GetActivePreset().rollEffects[2].target, "channel")
+H.checkEqual("without disturbing the others",
+	DB:GetActivePreset().rollEffects[1].target, "whisper")
+
+H.clearOutput()
+H.checkEqual("somewhere an effect cannot go is refused",
+	Effects:SetAllTargets("shouted from the roof"), 0)
+H.check("with a reason", H.outputText():find("not somewhere", 1, true) ~= nil)
+
+withEffects({})
+H.clearOutput()
+H.checkEqual("and an empty list is a no-op", Effects:SetAllTargets("channel"), 0)
+H.check("that says there is nothing to do",
+	H.outputText():find("no effects", 1, true) ~= nil, H.outputText())
+
+-- The same decision from chat, since everything else in the addon is reachable
+-- that way.
+withEffects({
+	effect({ trigger = "any", target = "channel", message = "One." }),
+	effect({ trigger = "any", target = "channel", message = "Two." }),
+})
+
+REH.Commands:Handle("effects all roller")
+H.checkEqual("/reh effects all roller points them at the roller",
+	DB:GetActivePreset().rollEffects[1].target, "whisper")
+
+REH.Commands:Handle("effects all me")
+H.checkEqual("and 'me' keeps them to the host",
+	DB:GetActivePreset().rollEffects[1].target, "self")
+
+REH.Commands:Handle("effects all channel")
+H.checkEqual("and 'channel' sends them to the room",
+	DB:GetActivePreset().rollEffects[1].target, "channel")
+
+H.clearOutput()
+REH.Commands:Handle("effects all sideways")
+H.checkEqual("an unknown destination changes nothing",
+	DB:GetActivePreset().rollEffects[1].target, "channel")
+H.check("and lists the ones that work",
+	H.outputText():find("channel, me, or roller", 1, true) ~= nil, H.outputText())
+
+--------------------------------------------------------------------------------
 H.section("It opens where it can be seen")
 --------------------------------------------------------------------------------
 

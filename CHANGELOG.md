@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+**"Set all to..." in the roll effects window.** One click points every effect at
+the same destination — your channel, yourself, or the roller — for an evening
+you want kept private, or read out in the room. `/reh effects all roller` does
+the same from chat.
+
+It changes each row rather than linking them. Every effect still says where it
+goes, so "who sees this line" is answered by looking at the line, and you can
+still set one row back on its own afterwards.
+
+That is deliberate, and worth saying why: a roll effect is not always aimed at
+the same people as the catch. *"Somebody drops their tankard watching you land
+it"* is the room watching — nobody drops a tankard privately. So the two stay
+independent, with a fast way to line them up when you do want them the same.
+
 ## 1.17.1 - 2026-08-04
 
 **Two settings were both called "Announce", and meant different things.**

@@ -373,10 +373,35 @@ local function Build()
 	addButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 10, 10)
 	frame.addButton = addButton
 
+	-- Making a whole evening private is one decision, and without this it is one
+	-- decision typed out once per row.
+	--
+	-- Deliberately a bulk edit rather than an inherited setting: every row still
+	-- states its own destination afterwards, so "who sees this line" is answered
+	-- by looking at the line, not by remembering what another tab is set to.
+	-- Effects are not always the same audience as the catch -- "somebody drops
+	-- their tankard" is the room watching, and nobody drops a tankard privately.
+	local setAllPopup = UI.CreatePopupSelector(frame, 170)
+	frame.setAllPopup = setAllPopup
+
+	local setAllButton = UI.CreateButton(frame, "Set all to...", 110, 22)
+	setAllButton:SetScript("OnClick", function(self)
+		setAllPopup:Toggle(
+			REH.Fields.OptionsFrom(REH.RESULT_TARGETS, REH.DISPLAY.resultTarget),
+			function(value)
+				EffectsFrame:SetAllTargets(value)
+			end, self)
+	end)
+	setAllButton:SetPoint("LEFT", addButton, "RIGHT", 6, 0)
+	frame.setAllButton = setAllButton
+
+	UI.SetTooltip(setAllButton, "Set all to...",
+		"Points every effect above at the same destination in one go, for an evening you want kept private or read out in the room.\n\nIt changes each row rather than linking them, so they still say where they go and you can set one back on its own.")
+
 	-- Trying a number is how a host checks a table before the event rather than
 	-- during it, so this sends nothing and ignores both chance and delay.
 	local testLabel = UI.CreateLabel(frame, "Test a roll of", "GameFontNormalSmall")
-	testLabel:SetPoint("LEFT", addButton, "RIGHT", 12, 0)
+	testLabel:SetPoint("LEFT", setAllButton, "RIGHT", 12, 0)
 
 	local testBox = UI.CreateEditBox(frame, 50, 7)
 	testBox:SetPoint("LEFT", testLabel, "RIGHT", 6, 0)
@@ -456,6 +481,40 @@ end
 --------------------------------------------------------------------------------
 -- Testing a roll
 --------------------------------------------------------------------------------
+
+--- Point every effect at one destination. Returns how many rows changed.
+function EffectsFrame:SetAllTargets(target)
+	if not REH.IsValidEnum(REH.RESULT_TARGETS, target) then
+		REH:PrintError("That is not somewhere an effect can be sent.")
+		return 0
+	end
+
+	local list = Effects()
+	local where = REH.DISPLAY.resultTarget[target] or target
+
+	if #list == 0 then
+		REH:Print("There are no effects to point anywhere yet.")
+		return 0
+	end
+
+	local changed = 0
+	for _, effect in ipairs(list) do
+		if effect.target ~= target then
+			effect.target = target
+			changed = changed + 1
+		end
+	end
+
+	Commit()
+
+	if changed == 0 then
+		REH:Print("All %d effects already go %s.", #list, where)
+	else
+		REH:Print("All %d effects now go %s (%d changed).", #list, where, changed)
+	end
+
+	return changed
+end
 
 function EffectsFrame:Test(roll)
 	local preset = REH.Database:GetActivePreset()

@@ -506,12 +506,33 @@ Register("loot", "[on|off|test <roll>]", "the result table read off each roll",
 		end
 	end)
 
-Register("effects", "[test <roll>]", "open the roll effects window", function(argument)
+Register("effects", "[list|test <roll>|all <where>]", "open the roll effects window",
+	function(argument)
 	local word, rest = argument:match("^(%S*)%s*(.-)$")
 	word = word:lower()
 
 	if word == "test" then
 		REH.UI.EffectsFrame:Test(tonumber(rest))
+		return
+	end
+
+	-- Making a whole evening private is one decision; this is that decision
+	-- from chat, the same as the window's "Set all to..." button.
+	if word == "all" then
+		local where = rest:lower():gsub("%s+", "")
+
+		if where == "roller" or where == "whisper" then
+			where = "whisper"
+		elseif where == "me" or where == "self" then
+			where = "self"
+		elseif where == "channel" or where == "room" then
+			where = "channel"
+		else
+			REH:PrintError(L["Send effects where? channel, me, or roller."])
+			return
+		end
+
+		REH.UI.EffectsFrame:SetAllTargets(where)
 		return
 	end
 
