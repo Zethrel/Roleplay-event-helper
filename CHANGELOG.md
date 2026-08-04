@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+**Fixed: a whispered effect that your client refused was reported as sent.**
+A refusal is not an error the addon can catch -- the client fires the "Interface
+action failed because of an AddOn" event and carries on -- so 1.16.0 checked the
+wrong thing and told you the line had gone when nobody received it.
+
+The line now reads `(NOT sent to Rennek)` in your own frame when the whisper was
+refused, and `(to Rennek)` only when it actually left. The one-time explanation
+and `/reh blocked` were already there and now fire when they should.
+
 ## 1.16.0 - 2026-08-04
 
 **A roll effect can now be whispered to whoever rolled.** A third destination

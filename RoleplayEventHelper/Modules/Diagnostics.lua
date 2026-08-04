@@ -17,6 +17,10 @@ local REPEAT_SILENCE = 5
 
 local blocked = {}
 local lastReport = { func = nil, at = 0 }
+
+-- The recorded list is capped, so its length cannot answer "was anything
+-- blocked between these two lines of code". This total only ever grows.
+local totalBlocked = 0
 local eventFrame
 
 --- Set by the announcer before each send, so a block can be attributed to a
@@ -50,11 +54,20 @@ local function Record(event, addon, func)
 	}
 
 	table.insert(blocked, entry)
+	totalBlocked = totalBlocked + 1
+
 	if #blocked > MAX_ENTRIES then
 		table.remove(blocked, 1)
 	end
 
 	return entry
+end
+
+--- How many blocks have been seen this session, ever. Compared either side of
+--- a send to find out whether the client refused it: a refusal is not a Lua
+--- error, so pcall around the send returns success and reports nothing.
+function Diagnostics:TotalBlocked()
+	return totalBlocked
 end
 
 function Diagnostics:Handle(event, addon, func)

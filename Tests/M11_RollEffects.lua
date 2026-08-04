@@ -315,9 +315,34 @@ H.checkEqual("a preview preset whispers nothing", #H.sentMessages(), 0)
 H.check("and says who it would have gone to",
 	H.outputText():find("would whisper Rennek", 1, true) ~= nil, H.outputText())
 
--- The one the client may refuse. A whisper an addon sends after a roll has no
--- click behind it, so it can be blocked -- and a blocked whisper that says
--- nothing is a host wondering why one person is quiet.
+-- The refusal that matters, and the one 1.16.0 got wrong: the client does not
+-- raise a Lua error when it refuses a send. It fires ADDON_ACTION_BLOCKED and
+-- returns normally, so pcall reports success for a whisper that never left and
+-- the host is told a line arrived when nobody received it.
+reset()
+preset.channel.type = "PARTY"
+preset.rollFilter.mode = "group"
+H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Rennek", subgroup = 1 } })
+Watcher:SetMode("local")
+REH.Diagnostics:Clear()
+H.blockAfter = 0
+
+roll("Rennek", 50)
+H.blockAfter = nil
+
+H.checkEqual("a silently refused whisper sends nothing", #H.sentMessages(), 0)
+H.check("and is not reported as delivered",
+	H.outputText():find("(to Rennek)", 1, true) == nil, H.outputText())
+H.check("it says the line did not go",
+	H.outputText():find("NOT sent to Rennek", 1, true) ~= nil, H.outputText())
+H.check("and explains why once",
+	H.outputText():find("refused a whispered effect", 1, true) ~= nil, H.outputText())
+H.check("with the refusal recorded for /reh blocked",
+	#REH.Diagnostics:GetBlocked() > 0)
+
+Watcher.whisperWarned = false
+
+-- The same again, this time as an outright Lua error rather than a block.
 reset()
 preset.channel.type = "PARTY"
 H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Rennek", subgroup = 1 } })

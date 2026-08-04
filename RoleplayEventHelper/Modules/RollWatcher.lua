@@ -559,22 +559,33 @@ function RollWatcher:WhisperLine(preset, fullName, line)
 		return false, "preview"
 	end
 
+	-- A refused send is not a Lua error. The client fires ADDON_ACTION_BLOCKED
+	-- -- the "Interface action failed because of an AddOn" message -- and then
+	-- returns normally, so pcall reports success for a whisper that never left.
+	-- The only reliable answer is whether a block was recorded while the send
+	-- was on the stack.
+	local before = REH.Diagnostics:TotalBlocked()
+
 	REH.Diagnostics:SetContext(("whisper to %s"):format(shown))
 	local ok = pcall(SendChatMessage, line, "WHISPER", nil, fullName)
 	REH.Diagnostics:ClearContext()
 
-	-- Shown to the host either way: they are running the event and need to know
-	-- what each person was told, whether or not it arrived.
-	REH:Print("|cffffd100%s|r |cff808080(to %s)|r", line, shown)
+	local refused = (not ok) or REH.Diagnostics:TotalBlocked() > before
 
-	if not ok then
+	-- Shown to the host either way: they are running the event and need to know
+	-- what each person was told, and whether it actually reached them.
+	if refused then
+		REH:Print("|cffffd100%s|r |cffff8080(NOT sent to %s)|r", line, shown)
+
 		if not self.whisperWarned then
 			self.whisperWarned = true
 			REH:PrintWarning(L["Your client refused a whispered effect. Whispers from an addon need a click behind them, and a roll has none, so these are showing here instead. /reh blocked has the details."])
 		end
+
 		return false, "blocked"
 	end
 
+	REH:Print("|cffffd100%s|r |cff808080(to %s)|r", line, shown)
 	return true, "sent"
 end
 
