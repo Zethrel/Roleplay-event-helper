@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.16.0 - 2026-08-04
 
 **A roll effect can now be whispered to whoever rolled.** A third destination
 on each effect row, alongside *to my channel* and *to me only*: **to the

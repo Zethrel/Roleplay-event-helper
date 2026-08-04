@@ -16,7 +16,7 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**v1.15.1**, in use and being fixed as the game finds things. Covered by 1303
+**v1.16.0**, in use and being fixed as the game finds things. Covered by 1318
 checks across thirteen suites, which run against a stub of the WoW API rather than
 the client -- see the [changelog](CHANGELOG.md) for what that does and does not
 catch.
@@ -118,8 +118,8 @@ Tagging is the release. Pushing a `v*` tag runs the test suites and then builds
 and uploads the addon zip from [`.pkgmeta`](.pkgmeta):
 
 ```sh
-git tag -a v1.15.1 -m "Roleplay Event Helper v1.15.1"
-git push origin v1.15.1
+git tag -a v1.16.0 -m "Roleplay Event Helper v1.16.0"
+git push origin v1.16.0
 ```
 
 The CurseForge project id is already set in the TOC. One thing is still needed
@@ -330,7 +330,7 @@ happens on that roll*, and it can do three things the table cannot. Open it with
 |---|---|
 | **Fires on** | a number, a range, a success, a failure, a critical either way, or every roll |
 | **How many** | all the effects that match, not just the first — or tick **one of these at random** on a group sharing a trigger and only one fires |
-| **Each one has** | its own chance, delay, and destination |
+| **Each one has** | its own chance, delay, and destination — your channel, your own frame, or whispered to whoever rolled |
 
 So a fishing night can say `Rennek's line snaps.` on a natural 1, `A monster!`
 on a critical success 25% of the time, and `A splash.` on every cast — three
