@@ -16,7 +16,7 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**v1.18.0**, in use and being fixed as the game finds things. Covered by 1369
+**v1.18.1**, in use and being fixed as the game finds things. Covered by 1375
 checks across thirteen suites, which run against a stub of the WoW API rather than
 the client -- see the [changelog](CHANGELOG.md) for what that does and does not
 catch.
@@ -118,8 +118,8 @@ Tagging is the release. Pushing a `v*` tag runs the test suites and then builds
 and uploads the addon zip from [`.pkgmeta`](.pkgmeta):
 
 ```sh
-git tag -a v1.18.0 -m "Roleplay Event Helper v1.18.0"
-git push origin v1.18.0
+git tag -a v1.18.1 -m "Roleplay Event Helper v1.18.1"
+git push origin v1.18.1
 ```
 
 The CurseForge project id is already set in the TOC. One thing is still needed
@@ -152,7 +152,7 @@ blank form:
 | Starter | What it is |
 |---|---|
 | **Duel Ring** | One-on-one duels: initiative, armor-based health, a turn timer |
-| **Fishing Night** | A results table with several fish per band, picked at random, and roll effects for the room's reaction |
+| **Fishing Night** | Several fish per band picked at random, whispered to whoever cast so they can tell the dock in their own words, with the room's reactions still public |
 | **Tavern Night** | No combat: house rules, etiquette, and a drinks table you read out yourself |
 | **Arena Brawl** | A raid-sized free-for-all where only the fighting subgroups are adjudicated |
 

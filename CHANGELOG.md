@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.18.1 - 2026-08-04
 
 **The Fishing Night starter now whispers the catch.** A fresh one arrives set to
 *to the roller*, so only the person who cast is told what they landed. They can
