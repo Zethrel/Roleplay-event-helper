@@ -207,7 +207,7 @@ H.check("the tavern night has no combat sections",
 -- A tavern night runs in /say, where the client will not deliver a line sent
 -- seconds after a roll. The drinks go to the host to read out instead.
 H.check("its drinks come to the host rather than the channel",
-	tavern.loot.enabled and tavern.loot.announce == false)
+	tavern.loot.enabled and tavern.loot.target == "self")
 H.check("and you cannot fail at being handed a drink",
 	tavern.rolls.useVerdicts == false)
 

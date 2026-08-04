@@ -405,10 +405,13 @@ Fields.TABS = {
 				onClick = function() REH.UI.EffectsFrame:Toggle() end,
 			},
 			{
-				key = "announce", label = "Send results to my channel", type = "toggle",
-				tooltip = "Off keeps them in your own chat frame. Your client only lets an addon send to /say, /yell, /emote, whispers and custom channels right after a click, so party, raid, guild and instance chat are the reliable ones for this.",
-				get = function(p) return p.loot.announce end,
-				set = function(p, v) p.loot.announce = v end,
+				key = "target", label = "Send the result", type = "select",
+				options = function()
+					return OptionsFrom(REH.RESULT_TARGETS, REH.DISPLAY.resultTarget)
+				end,
+				tooltip = "To my channel: the room is told what was caught.\n\nTo me only: it comes to you to read out.\n\nTo the roller: whispered to them alone, so they can announce it in their own words, play the struggle, or say nothing. The addon knows what was caught; they decide what it means.\n\nA whisper ignores the preview setting, and your client may refuse one sent after a roll -- you will see either way in your own frame.",
+				get = function(p) return p.loot.target end,
+				set = function(p, v) p.loot.target = v end,
 			},
 		},
 	},

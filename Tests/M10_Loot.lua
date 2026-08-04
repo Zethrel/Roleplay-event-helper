@@ -42,7 +42,7 @@ local function fishingPreset()
 	local preset = DB:GetActivePreset()
 
 	preset.loot.enabled = true
-	preset.loot.announce = true
+	preset.loot.target = "channel"
 	preset.loot.delaySeconds = 3
 	preset.loot.message = "{name} has caught {item}."
 	preset.loot.nothingText = ""
@@ -313,7 +313,7 @@ H.checkEqual("the verdict did not go with it", #H.sentMessages(), 1)
 reset()
 preset = fishingPreset()
 preset.channel.type = "PARTY"
-preset.loot.announce = false
+preset.loot.target = "self"
 H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Rennek", subgroup = 1 } })
 
 Watcher:SetMode("local")
@@ -453,7 +453,7 @@ local scratch = REH.CreateDefaultPreset("Scratch")
 scratch.rolls.dieMax = 20
 scratch.loot = {
 	enabled = "yes",
-	announce = 1,
+	target = "everywhere",
 	delaySeconds = 9999,
 	message = 42,
 	entries = {
@@ -468,7 +468,8 @@ scratch.loot = {
 DB:ValidatePreset(scratch)
 
 H.checkEqual("a string enable is coerced to a boolean", scratch.loot.enabled, true)
-H.checkEqual("and a number announce", scratch.loot.announce, true)
+H.checkEqual("and an unknown destination falls back to the channel",
+	scratch.loot.target, "channel")
 H.checkEqual("an absurd delay is clamped", scratch.loot.delaySeconds, 30)
 H.checkEqual("a non-string message falls back to the default",
 	scratch.loot.message, "{name} has caught {item}.")
@@ -557,6 +558,97 @@ H.clearOutput()
 REH.Commands:Handle("loot test")
 H.check("a test with no number explains itself",
 	H.outputText():find("loot test", 1, true) ~= nil, H.outputText())
+
+--------------------------------------------------------------------------------
+H.section("Keeping the catch private")
+--------------------------------------------------------------------------------
+
+-- Asked for by the fishing host, and the best argument anyone has made about
+-- this addon: telling the room "Rennek caught the salmon" hands Rennek the
+-- outcome and leaves him nothing to play. Whispered, he can announce it
+-- himself, make a meal of landing it, or say nothing at all.
+reset()
+preset = fishingPreset()
+preset.loot.target = "whisper"
+preset.loot.delaySeconds = 0
+preset.channel.type = "PARTY"
+H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Rennek", subgroup = 1 } })
+Watcher:SetMode("local")
+
+roll("Rennek", 2)
+
+H.checkEqual("the catch is sent", #H.sent, 1)
+H.checkEqual("as a whisper", H.sent[1].chatType, "WHISPER")
+H.checkEqual("to whoever rolled", H.sent[1].target, "Rennek-ArgentDawn")
+H.checkEqual("with the table's own line", H.sent[1].message,
+	"Rennek has caught an anchovy.")
+H.check("and the host sees what they were told",
+	H.outputText():find("(to Rennek)", 1, true) ~= nil, H.outputText())
+
+-- The room hears nothing, which is the entire point.
+local toldTheRoom = false
+for _, entry in ipairs(H.sent) do
+	if entry.chatType ~= "WHISPER" then
+		toldTheRoom = true
+	end
+end
+H.check("and nothing at all goes to the room", toldTheRoom == false)
+
+-- Preview does not suppress it, for the same reason it does not suppress a
+-- whispered effect: a line for one person is not an announcement.
+reset()
+preset.channel.type = "PREVIEW"
+H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Rennek", subgroup = 1 } })
+Watcher:SetMode("local")
+roll("Rennek", 2)
+H.checkEqual("a preview preset still whispers the catch", #H.sent, 1)
+H.checkEqual("privately", H.sent[1].chatType, "WHISPER")
+
+-- The other two destinations are unchanged.
+reset()
+preset.loot.target = "channel"
+preset.channel.type = "PARTY"
+H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Rennek", subgroup = 1 } })
+Watcher:SetMode("local")
+roll("Rennek", 2)
+H.checkEqual("to my channel still tells the room", #H.sent, 1)
+H.checkEqual("in the channel", H.sent[1].chatType, "PARTY")
+
+reset()
+preset.loot.target = "self"
+H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Rennek", subgroup = 1 } })
+Watcher:SetMode("local")
+roll("Rennek", 2)
+H.checkEqual("to me only sends nothing anywhere", #H.sent, 0)
+H.check("and comes to the host to read out",
+	H.outputText():find("caught an anchovy", 1, true) ~= nil)
+
+--------------------------------------------------------------------------------
+H.section("Presets from before results had a destination")
+--------------------------------------------------------------------------------
+
+-- The setting used to be a checkbox: on meant the channel, off meant the host.
+-- A preset saved then must keep behaving the way its host set it up.
+local old = REH.CreateDefaultPreset("Old")
+old.loot.target = nil
+old.loot.announce = false
+DB:ValidatePreset(old)
+H.checkEqual("switched off becomes 'to me only'", old.loot.target, "self")
+H.check("and the old key is gone", old.loot.announce == nil)
+
+local older = REH.CreateDefaultPreset("Older")
+older.loot.target = nil
+older.loot.announce = true
+DB:ValidatePreset(older)
+H.checkEqual("switched on becomes 'to my channel'", older.loot.target, "channel")
+
+-- A preset that already has a destination is not overwritten by a stale
+-- boolean left beside it.
+local mixed = REH.CreateDefaultPreset("Mixed")
+mixed.loot.target = "whisper"
+mixed.loot.announce = true
+DB:ValidatePreset(mixed)
+H.checkEqual("an existing destination wins", mixed.loot.target, "whisper")
 
 H.checkNoLeakedGlobals(H.ALLOWED_GLOBALS)
 H.finish()

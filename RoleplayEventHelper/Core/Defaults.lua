@@ -31,7 +31,11 @@ REH.ANNOUNCE_STYLES = { "full", "summary" }
 -- line it produces goes.
 REH.EFFECT_TRIGGERS = { "band", "verdict", "any" }
 REH.EFFECT_VERDICTS = { "critsuccess", "success", "fail", "critfail" }
-REH.EFFECT_TARGETS = { "channel", "self", "whisper" }
+-- Where a line the addon produces after a roll ends up. The same three for a
+-- roll effect and for the results table: they are the same question, and a host
+-- who learns them in one place should not have to learn them again in the other.
+REH.RESULT_TARGETS = { "channel", "self", "whisper" }
+REH.EFFECT_TARGETS = REH.RESULT_TARGETS
 REH.CHANNEL_TYPES = {
 	"PREVIEW", "SAY", "YELL", "EMOTE", "PARTY", "RAID", "RAID_WARNING",
 	"INSTANCE_CHAT", "GUILD", "OFFICER", "CHANNEL", "WHISPER",
@@ -104,7 +108,7 @@ REH.DISPLAY = {
 		fail = "failure",
 		critfail = "critical failure",
 	},
-	effectTarget = {
+	resultTarget = {
 		channel = "to my channel",
 		self = "to me only",
 		whisper = "to the roller",
@@ -116,6 +120,8 @@ REH.DISPLAY = {
 		everyone = "everyone in range",
 	},
 }
+
+REH.DISPLAY.effectTarget = REH.DISPLAY.resultTarget
 
 --- Membership test for the enumerations above.
 function REH.IsValidEnum(list, value)
@@ -251,11 +257,16 @@ local PRESET_TEMPLATE = {
 	loot = {
 		enabled = false,
 
-		-- Announced to the channel as well as printed locally. Separate from the
-		-- watcher's own verdicts on purpose: a fishing night wants "Rennek has
-		-- caught an anchovy" in the room without "Rennek rolled 3 -> FAILURE"
-		-- going with it.
-		announce = true,
+		-- Where the result goes. Separate from the watcher's own verdicts on
+		-- purpose: a fishing night wants "Rennek has caught an anchovy" without
+		-- "Rennek rolled 3 -> FAILURE" going with it.
+		--
+		-- "whisper" is the one worth understanding. Telling the room what
+		-- somebody caught hands them the outcome and leaves them nothing to
+		-- play; telling only them lets them announce it in their own words, or
+		-- struggle with it, or lie about it. The addon knows what was caught,
+		-- and the person who caught it decides what that means.
+		target = "channel",
 
 		-- A pause before the result, so the roll lands first and the catch reads
 		-- as a consequence of it rather than as part of the same line.

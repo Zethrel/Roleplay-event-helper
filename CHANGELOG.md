@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+**The results table can now be whispered to whoever rolled.** *Send the result*
+on the Loot tab is no longer a checkbox but a choice of three, the same three a
+roll effect has:
+
+| | |
+|---|---|
+| **to my channel** | the room is told what was caught — what the checkbox used to do when it was on |
+| **to me only** | it comes to you to read out — what the checkbox used to do when it was off |
+| **to the roller** | whispered to them alone |
+
+The last one is the reason this exists. Being told *"Rennek caught the salmon"*
+in front of everyone hands Rennek the outcome and leaves him nothing to play.
+Whispered, he can announce it in his own words, make a meal of landing it, keep
+it to himself, or lie about it. The addon knows what was caught; the person who
+caught it decides what that means.
+
+Your existing presets keep the behaviour you gave them — the old checkbox is
+read once and turned into the matching choice.
+
 **An effect set to "to the roller" now works even while the preset is on
 preview only.** Preview answers "where do my rules and results get announced",
 and a line meant for one person is not an announcement — you picked that

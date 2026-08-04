@@ -241,12 +241,27 @@ function Database:ValidatePreset(preset)
 		legacyRange = preset.rollFilter.matchRangeOnly and "atMost" or "any"
 	end
 
+	-- Presets saved before results had a destination stored a boolean: true was
+	-- "to my channel", false was "to me only". Read here, before the defaults
+	-- are merged in and a fresh "channel" hides the fact that the host had
+	-- switched announcing off.
+	local legacyLootTarget
+	if type(preset) == "table" and type(preset.loot) == "table"
+		and preset.loot.target == nil and preset.loot.announce ~= nil then
+		legacyLootTarget = preset.loot.announce and "channel" or "self"
+	end
+
 	preset = REH.ApplyDefaults(preset, REH.PRESET_TEMPLATE)
 
 	if legacyRange then
 		preset.rollFilter.rangeMode = legacyRange
 		preset.rollFilter.matchRangeOnly = nil
 	end
+
+	if legacyLootTarget then
+		preset.loot.target = legacyLootTarget
+	end
+	preset.loot.announce = nil
 
 	-- Header
 	local header = preset.header
@@ -311,7 +326,9 @@ function Database:ValidatePreset(preset)
 	-- leave a band nobody can ever roll into.
 	local loot = preset.loot
 	loot.enabled = REH.ToBoolean(loot.enabled, false)
-	loot.announce = REH.ToBoolean(loot.announce, true)
+	if not REH.IsValidEnum(REH.RESULT_TARGETS, loot.target) then
+		loot.target = "channel"
+	end
 	loot.delaySeconds = REH.ClampNumber(loot.delaySeconds, 0, 30, 3)
 	loot.message = REH.CleanString(loot.message, 200, "{name} has caught {item}.")
 	loot.nothingText = REH.CleanString(loot.nothingText, 200)

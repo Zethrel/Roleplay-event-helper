@@ -102,7 +102,7 @@ Templates.LIST = {
 			-- times are alternatives, one chosen at random, which is what makes
 			-- an evening of the same roll stay interesting.
 			preset.loot.enabled = true
-			preset.loot.announce = true
+			preset.loot.target = "channel"
 			preset.loot.delaySeconds = 3
 			preset.loot.message = "{name} reels in {item}."
 			preset.loot.nothingText = "a handful of weeds"
@@ -194,7 +194,7 @@ Templates.LIST = {
 			-- come to the host, who reads them out in character -- which is
 			-- better theatre anyway.
 			preset.loot.enabled = true
-			preset.loot.announce = false
+			preset.loot.target = "self"
 			preset.loot.delaySeconds = 2
 			preset.loot.message = "{name} is served {item}."
 			preset.loot.nothingText = "whatever was left in the jug"

@@ -697,14 +697,21 @@ function RollWatcher:ScheduleLoot(preset, name, roll)
 		return false
 	end
 
-	local announce = preset.loot.announce and true or false
+	local target = preset.loot.target
 
-	if announce then
+	if target == "channel" then
 		self:WarnDelayedChannel(preset)
 	end
 
 	local function deliver()
-		self:DeliverLine(preset, line, announce)
+		-- Whispered, the catch belongs to whoever made it: they can announce it
+		-- in their own words, play the struggle, or keep it to themselves. Told
+		-- to the room, it is already over.
+		if target == "whisper" then
+			self:WhisperLine(preset, name, line)
+		else
+			self:DeliverLine(preset, line, target == "channel")
+		end
 	end
 
 	local delay = preset.loot.delaySeconds or 0
