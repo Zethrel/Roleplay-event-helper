@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.17.0 - 2026-08-04
 
 **The results table can now be whispered to whoever rolled.** *Send the result*
 on the Loot tab is no longer a checkbox but a choice of three, the same three a

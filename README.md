@@ -16,7 +16,7 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**v1.16.0**, in use and being fixed as the game finds things. Covered by 1318
+**v1.17.0**, in use and being fixed as the game finds things. Covered by 1342
 checks across thirteen suites, which run against a stub of the WoW API rather than
 the client -- see the [changelog](CHANGELOG.md) for what that does and does not
 catch.
@@ -118,8 +118,8 @@ Tagging is the release. Pushing a `v*` tag runs the test suites and then builds
 and uploads the addon zip from [`.pkgmeta`](.pkgmeta):
 
 ```sh
-git tag -a v1.16.0 -m "Roleplay Event Helper v1.16.0"
-git push origin v1.16.0
+git tag -a v1.17.0 -m "Roleplay Event Helper v1.17.0"
+git push origin v1.17.0
 ```
 
 The CurseForge project id is already set in the TOC. One thing is still needed
@@ -287,7 +287,10 @@ table, and the addon reads each roll off it:
 100    the legendary whale
 ```
 
-Someone rolls a 3 and, a few seconds later, `Rennek has caught an anchovy.`
+Someone rolls a 3 and, a few seconds later, `Rennek has caught an anchovy.` —
+sent to your channel, kept for you to read out, or **whispered to whoever
+rolled**, so they can announce it in their own words rather than having the room
+told for them.
 One entry per line — a range or a single number. The line itself is yours:
 `{name}`, `{item}` and `{roll}` are filled in.
 
