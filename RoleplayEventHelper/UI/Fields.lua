@@ -350,8 +350,8 @@ Fields.TABS = {
 		title = "Loot",
 		fields = {
 			{
-				key = "enabled", label = "Announce a result for each roll", type = "toggle",
-				tooltip = "Reads the roll off the table below. A fishing night rolls, and the addon says what they caught.",
+				key = "enabled", label = "Give each roll a result", type = "toggle",
+				tooltip = "What happens during the event: each roll is read off the table below and answered. A fishing night rolls, and the addon says what they caught.\n\nSeparate from 'Include in the announced rules' at the top, which only decides whether the table is listed in the rules you post beforehand.",
 				get = function(p) return p.loot.enabled end,
 				set = function(p, v)
 					p.loot.enabled = v
@@ -567,9 +567,9 @@ for _, tab in ipairs(Fields.TABS) do
 
 		table.insert(tab.fields, 1, {
 			key = "include",
-			label = "Announce this section",
+			label = "Include in the announced rules",
 			type = "toggle",
-			tooltip = "Off keeps the rules here but leaves them out of the announcement. Useful for events with no rolls or combat.",
+			tooltip = "Whether this section appears in the rules you post before the event. It has no effect on what the addon does during it -- switching the Loot section off here still gives each roll its result, and still sends it wherever the Loot tab says.",
 			get = function(p) return p.moduleEnabled[moduleKey] end,
 			set = function(p, v) p.moduleEnabled[moduleKey] = v end,
 		})

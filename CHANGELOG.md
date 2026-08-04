@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+**Two settings were both called "Announce", and meant different things.**
+Reported from an event: a host switched *Announce this section* off on the Loot
+tab expecting results to stop reaching chat, and they carried on.
+
+They do different jobs, and the labels now say so:
+
+- **Include in the announced rules** (top of every tab) — whether the section
+  appears in the rules you post *before* the event. It changes nothing about
+  what happens during it.
+- **Give each roll a result** (Loot tab) — what happens *during* the event.
+  This, and *Send the result* beside it, are what decide whether anything
+  reaches chat after a roll.
+
+Nothing about the behaviour changed; it was always this way, and now it reads
+that way.
+
 **Fixed: 1.17.0 could stop whispering entirely.** Reported straight away — a
 whisper that arrived in 1.16.0 sent nothing in 1.17.0.
 

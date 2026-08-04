@@ -624,6 +624,48 @@ H.check("with nothing complained about",
 H.checkEqual("and nothing said in chat", H.outputText(), "")
 
 --------------------------------------------------------------------------------
+H.section("Two settings that were both called Announce")
+--------------------------------------------------------------------------------
+
+-- Reported from an event: a host switched a section off expecting results to
+-- stop reaching chat, and they carried on. One setting decides what goes in the
+-- rules posted beforehand; the other decides what happens during the evening.
+-- Both used to start with "Announce".
+local includeField = Fields:FindField("loot", "include")
+local resultsField = Fields:FindField("loot", "enabled")
+
+H.check("the section toggle no longer starts with Announce",
+	includeField.label:find("^Announce") == nil, includeField.label)
+H.check("and says it is about the rules",
+	includeField.label:lower():find("rules", 1, true) ~= nil, includeField.label)
+H.check("with a tooltip saying it changes nothing during the event",
+	includeField.tooltip:find("during", 1, true) ~= nil)
+
+H.check("the results toggle no longer starts with Announce either",
+	resultsField.label:find("^Announce") == nil, resultsField.label)
+H.check("and the two labels cannot be confused",
+	includeField.label ~= resultsField.label)
+
+-- The behaviour they were confused by, pinned: a section left out of the rules
+-- still answers rolls.
+local quiet = REH.CreateDefaultPreset("Quiet")
+quiet.loot.enabled = true
+quiet.loot.entries = { { min = 1, max = 100, text = "a fish" } }
+quiet.moduleEnabled.loot = false
+DB:ValidatePreset(quiet)
+
+H.check("a section left out of the rules is not announced with them", (function()
+	for _, message in ipairs(REH.Formatter:BuildMessages(quiet)) do
+		if message:find("Results:", 1, true) then
+			return false
+		end
+	end
+	return true
+end)())
+H.check("but its results still answer a roll",
+	REH.RollWatcher:LootFor(quiet, 50) ~= nil)
+
+--------------------------------------------------------------------------------
 H.section("Every field explains itself")
 --------------------------------------------------------------------------------
 
