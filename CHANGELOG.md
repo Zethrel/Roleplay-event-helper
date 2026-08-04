@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+**Fixed: 1.17.0 could stop whispering entirely.** Reported straight away — a
+whisper that arrived in 1.16.0 sent nothing in 1.17.0.
+
+The refusal check added in 1.17.0 read a counter *before* the send, so anything
+wrong with that read took the send down with it. Nothing sits between you and
+the send now: the whisper goes out first and everything after it is only
+description, guarded so it cannot fail in a way that costs you a line.
+
+Two related repairs:
+
+- another addon being refused while this one was sending counted as *our*
+  refusal, so a perfectly good whisper could be reported as `(NOT sent)`
+- the same read is now defensive, so a half-updated install — one file new,
+  another still the old one — cannot stop whispers going out
+
+If you are on 1.17.0 and whispers went quiet, this is why.
+
 ## 1.17.0 - 2026-08-04
 
 **The results table can now be whispered to whoever rolled.** *Send the result*

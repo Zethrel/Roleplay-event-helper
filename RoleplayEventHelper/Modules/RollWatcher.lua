@@ -562,18 +562,28 @@ function RollWatcher:WhisperLine(preset, fullName, line)
 	-- nothing broadcast -- can still have the addon tell each person privately
 	-- what only they noticed.
 
-	-- A refused send is not a Lua error. The client fires ADDON_ACTION_BLOCKED
-	-- -- the "Interface action failed because of an AddOn" message -- and then
-	-- returns normally, so pcall reports success for a whisper that never left.
-	-- The only reliable answer is whether a block was recorded while the send
-	-- was on the stack.
-	local before = REH.Diagnostics:TotalBlocked()
+	-- Nothing goes between the host and the send. Everything below the send is
+	-- reporting, and reporting that can fail -- a half-updated install, a
+	-- function that moved -- must not be able to stop a whisper going out. 1.17
+	-- read a counter first and stopped whispering when that read went wrong.
+	local blocks = REH.Diagnostics.TotalBlocked and REH.Diagnostics:TotalBlocked()
 
 	REH.Diagnostics:SetContext(("whisper to %s"):format(shown))
 	local ok = pcall(SendChatMessage, line, "WHISPER", nil, fullName)
 	REH.Diagnostics:ClearContext()
 
-	local refused = (not ok) or REH.Diagnostics:TotalBlocked() > before
+	-- A refused send is not a Lua error: the client fires ADDON_ACTION_BLOCKED
+	-- -- the "Interface action failed because of an AddOn" message -- and
+	-- returns normally, so pcall alone reports success for a whisper that never
+	-- left. A block recorded against this addon while the send was on the stack
+	-- is the other half of the answer, and it is only ever used to describe what
+	-- happened, never to decide whether to try.
+	local refused = not ok
+
+	if blocks and REH.Diagnostics.TotalBlocked
+		and REH.Diagnostics:TotalBlocked() > blocks then
+		refused = true
+	end
 
 	-- Shown to the host either way: they are running the event and need to know
 	-- what each person was told, and whether it actually reached them.

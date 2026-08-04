@@ -54,7 +54,13 @@ local function Record(event, addon, func)
 	}
 
 	table.insert(blocked, entry)
-	totalBlocked = totalBlocked + 1
+
+	-- Only this addon's own refusals are counted. Every block is recorded for
+	-- /reh blocked, including other addons', but another addon being refused
+	-- while this one happens to be sending is not evidence about our send.
+	if entry.addon == ADDON_NAME then
+		totalBlocked = totalBlocked + 1
+	end
 
 	if #blocked > MAX_ENTRIES then
 		table.remove(blocked, 1)

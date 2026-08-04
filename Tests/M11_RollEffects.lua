@@ -369,6 +369,38 @@ H.check("and explains why once",
 H.check("with the refusal recorded for /reh blocked",
 	#REH.Diagnostics:GetBlocked() > 0)
 
+-- Another addon being refused while this one is sending says nothing about
+-- this one's send, and must not be reported as if it did.
+reset()
+preset.channel.type = "PARTY"
+preset.rollFilter.mode = "group"
+H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Rennek", subgroup = 1 } })
+Watcher:SetMode("local")
+Watcher.whisperWarned = false
+REH.Diagnostics:Handle("ADDON_ACTION_BLOCKED", "SomeOtherAddon", "Frame:Show()")
+
+roll("Rennek", 50)
+H.checkEqual("a foreign block does not stop the whisper", #H.sentMessages(), 1)
+H.check("nor is it reported as a refusal",
+	H.outputText():find("NOT sent", 1, true) == nil, H.outputText())
+
+-- The reporting must never be able to stop the send. A half-updated install is
+-- the real-world version of this: one file new, another still old.
+reset()
+preset.rollFilter.mode = "group"
+H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Rennek", subgroup = 1 } })
+Watcher:SetMode("local")
+
+local savedTotal = REH.Diagnostics.TotalBlocked
+REH.Diagnostics.TotalBlocked = nil
+
+roll("Rennek", 50)
+REH.Diagnostics.TotalBlocked = savedTotal
+
+H.checkEqual("the whisper still goes out with the counter missing",
+	#H.sentMessages(), 1)
+H.checkEqual("as a whisper", H.sent[1].chatType, "WHISPER")
+
 Watcher.whisperWarned = false
 
 -- The same again, this time as an outright Lua error rather than a block.
