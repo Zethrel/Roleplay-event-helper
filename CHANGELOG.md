@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+
+**The Fishing Night starter now whispers the catch.** A fresh one arrives set to
+*to the roller*, so only the person who cast is told what they landed. They can
+announce it in their own words, make a meal of hauling it in, or say nothing and
+let the dock wonder.
+
+Three things changed with it, so the default actually works:
+
+- the result line reads **"You reel in a fat carp."** rather than naming the
+  roller in the third person, because it arrives as a whisper to the one person
+  it happened to. Point it back at your channel and it wants rewording.
+- the rules now say the catch is whispered, and invite people to tell the dock
+  in their own words
+- **the results table is no longer announced with the rules.** The `/roll` is
+  public, so posting the table lets anyone read "18-19 = a sturgeon" off a roll
+  they watched — the whisper would be theatre. Switch the Loot section back on
+  under *Include in the announced rules* if you would rather publish it.
+
+The room's reactions are unchanged and still public: nobody drops a tankard
+privately.
+
+Existing presets are untouched. This is the starter only, so make a fresh
+Fishing Night to pick it up.
+
 ## 1.18.0 - 2026-08-04
 
 **"Set all to..." in the roll effects window.** One click points every effect at

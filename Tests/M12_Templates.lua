@@ -111,6 +111,44 @@ H.check("so its rules announce no success band",
 	(fishingRolls or ""):find("SUCCESS", 1, true) == nil, fishingRolls)
 
 H.check("the fishing night has its results table on", fishing.loot.enabled)
+
+-- The catch is the roller's to play, not the room's to be told. Whispered, they
+-- can announce it themselves, make a meal of landing it, or say nothing.
+H.checkEqual("and whispers the catch rather than announcing it",
+	fishing.loot.target, "whisper")
+H.check("with the line written to the person it happened to",
+	fishing.loot.message:find("You ", 1, true) == 1, fishing.loot.message)
+H.check("and the rules say the catch is private", (function()
+	for _, rule in ipairs(fishing.custom) do
+		if rule:lower():find("whispered to you", 1, true) then
+			return true
+		end
+	end
+	return false
+end)())
+
+-- The roll is public, so an announced table is a decoder ring: read "18-19 = a
+-- sturgeon" off a roll everyone watched and the whispered catch is theatre.
+H.check("and the table is kept out of the announced rules",
+	fishing.moduleEnabled.loot == false)
+H.check("so no catch can be read off a roll the room saw", (function()
+	for _, message in ipairs(REH.Formatter:BuildMessages(fishing)) do
+		if message:find("sturgeon", 1, true) then
+			return false
+		end
+	end
+	return true
+end)())
+
+-- The reactions stay public: nobody drops a tankard privately.
+local publicReactions = 0
+for _, record in ipairs(fishing.rollEffects) do
+	if record.target == "channel" then
+		publicReactions = publicReactions + 1
+	end
+end
+H.checkEqual("while the room's reactions stay in the room",
+	publicReactions, #fishing.rollEffects)
 H.check("with a full table of bands", #fishing.loot.entries >= 8, #fishing.loot.entries)
 H.check("every band inside its die", (function()
 	for _, entry in ipairs(fishing.loot.entries) do

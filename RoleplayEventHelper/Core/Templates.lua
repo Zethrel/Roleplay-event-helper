@@ -76,7 +76,7 @@ Templates.LIST = {
 	{
 		key = "fishing",
 		name = "Fishing Night",
-		summary = "A results table read off the roll, with several fish per band picked at random.",
+		summary = "A table read off the roll: several fish per band, picked at random, whispered to whoever cast.",
 		build = function(preset)
 			preset.header.eventName = "Fishing Night"
 			preset.header.description = "Cast with /roll 20 and see what comes up."
@@ -102,9 +102,18 @@ Templates.LIST = {
 			-- times are alternatives, one chosen at random, which is what makes
 			-- an evening of the same roll stay interesting.
 			preset.loot.enabled = true
-			preset.loot.target = "channel"
+
+			-- Whispered, not announced. Telling the dock "Rennek caught the
+			-- salmon" hands Rennek the outcome and leaves him nothing to play;
+			-- told only him, he can announce it himself, make a meal of landing
+			-- it, or say nothing and let them wonder.
+			preset.loot.target = "whisper"
 			preset.loot.delaySeconds = 3
-			preset.loot.message = "{name} reels in {item}."
+
+			-- Second person, because it arrives as a whisper to the one person
+			-- it happened to. A host who points this at the channel instead
+			-- should reword it to name them.
+			preset.loot.message = "You reel in {item}."
 			preset.loot.nothingText = "a handful of weeds"
 			preset.loot.entries = {
 				{ min = 1,  max = 1,  text = "a snapped line and nothing on the end of it" },
@@ -154,7 +163,8 @@ Templates.LIST = {
 			preset.turns.turnTimeSeconds = 0
 
 			preset.custom = {
-				"Cast by rolling /roll 20. What you catch is read off the roll.",
+				"Cast by rolling /roll 20. What you caught is whispered to you.",
+				"Tell the dock what you landed in your own words, or do not and let them wonder.",
 				"One cast each, then let the next person fish.",
 				"Nobody is competing. Big fish and boots are both good stories.",
 			}
@@ -165,7 +175,15 @@ Templates.LIST = {
 
 			-- No combat at a fishing night, and an empty combat section in the
 			-- announcement teaches the wrong thing about the addon.
-			Disable(preset, "health", "damage")
+			--
+			-- The results table is left out of the announcement for a different
+			-- reason, and it is the one that makes the private catch work: the
+			-- roll itself is public. Post the table and anyone can read "18-19 =
+			-- a sturgeon" off a roll they watched land, and the whisper becomes
+			-- theatre. Kept out, the only person who knows is the one holding
+			-- the rod. A host who would rather publish the table can switch it
+			-- back on and accept that the room can do the arithmetic.
+			Disable(preset, "health", "damage", "loot")
 		end,
 	},
 
