@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+**An effect set to "to the roller" now works even while the preset is on
+preview only.** Preview answers "where do my rules and results get announced",
+and a line meant for one person is not an announcement — you picked that
+destination on that effect, which is as explicit as picking a channel. So a host
+running an evening in preview, reading the rules out by hand and broadcasting
+nothing, can still have the addon tell each person privately what only they
+noticed.
+
+Everything else about preview is unchanged: an effect aimed at your channel
+still says nothing to the room, and still tells you the preset is on preview.
+
 **Fixed: a whispered effect that your client refused was reported as sent.**
 A refusal is not an error the addon can catch -- the client fires the "Interface
 action failed because of an AddOn" event and carries on -- so 1.16.0 checked the

@@ -305,15 +305,44 @@ H.checkEqual("whispering yourself sends nothing", #H.sentMessages(), 0)
 H.check("but still shows you the line",
 	H.outputText():find("tug the line", 1, true) ~= nil, H.outputText())
 
--- A preset that announces to preview sends nothing anywhere, whispers included.
+-- The exception, asked for after a party test: the preset's channel says where
+-- rules and results are announced, and a line meant for one person is not an
+-- announcement. A host running an evening in preview -- reading the rules out
+-- by hand, broadcasting nothing -- can still have each person told privately
+-- what only they noticed.
 reset()
 preset.channel.type = "PREVIEW"
+preset.rollFilter.mode = "group"
 H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Rennek", subgroup = 1 } })
 Watcher:SetMode("local")
 roll("Rennek", 50)
-H.checkEqual("a preview preset whispers nothing", #H.sentMessages(), 0)
-H.check("and says who it would have gone to",
-	H.outputText():find("would whisper Rennek", 1, true) ~= nil, H.outputText())
+
+H.checkEqual("a preview preset still whispers the roller", #H.sentMessages(), 1)
+H.checkEqual("as a whisper", H.sent[1].chatType, "WHISPER")
+H.checkEqual("to them", H.sent[1].target, "Rennek-ArgentDawn")
+
+-- Everything else about preview is untouched: an effect aimed at the channel
+-- still says nothing to the room.
+reset()
+preset = withEffects({
+	effect({ trigger = "any", delaySeconds = 0, target = "channel",
+		message = "Heard by everyone." }),
+})
+preset.channel.type = "PREVIEW"
+preset.rollFilter.mode = "group"
+H.setGroup({ { name = "Testchar", subgroup = 1 }, { name = "Rennek", subgroup = 1 } })
+Watcher:SetMode("local")
+roll("Rennek", 50)
+H.checkEqual("while an effect aimed at the channel still sends nothing",
+	#H.sentMessages(), 0)
+H.check("and says the preset is on preview",
+	H.outputText():find("preview only", 1, true) ~= nil, H.outputText())
+
+preset = withEffects({
+	effect({ trigger = "any", delaySeconds = 0, target = "whisper",
+		message = "You feel something tug the line." }),
+})
+preset.rollFilter.mode = "group"
 
 -- The refusal that matters, and the one 1.16.0 got wrong: the client does not
 -- raise a Lua error when it refuses a send. It fires ADDON_ACTION_BLOCKED and

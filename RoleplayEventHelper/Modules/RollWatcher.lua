@@ -554,10 +554,13 @@ function RollWatcher:WhisperLine(preset, fullName, line)
 		return false, "self"
 	end
 
-	if preset.channel.type == "PREVIEW" then
-		REH:Print("|cffffd100%s|r |cff808080(would whisper %s)|r", line, shown)
-		return false, "preview"
-	end
+	-- Deliberately not subject to the preset's channel, including preview only.
+	-- That setting answers "where do my rules and results get announced", and a
+	-- line meant for one person is not an announcement: the host chose "to the
+	-- roller" on this effect specifically, which is as explicit as picking a
+	-- channel. A host running an event in preview -- rules read out by hand,
+	-- nothing broadcast -- can still have the addon tell each person privately
+	-- what only they noticed.
 
 	-- A refused send is not a Lua error. The client fires ADDON_ACTION_BLOCKED
 	-- -- the "Interface action failed because of an AddOn" message -- and then
