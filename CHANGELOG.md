@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.18.0 - 2026-08-04
 
 **"Set all to..." in the roll effects window.** One click points every effect at
 the same destination — your channel, yourself, or the roller — for an evening

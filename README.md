@@ -16,7 +16,7 @@ watcher adjudicates the plain `/roll` everyone already uses.
 
 ## Status
 
-**v1.17.1**, in use and being fixed as the game finds things. Covered by 1353
+**v1.18.0**, in use and being fixed as the game finds things. Covered by 1369
 checks across thirteen suites, which run against a stub of the WoW API rather than
 the client -- see the [changelog](CHANGELOG.md) for what that does and does not
 catch.
@@ -75,7 +75,7 @@ then restart the client or `/reload`.
 | `/reh log [clear]` | Show this session's rolls and per-name totals |
 | `/reh round [new]` | Start a new round, or show the current one |
 | `/reh loot [on\|off\|test <roll>]` | The result table read off each roll |
-| `/reh effects [list\|test <roll>]` | Open the roll effects window |
+| `/reh effects [list\|test <roll>\|all <where>]` | Open the roll effects window |
 | `/reh filter [mode]` | Whose rolls are tracked |
 | `/reh subgroups <numbers>` | Raid subgroups counted as combatants |
 | `/reh range [atmost\|exact\|any]` | Which dice sizes count |
@@ -118,8 +118,8 @@ Tagging is the release. Pushing a `v*` tag runs the test suites and then builds
 and uploads the addon zip from [`.pkgmeta`](.pkgmeta):
 
 ```sh
-git tag -a v1.17.1 -m "Roleplay Event Helper v1.17.1"
-git push origin v1.17.1
+git tag -a v1.18.0 -m "Roleplay Event Helper v1.18.0"
+git push origin v1.18.0
 ```
 
 The CurseForge project id is already set in the TOC. One thing is still needed
@@ -347,6 +347,11 @@ can be two lines rather than one crowded one.
 set off without waiting for anyone to roll it and without sending anything.
 Chance and delay are ignored there so you see every effect that matches.
 `/reh effects list` reads the whole set back in plain English.
+
+**Set all to...** in the window points every effect at one destination in a
+single click, for an evening you want kept private or read out in the room. It
+changes each row rather than linking them, so every effect still says where it
+goes and one can be set back on its own.
 
 Effects are per preset and travel in export strings. An event with none behaves
 exactly as it did before they existed.
